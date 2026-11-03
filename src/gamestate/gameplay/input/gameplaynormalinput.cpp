@@ -1,3 +1,7 @@
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+
 #include "gameplaynormalinput.h"
 
 #ifdef WIN32
@@ -9,8 +13,6 @@
 #include <glm/glm.hpp>
 
 #include "etc/contextprovider.h"
-#include "etc/hmd/hmd.h"
-#include "etc/hmd/hmdmanager.h"
 
 #include "gamestate/gamestate.h"
 
@@ -163,7 +165,7 @@ void GamePlayNormalInput::update(float deltaSec) {
                 processUpdate();
                 processMouseUpdate(deltaSec);
                 applyUpdates();
-                processHMDUpdate();
+                resetHeadOrientation();
             }
         }
     }
@@ -260,12 +262,8 @@ void GamePlayNormalInput::processMouseUpdate(float deltaSec) {
     }
 }
 
-void GamePlayNormalInput::processHMDUpdate() {
-    if (HMDManager::instance()->hmd()) {
-        World::instance()->player().cameraHead().setRelativeOrientation(HMDManager::instance()->hmd()->orientation());
-    } else {
-        World::instance()->player().cameraHead().setRelativeOrientation(glm::quat());
-    }
+void GamePlayNormalInput::resetHeadOrientation() {
+    World::instance()->player().cameraHead().setRelativeOrientation(glm::quat());
 }
 
 void GamePlayNormalInput::addActionsToVector() {

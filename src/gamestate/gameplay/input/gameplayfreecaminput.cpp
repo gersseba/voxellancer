@@ -6,8 +6,6 @@
 #include <glm/glm.hpp>
 
 #include "etc/contextprovider.h"
-#include "etc/hmd/hmd.h"
-#include "etc/hmd/hmdmanager.h"
 
 #include "camera/camerahead.h"
 
@@ -72,7 +70,7 @@ void GamePlayFreecamInput::update(float deltaSec) {
             processUpdate();
             processMouseUpdate(deltaSec);
             applyUpdates();
-            processHMDUpdate();
+            resetHeadOrientation();
         }
     }
     m_lastfocus = glfwGetWindowAttrib(glfwGetCurrentContext(), GLFW_FOCUSED);
@@ -133,12 +131,8 @@ void GamePlayFreecamInput::processMouseUpdate(float deltaSec) {
     glfwSetCursorPos(glfwGetCurrentContext(), x, y);
 }
 
-void GamePlayFreecamInput::processHMDUpdate() {
-    if (HMDManager::instance()->hmd()) {
-        m_cameraDolly->cameraHead().setRelativeOrientation(HMDManager::instance()->hmd()->orientation());
-    } else {
-        m_cameraDolly->cameraHead().setRelativeOrientation(glm::quat());
-    }
+void GamePlayFreecamInput::resetHeadOrientation() {
+    m_cameraDolly->cameraHead().setRelativeOrientation(glm::quat());
 }
 
 void GamePlayFreecamInput::addActionsToVector() {
@@ -250,4 +244,3 @@ void GamePlayFreecamInput::setOrientation(const glm::quat& orientation) {
 CameraHead& GamePlayFreecamInput::cameraHead() {
     return m_cameraDolly->cameraHead();
 }
-

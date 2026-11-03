@@ -11,7 +11,6 @@ public:
 
     void parse(int argc, char* argv[]);
 
-    bool hmd() const;
     bool stereoView() const;
     bool fullScreen() const;
     bool showIntro() const;

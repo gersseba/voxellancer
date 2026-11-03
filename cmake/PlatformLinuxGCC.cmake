@@ -1,26 +1,4 @@
 
-# support for C++11 etc.
-
-execute_process(COMMAND ${CMAKE_C_COMPILER} -dumpversion
-	OUTPUT_VARIABLE GCC_VERSION)
-
-if(GCC_VERSION VERSION_GREATER 4.7 OR GCC_VERSION VERSION_EQUAL 4.7)
-	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++11")
-elseif(GCC_VERSION VERSION_EQUAL 4.6)
-	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++0x")
-else()
-	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
-endif()
-
-if(GCC_VERSION VERSION_LESS 4.9)
-    set(BOOST_MODULES ${BOOST_MODULES} regex)
-	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DREGEX_USE_BOOST")
-endif()
-
-set(BOOST_MODULES ${BOOST_MODULES} system filesystem)  # until gcc implements <filesystem>
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DFILESYSTEM_USE_BOOST")
-
-
 set(LINUX_COMPILE_DEFS
 	LINUX	                  # Linux system
 	PIC		                  # Position-independent code

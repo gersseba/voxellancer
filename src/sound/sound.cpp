@@ -20,11 +20,11 @@ Sound::Status Sound::status() {
         return Status::Null;
     }
     switch (m_sound->getStatus()) {
-        case sf::SoundSource::Playing:
+        case sf::Sound::Status::Playing:
             return Status::Playing;
-        case sf::SoundSource::Paused:
+        case sf::Sound::Status::Paused:
             return Status::Paused;
-        case sf::SoundSource::Stopped:
+        case sf::Sound::Status::Stopped:
             return Status::Stopped;
         default:
             return Status::Stopped;
@@ -72,7 +72,7 @@ Sound& Sound::setVolume(float volume) {
 
 Sound& Sound::setLooping(bool loop) {
     if (m_sound) {
-        m_sound->setLoop(loop);
+        m_sound->setLooping(loop);
     }
     return *this;
 }
@@ -90,4 +90,3 @@ Sound& Sound::setMinDistance(float distance) {
     }
     return *this;
 }
-

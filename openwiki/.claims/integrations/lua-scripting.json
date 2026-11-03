@@ -1,0 +1,104 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:b90d8a228654a9fff7535b8a780fa06c0d981e2f5c92340c053c9e48437474b8",
+  "claims": [
+    {
+      "id": "claim_7083a2d67caa4aa2b49d742fcfab50cd",
+      "statement": "A Script starts by calling Lua main, calls Lua update only when that function exists, and transitions among idle, running, and stopped states.",
+      "evidence": [
+        {
+          "resource": "repo://src/scripting/script.cpp",
+          "version": "repo-file-v1:sha256:edad41ab3ee0609f5fca539c071d8cbbedac8d355c5319daf5d2667fbf3e7da5"
+        }
+      ]
+    },
+    {
+      "id": "claim_12cd15f04ef0446fb98e1ff70796a0fb",
+      "statement": "ScriptedScenario loads a GamePlayScript from its path, creates and schedules the player ship, assigns it to the player, and adds the script to the world ScriptEngine.",
+      "evidence": [
+        {
+          "resource": "repo://src/scenarios/scriptedscenario.cpp",
+          "version": "repo-file-v1:sha256:a06706fda7668dd2c912d9fccfff529244b0f0822c0f51990b6ca13c37682a2c"
+        }
+      ]
+    },
+    {
+      "id": "claim_84edf4a4263d41b9a635b8aafd0b681a",
+      "statement": "GamePlayScript installs common, world-object, AI, squad, and external-mission bindings and cleans up registered local scriptables and event polls when destroyed.",
+      "evidence": [
+        {
+          "resource": "repo://src/scripting/gameplayscript.cpp",
+          "version": "repo-file-v1:sha256:a2c481113b8d6ae3083bf6126e69889d233ff4f2526384991739c111b9a3b0f8"
+        }
+      ]
+    },
+    {
+      "id": "claim_d47821b046a44e62893f9a0cd11aa751",
+      "statement": "MissionSystem registers and starts added missions, updates them each frame, removes non-running missions, and unregisters explicitly removed missions.",
+      "evidence": [
+        {
+          "resource": "repo://src/missions/missionsystem.cpp",
+          "version": "repo-file-v1:sha256:0dba6a1691adffcfd8be03c3d57634cede02c96a3c75bd78fbb245a81eba3b44"
+        }
+      ]
+    },
+    {
+      "id": "claim_b7b550fffdec48159dce1ce57c23bd53",
+      "statement": "The project requires Lua 5.5, and gameplay function bindings use the Luaw wrapper to convert values between Lua and C++.",
+      "evidence": [
+        {
+          "resource": "repo://CMakeLists.txt#L103-L109",
+          "version": "repo-lines-v1:sha256:a7e7095687d172bcb5267be56bd1f2f00f20005cd1618562249c5e8369e26938:eyJzZWxlY3RlZExpbmVDb3VudCI6NywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMTVkMmMzMzliMTI0N2M1ZTAzMDk5ZWQ3Y2VkOGU0ODQ0OGIyNzAwNmM0NDNmNGVmNzI1ZmUwMjFkNmJjNTk0YSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMDJkMTg2NzY2ZTNlMGNkM2FkOGNlNzliMGIwYzUzNDQwZTA3ZTgxOGI5NjEzYzMxNWJiODNlMDlhMjEzZjAyYiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNjBlODVhN2JmYzZhODBmODQ0YzRjNDYyYzY0MGI0ZjZhNzhkOTg5ZTk0NjUwYjkwYzk2NjU0NDVlZTMzZmZkNCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNzliMmExODM2ZTU4OWE2YTQ2ODcyZWY4OTEzOTE2NDlhNzhjYjJkNWNjNjU3N2JhOGI5NjM5MDUzNzdjNGExZCJ9"
+        },
+        {
+          "resource": "repo://src/scripting/elematelua/luawrapperfunction.cpp#L153-L203",
+          "version": "repo-lines-v1:sha256:e7fb2e9113eb53e0ca7c6fe5f9c8d16ccb8319e40a7dab6fc826f8590209bb03:eyJzZWxlY3RlZExpbmVDb3VudCI6NTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImM0MWNkZTk4YzE3MGNjYjExNDQ2YTg3ZDVhMDM1MjlhOTgxOGQzZGNhODg4NzQ1NGQ0YjY4NGE5MmMzMzA4ZDIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjM2YTYwODAzZjQ1M2M5NzJlZDZlOTdlZGE4YzhjNWRiZGFmZjlhMzQ3MDMwZDFjODQ4YmE1ZDBiZWQ1MzZkYmYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjA2ZjRmOTc1NGY5ODRlZWI5NmE5MmRjMjg2ZWFjYjk1MTQ1Y2VlMTY3ZDY0OTczYWYyZGY3OWI5NzZjNTlkOTIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjBjMzZiNjhhZmY3OTRjNWQ2ZmJkNDc2NGI2NTViNzhmZDMyNjE2YjJhNDEwZWM3ZjM4OGYzNDU4YmRjMDhiNjEifQ"
+        },
+        {
+          "resource": "repo://src/scripting/elematelua/luawrapperfunction.cpp#L43-L46",
+          "version": "repo-lines-v1:sha256:85c6b6fb5cca91fcc28aaa7ad270b032a38c425d8532e9ccf10f2d95a4c7b126:eyJzZWxlY3RlZExpbmVDb3VudCI6NCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNzc0MDYzZTg3ZmZmYWQ3ZjUyNGYwMDNhZTBkYjYyZTU0OTIyMWJhMTg4NzM4NzY5ZTU3MjEyMTAwZDkwZWY5OSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNDc3OWI5Yjg5ZThlMTg4NjU4ZmI5OGEyMWExODM1NTk4MDkwNTgyMDNmMTU5MmJhNTE1ODgyNjE1ZmVkMzQ5ZCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMDdhZmFlODBlYmRjMmQxYzk3YWViNDM5OGJkNDEzN2MwMWJhYjA3ZGFmNTQwZWJkNzYzYTg3YjhiZDA5YWQ4NSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMGY5N2ViMDA2ZWJiNDAzNDcxNTBiMzVjM2FhYzJjMzIwODk2YzdmNjEzODM2ZjlmZmYxZmE2NGY5ZmQxZjlkZCJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_4fe0343707684e7ab9654309d99f7bcd",
+      "statement": "Luaw unsigned arguments must be nonnegative and fit the destination type; an unsigned long result uses lua_Integer when it fits and lua_Number otherwise.",
+      "evidence": [
+        {
+          "resource": "repo://src/scripting/elematelua/luawrapperfunction.cpp#L167-L173",
+          "version": "repo-lines-v1:sha256:c0e42c17c8c0d6a49cc4314f61a9bc056a3f75e10da0cc8698899b872b5be759:eyJzZWxlY3RlZExpbmVDb3VudCI6NywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMTMwMzBlMTdiZmVkMTMzYWY0MjVhMjBmMDJmYjI3YmI5NDRjNDhiOTVkZjQyYzEyYTE2NzYzN2FmZmMxYWM2MCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiODI1MWJmYWJjZmI2ZDg5ZmQ5ZjRlM2I3YmM0YTE3NGZkOTBjOTk4MTg2ZTRmZGUyYzhmYTM0ZTZkNWMyOTNhYSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNmM4MmMzYmY1YjM5MWQ2ZGMyNTZjZTllYzEyNDY2YzA1YzA3MzQ4N2Q1MjNhM2ZlNDRmMzQwYjQwY2NmNzNlNiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiYjJmZmIyZmU5OWJlODIxY2FjOGNhYzNiZDA0MzM4M2FhYWFlZTYyN2ViNjM5OGFjNTU4MTMwMGI1ZTk4YzAxNCJ9"
+        },
+        {
+          "resource": "repo://src/scripting/elematelua/luawrapperfunction.cpp#L43-L69",
+          "version": "repo-lines-v1:sha256:5ae7ae0d7ab30a509abe4fc27ef840b9a55e1a4f4acef20ba0150e75f3a953a0:eyJzZWxlY3RlZExpbmVDb3VudCI6MjcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijc3NDA2M2U4N2ZmZmFkN2Y1MjRmMDAzYWUwZGI2MmU1NDkyMjFiYTE4ODczODc2OWU1NzIxMjEwMGQ5MGVmOTkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImRmNjk4ODgzMmExOWI2YTNlYjg5MzY5ZGE3MDMxY2U2NWYxYWI2MDVkMTkzMjg0N2Q4ZmVjODk0ZWQyNzk0NzMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjA3YWZhZTgwZWJkYzJkMWM5N2FlYjQzOThiZDQxMzdjMDFiYWIwN2RhZjU0MGViZDc2M2E4N2I4YmQwOWFkODUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImYwZDkwZDE2ZmZjNmFhOThhOWU1ZTgzODU4ZmFkM2I3MDc5ZGJlNTNiNmQxOTkyNmJiYjAyZWVmODQwMTJkYzUifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_6af6e5e9e77d48bd977c0143d089162e",
+      "statement": "Luaw represents glm::vec3 values with named x, y, and z fields, and Bandit scripting tests exercise vector operations and gameplay bindings.",
+      "evidence": [
+        {
+          "resource": "repo://src/scripting/elematelua/luawrapperfunction.cpp#L196-L204",
+          "version": "repo-lines-v1:sha256:a4444d66662331c280b92cb9eb3e0e6b2b235170d68181f77e10cad57353b2a4:eyJzZWxlY3RlZExpbmVDb3VudCI6OSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZDkxYjhmMzAyNTUwMTA4YTdjYmZhOTdmYjRiMTU0NTdiM2NkOTU5YTIyZDg5MzkzNTRkZmVkNWYzNDhlNzNhZSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMWZlNTUwMjNiMzQ3ZDgyNTc1MGI1M2YwNzExZmFlMWM3OGQ3NzJmOTg5YmUyMDZiY2UwMzJmMjg4NzVjM2Q1MyIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiOTUzYmY4Y2JiMzk3ZGNiZmQ4MWQwZmNjMjg5ZjMxYjFkMTZlNmJhYTAyNzQzZGFlYzAyMmRjMDE2MzZiNGMxYSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNGM3YTg4OGIwZjQxMmU2MDNhYjU0N2QxMjU5NDk0MDc0NGE4MjA0MzExYTVmODc0MmJlMjY5MzEzMjExZmYwOSJ9"
+        },
+        {
+          "resource": "repo://src/scripting/elematelua/luawrapperfunction.cpp#L93-L103",
+          "version": "repo-lines-v1:sha256:73c3225d3789291726945dc5d2c0b9a2f52845701eb6aa53b696ac1d7d119147:eyJzZWxlY3RlZExpbmVDb3VudCI6MTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijc2ZWMzYTVjYmIzNTNhYzlkODViYzg0ZmI0YzljNTJjNDljMDYzNjNlNWVlZDQzZTg2NDdhNDAxYmViZDliMjEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjEwZTllMTEzOWM0NGZiYjBjYzE3MjkzNmY1YzNhZGMzYWE4NTk4YWNhZWUzYjRjZmZlNzhlYmM2ODJmN2VlOWYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImYwZDkwZDE2ZmZjNmFhOThhOWU1ZTgzODU4ZmFkM2I3MDc5ZGJlNTNiNmQxOTkyNmJiYjAyZWVmODQwMTJkYzUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImYwZDkwZDE2ZmZjNmFhOThhOWU1ZTgzODU4ZmFkM2I3MDc5ZGJlNTNiNmQxOTkyNmJiYjAyZWVmODQwMTJkYzUifQ"
+        },
+        {
+          "resource": "repo://test/scripting/testscripting.cpp#L70-L86",
+          "version": "repo-lines-v1:sha256:d9a2123524613a44d69080c3a92e645256e834093887221d98dafa30517947a2:eyJzZWxlY3RlZExpbmVDb3VudCI6MTcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjM3NDM5ODI3NWYxZDhjYzQxNDFiY2QwNzlkZWYzM2Q0YzU1MjA1ZmMwZGJlYTliNzM4NTQyZmVhYzFkYTZiOTEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjkzNzhkOTJhMWVhYTk0NzVlNDM5NWJlZmY0N2IwNTE5ZTE4Y2FjY2UyMjk0ZmE4YTM5ZWE1ZWMxMzYyMzFhYWQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImQ0Y2ZmNDhlMmQ3ZWJhNWNhYWFmMGVkYTUzMWY5ZTVkN2JiOGFiOGM2ZWQyMmZlMGFmMjFjMzk3MjVlZDcwODQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjYxMWIyMDNhZWY4OTk1MWY4YTQ1MTEyMTg2MGE3YjI0M2I0M2UxYjZmODcxNzFhNWQ2M2RkZjhkZjQxODdjZDkifQ"
+        },
+        {
+          "resource": "repo://test/scripting/testvectorextension.cpp#L32-L82",
+          "version": "repo-lines-v1:sha256:e11e647059d8fcddae4a8b5df9411096f02ddfa2211688095d52835f7b4e1c70:eyJzZWxlY3RlZExpbmVDb3VudCI6NTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijc3ZDUxNTMxZGU2NmM4MzNiNGUwZDA3ODZhOWM3MjY0NzBkZjZkZTA0MTBkNTU4ZTY5ODgyY2Y4NTlmNjRlNzUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjM3NDM5ODI3NWYxZDhjYzQxNDFiY2QwNzlkZWYzM2Q0YzU1MjA1ZmMwZGJlYTliNzM4NTQyZmVhYzFkYTZiOTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImIwM2ZjYzFkYzY0MzI0NTYyNTRlZDliMDZkMTU4YzVhMDJmZmQ0YTM2OTAxMTM5NWQ3ZTM4OTI4NDQ0OGQ4MDMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjoyLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImU3YmI4MTg3MjY5ODU5NjIzN2VhNzBkZmI5NTIwYTkzMWZjM2FlZTcwY2I0MWZkNjgzNGVlODQ0ZTI1ZjRmODAifQ"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.7.2",
+    "at": "2026-11-03T15:48:08.697Z"
+  }
+}

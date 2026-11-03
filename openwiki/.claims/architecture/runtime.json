@@ -1,0 +1,72 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:7be5996e347c684d0fe1622089b016674a6685ec5bcd973634086e99aa42f1cd",
+  "claims": [
+    {
+      "id": "claim_06ed6b0c8a1e4cf9898bcf379d354e4b",
+      "statement": "Application startup loads base, user-control, and voxel property files; initializes graphics; loads property directories for world objects and equipment; then constructs the Game before entering the GLFW update/draw loop.",
+      "evidence": [
+        {
+          "resource": "repo://src/main.cpp",
+          "version": "repo-file-v1:sha256:f1373b77d1b0609b4fad7186095851b6b1a075871d4f9a426be99e7448c6aabe"
+        }
+      ]
+    },
+    {
+      "id": "claim_5502fdecfcfb4c80b2b1dfe030e2a14e",
+      "statement": "Game clamps update deltas to a nonzero 20 FPS maximum interval, delegates the update to its active GameState, updates its Viewer, and renders the active scene and camera through that Viewer.",
+      "evidence": [
+        {
+          "resource": "repo://src/gamestate/game.cpp",
+          "version": "repo-file-v1:sha256:8a4311dd6e140142d46dad01affc19a509e255174824db1620e700d4710baa3f"
+        }
+      ]
+    },
+    {
+      "id": "claim_495b4829015a4f748f4ccb4518ebb826",
+      "statement": "Gameplay's running state advances the World, while GamePlay owns its scene, sound manager, normal/free-camera input handling, and scenario selection.",
+      "evidence": [
+        {
+          "resource": "repo://src/gamestate/gameplay/gameplay.cpp",
+          "version": "repo-file-v1:sha256:bff1097642bdec2e49b0402ee2489f82e67df61efa021340c6f8c59733077009"
+        },
+        {
+          "resource": "repo://src/gamestate/gameplay/running/gameplayrunning.cpp",
+          "version": "repo-file-v1:sha256:05579012f3da39afe49e59af2574cc6218513cf45fc162f17c94aff5a5d314c4"
+        }
+      ]
+    },
+    {
+      "id": "claim_2c8bf7ec9e7645ed895884c727b40fd3",
+      "statement": "Viewer owns a selectable mono or stereo View and configures culling and depth clearing before forwarding scene rendering to the View.",
+      "evidence": [
+        {
+          "resource": "repo://src/display/viewer.cpp",
+          "version": "repo-file-v1:sha256:1cefef4aecedb0e675674d03541ab81ad337f7b37c6fa00a37429360d1bcce14"
+        }
+      ]
+    },
+    {
+      "id": "claim_2ec0fd4132f7430cac5d894d551e49eb",
+      "statement": "The `-stereo` option replaces the default mono view with the built-in `StereoView`, initialized with fixed placeholder parameters from `StereoRenderInfo::dummy()` rather than device-provided headset calibration.",
+      "evidence": [
+        {
+          "resource": "repo://src/display/stereorenderinfo.cpp#L13-L35",
+          "version": "repo-lines-v1:sha256:4a1df1bd4221683a5ac7b2b6dd6c249b0702115749d66d5738eeaa9c68aa039f:eyJzZWxlY3RlZExpbmVDb3VudCI6MjMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjYzYmQ0Zjc3ZmNmZDU1ZTlhZTZlZDNmNzUwYjVhMzYyNGE4YmI2ZTNiZWE4MzM5NzA1NmNlZmI2Y2U2MDJiZTIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjljZWM4NThjYzNhODkwN2M5YjZkYjE3Mjg1MDgzMjQ0YmVjZTYzOGUxMWE3N2EyM2YxMmQ5ZWFhYmI0MTZlNGEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjRiMWJhMTg0NzQxNzBjYTdlM2VkYWQyMWM2OGE4ZmFlZWY2MmExMzI2MmM5OWRlODg0NjE0MDVkMzNiNDlkZDciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjY3ZmE3YTZlOGMxYjRkMmUzNDIxMGI2YjgwMTVjMTVhNDBjMDM3NTM1NzFhNTU3ZmUzNTcxZWNhZDI5N2Y1MWMifQ"
+        },
+        {
+          "resource": "repo://src/display/viewer.cpp#L30-L40",
+          "version": "repo-lines-v1:sha256:8dc33b071f0942f19f678e523fac8100d9a10e6384bb1f37bde9424fb13c5e40:eyJzZWxlY3RlZExpbmVDb3VudCI6MTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU4ZmVlYzVkYWNiYzM1NjE1MWMyMWFhZjcxMDE3NGFjOTBhYTQ2NWUxYjg2ZjlmNGM5MGIxYjAyNmVmNjNmZGYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImUyMmZhYTUzNWJkMmVhM2Q1MmU3NDFlZDQ1NDQzNWI3ZmU0OWU4MzU4NmU5NDNkOThkODJiYmZiMjRkMWY1YzUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImFlOWIzM2QxNTFiNzVlNGE2MjM1MWI3MDA2MzUxOWUwMjhjYjkyYzE5YTQ4YTJiMjI1ZjQyMzcwMzQ0MzBmOWUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijc1YTI3NzRkOTUyNzU5OTQzZmY0ODFhY2I3OGFkZTQyNzRkNmI0NWQyMTZlNjI1NWI4MmVkZDFjYjcyM2U0ZjMifQ"
+        },
+        {
+          "resource": "repo://src/main.cpp#L224-L228",
+          "version": "repo-lines-v1:sha256:8c6e268d36bb761cc0bafd5355c5ceeb86e840f752e05e3c414d3f7e2838f12d:eyJzZWxlY3RlZExpbmVDb3VudCI6NSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMjkyYzAzNjQyNGU1NzA0Yjg5ZGEzODI1MTE4MTc3YWNiMGYzYzVlYTkzMDE3M2NhZjk3OThlNDIxMDJiODA2MSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiODI1MWJmYWJjZmI2ZDg5ZmQ5ZjRlM2I3YmM0YTE3NGZkOTBjOTk4MTg2ZTRmZGUyYzhmYTM0ZTZkNWMyOTNhYSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMTQ2YmFmYTdhYWU2ODFlMmVlNzk4OTgzMzVhNjU2ODdhYWY5MzZjNDRkNzFiYWJiNjNhMjY0N2FhY2M1YjkwNCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMGYzYTU1N2YwN2U4YTQ2MmI2MjI5MThiOGQzNzMxMzcyZTdlODhkMDM4NzJjN2U5ZWIyNzZjYzI3NjEyZWU3NCJ9"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.7.2",
+    "at": "2026-11-03T15:48:08.697Z"
+  }
+}

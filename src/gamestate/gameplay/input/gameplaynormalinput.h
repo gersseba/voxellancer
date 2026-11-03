@@ -15,7 +15,6 @@ class WorldObject;
 class InputConfigurator;
 class GameState;
 class HUD;
-class HMD;
 class Player;
 
 class GamePlayNormalInput : public GamePlayInput {
@@ -43,7 +42,7 @@ protected:
 
     void processUpdate();
     void processMouseUpdate(float deltaSec);
-    void processHMDUpdate();
+    void resetHeadOrientation();
     void applyUpdates();
 
     void processFireActions();

@@ -20,16 +20,12 @@ bool FileSystem::createDirectory(const std::string& path) {
 }
 
 bool FileSystem::removeDirectory(const std::string& path) {
-#ifdef WIN32
-    return filesystem::remove_directory(filesystem::path(path));
-#else
     return filesystem::remove(filesystem::path(path));
-#endif
 }
 
 bool FileSystem::copyFile(const std::string& from, const std::string& to) {
     try {
-        filesystem::copy_file(filesystem::path(from), filesystem::path(to), filesystem::copy_option::fail_if_exists);
+        filesystem::copy_file(filesystem::path(from), filesystem::path(to));
     } catch (const filesystem::filesystem_error& e) {
         glow::warning("filesystem: %;", e.what());
         return false;

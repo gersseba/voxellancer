@@ -68,7 +68,7 @@ void Transform::rotateWorld(const glm::quat &qrot) {
 }
 
 const glm::mat4 Transform::matrix() const {
-    return glm::translate(m_position) * glm::mat4_cast(m_orientation) * glm::scale(m_scale, m_scale, m_scale) * glm::translate(-m_center);
+    return glm::translate(m_position) * glm::mat4_cast(m_orientation) * glm::scale(glm::vec3(m_scale)) * glm::translate(-m_center);
 }
 
 // should do the same as matrix() * vertex
@@ -128,4 +128,3 @@ void Transform::setCenterAndAdjustPosition(const glm::vec3& newCenter) {
 
     setPosition(position() + (oldOrigin - newOrigin));
 }
-

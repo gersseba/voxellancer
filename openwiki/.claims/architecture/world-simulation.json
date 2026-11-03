@@ -1,0 +1,68 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:ccec826b34a1b9a06bac8daddd6f7268993ad49d675ee2fbc93716eb03446146",
+  "claims": [
+    {
+      "id": "claim_d0d31fe52c8d4e5ba9ad026d4ad1eb1d",
+      "statement": "World owns core simulation services and updates player, world logic, scripts, event polls, particles, missions, and then registered world objects in that order.",
+      "evidence": [
+        {
+          "resource": "repo://src/world/world.cpp",
+          "version": "repo-file-v1:sha256:e939a9b015a5e4fda1be7f1381ef03716296638f0013d1858321a36a0b31310d"
+        }
+      ]
+    },
+    {
+      "id": "claim_448807a771a34c1baa1a046530a9ffe1",
+      "statement": "WorldLogic moves objects, resolves collisions into damage and impulses, iterates forwarded damage until drained, then schedules splitting, wreckage, and garbage lifecycle changes.",
+      "evidence": [
+        {
+          "resource": "repo://src/world/worldlogic.cpp",
+          "version": "repo-file-v1:sha256:f370a68286745d4ac8ad92d77e933c8f3c42b9d7ae7526588e24807fa7447ced"
+        }
+      ]
+    },
+    {
+      "id": "claim_c70333a70aca4fe69c751b4f0c80b3da",
+      "statement": "God queues lifecycle work: it inserts spawn candidates into the spatial tree and rejects colliding candidates, while removal detaches, unregisters, and deletes scheduled objects.",
+      "evidence": [
+        {
+          "resource": "repo://src/world/god.cpp",
+          "version": "repo-file-v1:sha256:4f30c3db99864842bac5ced011d2180e5ddd86822ceaaf373364f384c7d1d9cc"
+        }
+      ]
+    },
+    {
+      "id": "claim_4cdd30cb870a4a18b0f123fd63a03965",
+      "statement": "WorldObject synchronizes voxel additions and removals with its physics and collision representations, and Ship extends the base object with character and board-computer updates.",
+      "evidence": [
+        {
+          "resource": "repo://src/worldobject/ship.cpp",
+          "version": "repo-file-v1:sha256:4d65bb29420084165cc723f81517e3291551a6dddd3d59b12c0c22b0eee79949"
+        },
+        {
+          "resource": "repo://src/worldobject/worldobject.cpp",
+          "version": "repo-file-v1:sha256:26e372aeb012f995eb2dce27c05106937ed62151c30e1b0b1a05c2ceda0d6649"
+        }
+      ]
+    },
+    {
+      "id": "claim_5d9fe1e690e84c8b9a3b041cc9719592",
+      "statement": "Gameplay scenario loading clears the previous scenario before selecting a replacement; BaseScenario then attaches to the singleton World, populates it, flushes initial scheduled spawns, and starts the world script engine.",
+      "evidence": [
+        {
+          "resource": "repo://src/gamestate/gameplay/gameplay.cpp#L111-L143",
+          "version": "repo-lines-v1:sha256:3ac267ccea8cab80c8398f043e0a4b556d09dee935aa3c831766e91eed691121:eyJzZWxlY3RlZExpbmVDb3VudCI6MzMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQ2ZGIwYjI5MWYyNWU1NWFkNGE1YjM1ZTNlZjUzNjU5Y2QyMjdkYjQ1NWRiOGFlMjI4YjMwZTc2NWY0OGRkYzQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImUyMmZhYTUzNWJkMmVhM2Q1MmU3NDFlZDQ1NDQzNWI3ZmU0OWU4MzU4NmU5NDNkOThkODJiYmZiMjRkMWY1YzUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjRiODc5N2NmN2ZkODU5NTgzODBmYzg3ZDNhMGI0MjU3ODIzZDg1ZjY1N2RkNWJkYTQ5ZWZmYzhiNzU1NzUwNWIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImViMzg4YWZhZjJiMmVhOTk5NTk5ZjFkZDQ4ZWIzMDgyZGI2ODI4ZjE3OGZkNDE1MzY3OWNmYTFhMjkzZTkyZjQifQ"
+        },
+        {
+          "resource": "repo://src/scenarios/basescenario.cpp#L31-L39",
+          "version": "repo-lines-v1:sha256:fc61857fe6832df1f14c3e45aca993cd813763c572518292a745cb71f7ac0886:eyJzZWxlY3RlZExpbmVDb3VudCI6OSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNzkzNWM5YWIwZDMwY2VhNzVjMDhmYTZmNWNiMGZiOWE3ZTM4MmJlN2UxZDY4MGU3ZWEwMzc0MTk2NGQxMTNhNyIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMTQxOWE2ZGNjMDRlMjEzYTNjN2E3N2E0NTZiMDFlNzZkMWVmNzhjZDAwYmJlYzFkOGY4MTQ1OGZlOTNlZGM1NiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMGFlZWY2YzhmZDAyZDRiMGZiZWFlZTRiMWZiZDMyZDdlMDhkMTZlMTYwODFjNjliZGUzODhmZGM0NzkzMGY2ZiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZTFlMTNkN2JkZjhjYTk5MWY1ZGFmOTA0NzE3MGY1MTRkNjkzOGVkMTkyZDIwMDk3ZGZkYWMyZmEwNTVjZjgxZSJ9"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.7.2",
+    "at": "2026-11-03T15:48:08.697Z"
+  }
+}

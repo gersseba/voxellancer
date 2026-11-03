@@ -60,11 +60,11 @@ void Physics::setAcceleration(const Acceleration& acceleration) {
 }
 
 float Physics::mass() const {
-    return m_densitySum * std::pow(m_worldObject.transform().scale(), 3);
+    return static_cast<float>(m_densitySum * std::pow(m_worldObject.transform().scale(), 3));
 }
 
 float Physics::maxMass() const {
-    return m_maxDensitySum * std::pow(m_worldObject.transform().scale(), 3);
+    return static_cast<float>(m_maxDensitySum * std::pow(m_worldObject.transform().scale(), 3));
 }
 
 const Transform Physics::projectedTransformIn(float deltaSec){
@@ -125,4 +125,3 @@ void Physics::voxelChanged(Voxel* voxel, bool isAdd) {
         m_worldObject.transform().setCenterAndAdjustPosition(glm::vec3(0.0f, 0.0f, 0.0f));
     }
 }
-

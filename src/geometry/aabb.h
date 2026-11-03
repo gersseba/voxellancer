@@ -15,29 +15,29 @@ template<typename T>
 class TAABB: public AbstractShape {
 public:
     TAABB();
-    TAABB(const glm::detail::tvec3<T> &llf, const glm::detail::tvec3<T> &urb);
+    TAABB(const glm::vec<3, T> &llf, const glm::vec<3, T> &urb);
     template<typename OtherT> TAABB(const TAABB<OtherT>& other);
 
-    inline const glm::detail::tvec3<T> &llf() const;
-    inline void setLLF(const glm::detail::tvec3<T> &llf);
+    inline const glm::vec<3, T> &llf() const;
+    inline void setLLF(const glm::vec<3, T> &llf);
 
-    inline const glm::detail::tvec3<T> &urb() const;
-    inline void setURB(const glm::detail::tvec3<T> &urb);
+    inline const glm::vec<3, T> &urb() const;
+    inline void setURB(const glm::vec<3, T> &urb);
 
     T axisMin(Axis axis) const;
     T axisMax(Axis axis) const;
 
-    glm::detail::tvec3<T> middle() const;
+    glm::vec<3, T> middle() const;
 
     virtual T extent(Axis axis) const;
-    glm::detail::tvec3<T> extent() const;
+    glm::vec<3, T> extent() const;
     T diameter() const;
 
     TAABB<T> moved(Axis axis, T delta) const;
-    TAABB<T> moved(const glm::detail::tvec3<T> &delta) const;
+    TAABB<T> moved(const glm::vec<3, T> &delta) const;
 
     void move(Axis axis, T delta);
-    void move(const glm::detail::tvec3<T> &delta);
+    void move(const glm::vec<3, T> &delta);
 
     void expand(Axis axis, T delta);
     TAABB<T> expanded(Axis axis, T delta) const;
@@ -45,7 +45,7 @@ public:
     template<typename OtherT> bool intersects(const TAABB<OtherT> &other) const;
 
     bool contains(const TAABB<T> &other) const;
-    template<typename OtherT> bool contains(const glm::detail::tvec3<OtherT> &vec) const;
+    template<typename OtherT> bool contains(const glm::vec<3, OtherT> &vec) const;
 
     virtual bool intersects(const Sphere& sphere) const override;
     virtual bool nearTo(const TAABB<int>& other) const override;
@@ -60,16 +60,16 @@ public:
 
     bool operator==(const TAABB<T> &other) const;
 
-    void extend(const glm::detail::tvec3<T> & point);
+    void extend(const glm::vec<3, T> & point);
 
     static TAABB<float> containing(const Sphere &sphere);
 
 
 protected:
-    glm::detail::tvec3<T> m_llf, m_urb;
+    glm::vec<3, T> m_llf, m_urb;
 };
 
-typedef TAABB<glm::mediump_float> AABB;
+typedef TAABB<float> AABB;
 typedef TAABB<int> IAABB;
 typedef TAABB<unsigned char> CAABB;
 

@@ -1,0 +1,60 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:3a8f74ba6629695c11d1a2aa9b2625e37a5a40a0f1acb840e48863e21919d8bd",
+  "claims": [
+    {
+      "id": "claim_5a26f220dc5e4d659a5ab24718779a58",
+      "statement": "PropertyDirectory reads every INI file in its directory and loads it with the filename basename as the property prefix.",
+      "evidence": [
+        {
+          "resource": "repo://src/property/propertydirectory.cpp",
+          "version": "repo-file-v1:sha256:3dc1154a99dc86324b0dd62dbf887fb65f0356fe2f98738f19b59ce9355ea416"
+        }
+      ]
+    },
+    {
+      "id": "claim_9e903e0e1c1b49fba58614398eebf47f",
+      "statement": "PropertyManager parses typed entries beneath INI section groups, prefixes keys when requested, warns for unrecognized values, and treats unreadable configuration as fatal.",
+      "evidence": [
+        {
+          "resource": "repo://src/property/propertymanager.cpp",
+          "version": "repo-file-v1:sha256:f6e55c736604fd3e64eaa3115236f39931afa3344ff8170e6f16f674aefd58a7"
+        }
+      ]
+    },
+    {
+      "id": "claim_fde12368c2444445a2df5761cde084aa",
+      "statement": "WorldObjectBuilder dispatches by the general type property, fills voxel data from data/voxelcluster, configures component slots from properties, and equips the first mountable item in each configured slot.",
+      "evidence": [
+        {
+          "resource": "repo://src/resource/worldobjectbuilder.cpp",
+          "version": "repo-file-v1:sha256:747cf7a40afa861ec963eb085c2e9692b9f2793b8c9a534059688242cb42a684"
+        }
+      ]
+    },
+    {
+      "id": "claim_a2c514c42ed447feaab6e327e85ecde3",
+      "statement": "ClusterCache caches loaded voxel source data by filename and clones voxels when filling a VoxelCluster or WorldObject.",
+      "evidence": [
+        {
+          "resource": "repo://src/resource/clustercache.cpp",
+          "version": "repo-file-v1:sha256:0d9c6e959dbec519f098c083e39913eae38af933748b50b22aba7b89ae27744b"
+        }
+      ]
+    },
+    {
+      "id": "claim_c1c0c94973114484a7b39000d9c9e74d",
+      "statement": "The mox world-object definition identifies a ship voxel cluster and configures mountable shields, weapons, and engines by slots/groups.",
+      "evidence": [
+        {
+          "resource": "repo://data/worldobjects/mox.ini",
+          "version": "repo-file-v1:sha256:a74eabb92ce858553a6d4404c333a918d4ac428cef42068855c9385c769ccdba"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.7.2",
+    "at": "2026-11-03T15:48:08.697Z"
+  }
+}

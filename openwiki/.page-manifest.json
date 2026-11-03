@@ -1,0 +1,54 @@
+{
+  "schemaVersion": 1,
+  "pages": {
+    "/openwiki/architecture/runtime.md": {
+      "pageVersion": "sha256:7be5996e347c684d0fe1622089b016674a6685ec5bcd973634086e99aa42f1cd",
+      "completedBy": "copilot",
+      "completedRunId": "c29de2ba-cfc5-4af8-983b-88b4d4a8ce8c",
+      "gitHead": "9d468a79c0c96a12170061958a4f06a8f8a9b197",
+      "sourceFingerprint": "sha256:2f184750299ba27fbfad8c30fbbfedf9730a80b284a4b53d907a7335d6a53b3e"
+    },
+    "/openwiki/architecture/world-simulation.md": {
+      "pageVersion": "sha256:ccec826b34a1b9a06bac8daddd6f7268993ad49d675ee2fbc93716eb03446146",
+      "completedBy": "copilot",
+      "completedRunId": "c29de2ba-cfc5-4af8-983b-88b4d4a8ce8c",
+      "gitHead": "9d468a79c0c96a12170061958a4f06a8f8a9b197",
+      "sourceFingerprint": "sha256:2f184750299ba27fbfad8c30fbbfedf9730a80b284a4b53d907a7335d6a53b3e"
+    },
+    "/openwiki/concepts/voxel-ships-and-damage.md": {
+      "pageVersion": "sha256:81c47e13076dfa633888f5dfe9299b7b765c8b8ffcdb3119e41f3679fc588b37",
+      "completedBy": "copilot",
+      "completedRunId": "c29de2ba-cfc5-4af8-983b-88b4d4a8ce8c",
+      "gitHead": "9d468a79c0c96a12170061958a4f06a8f8a9b197",
+      "sourceFingerprint": "sha256:2f184750299ba27fbfad8c30fbbfedf9730a80b284a4b53d907a7335d6a53b3e"
+    },
+    "/openwiki/development/build-and-test.md": {
+      "pageVersion": "sha256:9d53613b5984335d8873cc7c6de3abba5dffa490ae0ad1c82b666023a27edfea",
+      "completedBy": "copilot",
+      "completedRunId": "c29de2ba-cfc5-4af8-983b-88b4d4a8ce8c",
+      "gitHead": "9d468a79c0c96a12170061958a4f06a8f8a9b197",
+      "sourceFingerprint": "sha256:2f184750299ba27fbfad8c30fbbfedf9730a80b284a4b53d907a7335d6a53b3e"
+    },
+    "/openwiki/integrations/lua-scripting.md": {
+      "pageVersion": "sha256:b90d8a228654a9fff7535b8a780fa06c0d981e2f5c92340c053c9e48437474b8",
+      "completedBy": "copilot",
+      "completedRunId": "c29de2ba-cfc5-4af8-983b-88b4d4a8ce8c",
+      "gitHead": "9d468a79c0c96a12170061958a4f06a8f8a9b197",
+      "sourceFingerprint": "sha256:2f184750299ba27fbfad8c30fbbfedf9730a80b284a4b53d907a7335d6a53b3e"
+    },
+    "/openwiki/quickstart.md": {
+      "pageVersion": "sha256:7ae2f63ee4fe7fe3d085d08a55d8aa05167b569ca3ca1a318768f65abbe84f6b",
+      "completedBy": "copilot",
+      "completedRunId": "c29de2ba-cfc5-4af8-983b-88b4d4a8ce8c",
+      "gitHead": "9d468a79c0c96a12170061958a4f06a8f8a9b197",
+      "sourceFingerprint": "sha256:2f184750299ba27fbfad8c30fbbfedf9730a80b284a4b53d907a7335d6a53b3e"
+    },
+    "/openwiki/workflows/content-authoring.md": {
+      "pageVersion": "sha256:3a8f74ba6629695c11d1a2aa9b2625e37a5a40a0f1acb840e48863e21919d8bd",
+      "completedBy": "copilot",
+      "completedRunId": "c29de2ba-cfc5-4af8-983b-88b4d4a8ce8c",
+      "gitHead": "9d468a79c0c96a12170061958a4f06a8f8a9b197",
+      "sourceFingerprint": "sha256:2f184750299ba27fbfad8c30fbbfedf9730a80b284a4b53d907a7335d6a53b3e"
+    }
+  }
+}

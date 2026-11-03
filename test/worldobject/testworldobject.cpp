@@ -58,8 +58,7 @@ go_bandit([](){
             b.addVoxel(new Voxel(glm::ivec3(3, 1, 0), 0xFFFFFF));
 
             AssertThat(a.physics().mass(), Equals(b.physics().mass()));
-            AssertThat(a.transform().center(), EqualsWithDelta(b.transform().center(), glm::vec3(0.01)));
+            AssertThat(a.transform().center(), EqualsWithDelta(b.transform().center(), glm::vec3(0.01f)));
         });
     });
 });
-

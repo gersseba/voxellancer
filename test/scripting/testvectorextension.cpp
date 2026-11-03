@@ -51,9 +51,13 @@ go_bandit([](){
             AssertThat(script->debugStatus(), Equals(""));
             script->loadString(R"( 
                 x = vmul(vec3(1,2,3), 3.5)
-                setDebugStatus(vstring(x))
+                if x.x == 3.5 and x.y == 7 and x.z == 10.5 then
+                    setDebugStatus("success")
+                else
+                    setDebugStatus("failed")
+                end
             )");
-            AssertThat(script->debugStatus(), Equals("vec3(3.5, 7, 10.5)"));
+            AssertThat(script->debugStatus(), Equals("success"));
         });
 
         it("can normalize vec3 ", [&]() {
@@ -78,4 +82,3 @@ go_bandit([](){
         });
     });
 });
-

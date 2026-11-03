@@ -1,0 +1,74 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:7ae2f63ee4fe7fe3d085d08a55d8aa05167b569ca3ca1a318768f65abbe84f6b",
+  "claims": [
+    {
+      "id": "claim_c6182dcc016f4a7d8b30b2c57100e350",
+      "statement": "Voxellancer is a C++ OpenGL prototype space-combat game with editable voxel ships; Lua scripts define scenarios and missions, while INI properties and CSV clusters describe ships and equipment.",
+      "evidence": [
+        {
+          "resource": "repo://README.md#L3-L10",
+          "version": "repo-lines-v1:sha256:7ec15f0c88cc03760131279269fda9c39a971352fac9cd1c8431c6f825710b12:eyJzZWxlY3RlZExpbmVDb3VudCI6OCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMWNjYzBhZGU5Yjc2YmYyMzk0NjY2ZTNjMzhiNjNlMThjMGYyZjI4MTY4M2NjOTg3NDQzMmIxNTAxMDQ2MTM0MyIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiZTNhNmI4YzczMGY1YTFhZjBhNGE4Yjc4NzEzMTkwZjRhNjEyNGE0ZGMxMTVlN2I4MzkxZWY5YWM1NGI4NGY4NSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjIsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMDQxZGQzN2E1OTg0NDg5MmM2NGEyNDBjNDFkYjk4Y2Y2ZGFmYWRlNmFkZjJhZTBhZWE4ZWUxZDg2NWM1MTY5NSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMGUxOWUxMjdiYjY4ODEwYWM0OGYzYjczMmJkZjZhNzE2ZTY2NTRiYjM2YjA1ZmFlNGNjODI1NWNhNTc4ZjMwNiJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_7975172d52924a5b9a2847c98938a183",
+      "statement": "The contributor harness requires VCPKG_ROOT to point to a bootstrapped checkout; Test mode builds the game and all_tests then runs tests, while Run mode builds and launches the game.",
+      "evidence": [
+        {
+          "resource": "repo://AGENTS.md#L23-L33",
+          "version": "repo-lines-v1:sha256:efeee5009e783fd6a2bd09a834efcfe22af6ca007c42feb1298ec04c4d95fc5b:eyJzZWxlY3RlZExpbmVDb3VudCI6MTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjNlZWI1NjA5NzgzMzBiOGFkYjEwNjU0ZjY3OTg4ZmFmNjI1YTIyYmQ3NTA2MmRiMDI2ZjkwNWVjNDNiYzE4OTciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjRkNDgyMWI3NDFmMWYzZWI0YWJiYmI4M2Q1YzdkNTk4MTNjNzFmMDY4YzZhYzA4YmNjYzkwOWE0M2VhNDAxYTMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjA3NWFjM2U0YmZiMjNhYjEwNmI4YWQ2NTAwMDE1ZmY4ZGY0NmMxMDY3NzkxMGM2ZjU2MTVmZmQyMzkyOTA4MTMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjA1ZjhlMGUyYmZlMzY5NzZmNmQ5MjQ2ZTZiMzQzMmQyYmQwNDkxN2NjMjI4MGVkZDNkMjhhNzRjN2FmNTdlZjYifQ"
+        },
+        {
+          "resource": "repo://tools/agent-check.ps1#L103-L142",
+          "version": "repo-lines-v1:sha256:4439e1af824ce8b6b782be2c8542eba0ce0ed33bc18bd688a1bc58d646a1351a:eyJzZWxlY3RlZExpbmVDb3VudCI6NDAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImFmYjVjN2QzMzMyNGFiN2IyYTAzZTAwMTBjNGJhYzA4NWNkOTc1ZTdjNzNlYzRiMDE0ODBiNDQ3OWE1Yjc4NmUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjgyNDA5ZWI1NjlmNjgzY2NhM2E4MzEyMGU1ZjQwYmEwMjNmNmJiNGE5ZjBhZmVhN2NhZGM0MDUwZmFkNjRkZDEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImU5YjAyMjAwNzkxODdkZmIyNmExY2UxOGVjYzBiMTIzMTM1MzJmN2E1MTc5ZjY5YmFjOGNhMzY5YjNlY2VmODMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjoxLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjRhNTQ1NTRiOTcxMWQ2NGU1ZTJmYWM0YWIzYWM4MmE2MDkxYmU3ZDBmYzdjODk2YzEyOTFmODZkODZjOTI5NjQifQ"
+        },
+        {
+          "resource": "repo://tools/agent-check.ps1#L14-L24",
+          "version": "repo-lines-v1:sha256:42e3e930b6941178c26bbd8eba08f3bff02b10578169dbae9cddefe1197e0f8a:eyJzZWxlY3RlZExpbmVDb3VudCI6MTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI2NTU0MzJhZDJjZWZlODc1NmU1MGUzMDVjMzljZDY3Y2IwNmU2NzM5OTJkMDg1NTk4YzFhZWQ3ZjRmN2ZlZjIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjU2NGM0YTg3ZWEwMjIyMWMxNTE0YTQ0ZjNmZDkyNTA1MTNkMWQ5MWRmNjU1MDQ4ZjljNTJiZjU5ZGYzM2YxOGEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImNmODczMTY4M2UwOWE5ZDEzMGNmODA5MzdjN2Q2MWFkZDU4ODhmMTkzMjU1ZTFmYzc5YWQ0NzMxZGM1M2JhZjgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjFhOGYzZjZiYzY2MDVmMTI1ZWQyN2NkNzRlNzUxNDY0NTUwYjYwMGEzMDgzZGU0YTFiNjAyYjA3NTcxMTk0ZWQifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_cdd4f8498b3f4f3d83b2c13a62a19646",
+      "statement": "CMake builds the voxellancer executable from src and adds the test directory, which defines the all_tests target.",
+      "evidence": [
+        {
+          "resource": "repo://CMakeLists.txt#L139-L203",
+          "version": "repo-lines-v1:sha256:df39e5f3028a758d9703d83063edc50b082614ddd4fc2f48bfc9a51f15f79ed7:eyJzZWxlY3RlZExpbmVDb3VudCI6NjUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjliMzllMDIyZTBkODU0MTIwMDAzZDc5MGMyOGI3NTk2MmVkZDMwMzc1NmQ1MTMzM2RmNzQ1Y2ZiODZlYTExY2UiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImI4MTYzOTljZDM1MGYwYzM1ZTgyODlhNzAwNTM1NzFkYjlkNDk4ZThmMGUxYTIyMDM2ZjBjZTllYTA2YTY2ZjAiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjNjNGQ4NTVhMzBmNmVmMjFhODBhYzExNTFlZmQ0ODkyZTVjOGY3NzcxZjQzYzNjZWY0NTIwOGUwYmY1OGJiNDMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImEwMjhjNGNmYjA2ZjgzODk5MjBlMjBlZjNkYjE3M2QwOGJkYjFkZTFkMGVlMTdlOGNhZTAwYjQzZWVlYTRkZjgifQ"
+        },
+        {
+          "resource": "repo://CMakeLists.txt#L231-L231",
+          "version": "repo-lines-v1:sha256:956d7c7ae5157724fcf05d6c46a9ea007eae9682ffc0b420f6794f078a5123c3:eyJzZWxlY3RlZExpbmVDb3VudCI6MSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiOTU2ZDdjN2FlNTE1NzcyNGZjZjA1ZDZjNDZhOWVhMDA3ZWFlOTY4MmZmYzBiNDIwZjY3OTRmMDc4YTUxMjNjMyIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiOTU2ZDdjN2FlNTE1NzcyNGZjZjA1ZDZjNDZhOWVhMDA3ZWFlOTY4MmZmYzBiNDIwZjY3OTRmMDc4YTUxMjNjMyIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNjg4YjU0Y2ZlZGIxZWNiNjI0MWE1ZjJjZjk3YTE0N2JlMTgxZmIxODhjYWJmNjA5OTA5NjNiYzhhNTFjNjk2YiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMzM4NTU3ZDY3ZTY5ZjVkMGFkZDEwODYwYjRkN2Q4MzhkYWZiNDE5ZTdmMDUyOWQ0ZDk2ZTM0N2UxMWY5N2I3YSJ9"
+        },
+        {
+          "resource": "repo://test/CMakeLists.txt#L24-L36",
+          "version": "repo-lines-v1:sha256:5c2d2007ce357a8ee9eb468baa0b3b9e91a6e620e999da740e6388c8a2f15862:eyJzZWxlY3RlZExpbmVDb3VudCI6MTMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImVhNDliOTZmOTM1OWU0YmE2YzRkMWM1MDYzYzlmNjk5YjY1NmQ4ZjVjYmM1MDY1YTZjMDkxMzRhODhkNGY2ZjEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImI5MWExOGUxMjE4ZDNjYzc0Zjg5ZGQ1ZTMxZTc3M2Y4YjE1MGNhM2Y5NDg0MDMxYjc5ZTE1YThmYWFhYjI4YWQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijc5NmUzN2ZjYzhmMTQxODkxZDE0NTdhMDg5ZmFjZDcwMjQ2Y2VhODgwY2Q0MjA5YTU4ZTc1OGMzMjA4NjI0ZWYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_a1aae476d373482aad7a6a43947a59c0",
+      "statement": "The root vcpkg manifest pins a registry baseline for the runtime libraries, while Bandit is separately bundled in lib/lib.zip and extracted by CMake when its headers are missing.",
+      "evidence": [
+        {
+          "resource": "repo://CMakeLists.txt#L119-L126",
+          "version": "repo-lines-v1:sha256:6b4062f93689e71db0584693dd8b5816d29ba7bd538dc7c7625fb9edaa3621d1:eyJzZWxlY3RlZExpbmVDb3VudCI6OCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZGU0NDIzY2U4ZTQ1YmI1ZWIwMjZlOWU0MzYxY2RjMWU4NjBmNzE4MDYyZGZhNzgyNmU1OWI2MzhhOTI3YzE0OSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiZGFiYTc0NDczOTgzNTFkYTE1ZTFlNDEwMDM5ZTliMzdmZmQ1NGM0NDQxMTY4MTc0NDUwNWQyNjEwZmE1N2E1YiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNDhlNDQ4YTdlZGEyZTg0NjVjMGVlMzQxZjI4YWU2MzdmYWMwZGI3NjI0YzFjZWY3OGI5ODE1ODdjN2Q3ZGRlOSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNGYwMzQyNTcwNTM1Njc0Y2U2NDMzNGZiYTVmODJhNTcyNjMzOWYwYTM1YzYwNzIwNmQ4MTVkZTE5Y2VhNjExNiJ9"
+        },
+        {
+          "resource": "repo://doc/3_buildinstructions.md#L17-L22",
+          "version": "repo-lines-v1:sha256:d4424369e664e4ec179ad2a8267204622a33fe8d66ba21ec6557988c08c54737:eyJzZWxlY3RlZExpbmVDb3VudCI6NiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYzEzZWNmMzkwMjQ2ZWI2OWI1MTM2OTYxMDU2ZmQzNDFmZGY2M2ZlNjA1ZDJjNmRkMTc0ZmE2NjgwZTllNDhhYiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiZTJhZTAyMTYwNzg3Y2MzMWVjMzYwMGNkMDE4YTNiMzJkZjFlOWNhMzZhN2Y5OTM5ZTljZTg3NDUxZjNkMzQwNSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNjViMjNkZjFiOWQwM2U0NzVkNjU3ZjA5ODhhYjY2YTk2NjBmODM0YTc2NGY1MmJlNDhiOTczZTcyNzI4MWJjMSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMDUyZmFhOGU3NDBlMmYyYjlmYWM4ODdmMTM5NjQ5NzhlMDRhNGU0MDQyYTQ4ZWEyMDc5NWZjY2UzYWQyNDAzMCJ9"
+        },
+        {
+          "resource": "repo://vcpkg.json#L1-L18",
+          "version": "repo-lines-v1:sha256:46e7554a80dc0a82b29b7ef750b4efe0a95a6c02c704221f2001036396658073:eyJzZWxlY3RlZExpbmVDb3VudCI6MTgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjgzZWFlN2U2YTRkM2M3MWJjYzk2MzI4YzUxOWZiYTI5NDFlZTQ4Njk2OGE2ZDYzMjJmYjA4Y2ViNDRlM2VmZDYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImUyMmZhYTUzNWJkMmVhM2Q1MmU3NDFlZDQ1NDQzNWI3ZmU0OWU4MzU4NmU5NDNkOThkODJiYmZiMjRkMWY1YzUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.7.2",
+    "at": "2026-11-03T15:48:08.697Z"
+  }
+}

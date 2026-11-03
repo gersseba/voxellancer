@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.8.9 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.21 FATAL_ERROR)
 
 # PROJECT DESCRIPTION
 set(META_PROJECT_NAME "voxellancer")
@@ -39,6 +39,9 @@ endif()
 # Project
 project(${META_PROJECT_NAME} C CXX)
 
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
 # Generate folders
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
@@ -63,6 +66,14 @@ endif()
 if(MSVC)
     message(STATUS "Configuring for platform Windows/MSVC.")
     include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/PlatformWindowsMSVC.cmake)
+    add_definitions(
+        -DWIN32
+        -DUNICODE
+        -D_UNICODE
+        -D_SCL_SECURE_NO_WARNINGS
+        -D_CRT_SECURE_NO_DEPRECATE
+        -D_CRT_SECURE_NO_WARNINGS
+    )
 elseif(WIN32 AND CMAKE_COMPILER_IS_GNUCXX)
     message(STATUS "Configuring for platform Windows/GCC.")
     include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/PlatformWindowsGCC.cmake)
@@ -90,44 +101,34 @@ endif()
 # DEPENDENCIES
 # Find externals
 find_package(OpenGL REQUIRED)
-find_package(GLM REQUIRED)
-find_package(GLEW REQUIRED)
-find_package(GLFW REQUIRED)
-find_package(SFML REQUIRED)
-find_package(BANDIT REQUIRED)
-find_package(LibOVR REQUIRED)
+find_package(glm CONFIG REQUIRED)
+find_package(GLEW CONFIG REQUIRED)
+find_package(glfw3 CONFIG REQUIRED)
+find_package(SFML 3 CONFIG REQUIRED COMPONENTS Audio)
+find_package(Lua 5.5 REQUIRED)
 find_package(OpenMP REQUIRED)
-find_package(Lua52 REQUIRED)
 
-if(BOOST_MODULES)
-    find_package(Boost REQUIRED ${BOOST_MODULES})
+if(NOT TARGET Lua::Lua)
+    add_library(Lua::Lua INTERFACE IMPORTED)
+    set_target_properties(Lua::Lua PROPERTIES
+        INTERFACE_INCLUDE_DIRECTORIES "${LUA_INCLUDE_DIR}"
+        INTERFACE_LINK_LIBRARIES "${LUA_LIBRARIES}"
+    )
 endif()
 
-if(OPENMP_FOUND)
-    message(STATUS "OpenMP found")
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
-    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
-else()
-    message(WARNING "OpenMP not found")
+if(NOT EXISTS "${LIB_DIR}/bandit-1.1.4/bandit/bandit.h" AND EXISTS "${LIB_DIR}/lib.zip")
+    file(ARCHIVE_EXTRACT
+        INPUT "${LIB_DIR}/lib.zip"
+        DESTINATION "${LIB_DIR}"
+        PATTERNS "bandit-1.1.4/*"
+    )
 endif()
+find_package(BANDIT REQUIRED)
 
 set(GLOW_SOURCE_DIR ${LIB_DIR}/glow)
+include_directories(BEFORE ${CMAKE_CURRENT_SOURCE_DIR}/cmake/compat)
 include_directories(${GLOW_SOURCE_DIR}/source/glow/include)
 include_directories(${GLOW_SOURCE_DIR}/source/glowutils/include)
-
-# Include directories
-include_directories(
-    ${OPENGL_INCLUDE_DIR}
-    ${GLEW_INCLUDE_DIR}
-    ${GLFW_INCLUDE_DIR}
-    ${GLM_INCLUDE_DIR}
-    ${SFML_INCLUDE_DIR}
-    ${BANDIT_INCLUDE_DIR}
-    ${LIBOVR_INCLUDE_DIRS}
-    ${LUA52_INCLUDE_DIR}
-)
-
 
 # Compile voxellancer
 set(target voxellancer)
@@ -178,19 +179,25 @@ add_executable(${target}
 )
 
 add_definitions(-DGLM_FORCE_RADIANS)
+add_definitions(-DGLM_FORCE_CTOR_INIT)
+add_definitions(-DGLM_ENABLE_EXPERIMENTAL)
 
 set(LIBS_TO_LINK
-    ${OPENGL_LIBRARIES}
-    ${GLEW_LIBRARY}
-    ${GLFW_LIBRARY}
-    ${SFML_LIBRARIES}
-    ${Boost_LIBRARIES}
-    ${LIBOVR_LIBRARIES}
-    ${LUA52_LIBRARY}
+    OpenGL::GL
+    GLEW::GLEW
+    glfw
+    glm::glm
+    SFML::Audio
+    Lua::Lua
+    OpenMP::OpenMP_CXX
     glow
     glowutils
     ${LIBS_TO_LINK}
 )
+
+if(MSVC)
+    list(APPEND LIBS_TO_LINK legacy_stdio_definitions)
+endif()
 
 target_link_libraries(${target}
     ${LIBS_TO_LINK}
@@ -206,15 +213,6 @@ set_target_properties(${target}
     LINK_FLAGS_RELEASE "${DEFAULT_LINKER_FLAGS_RELEASE}"
     DEBUG_POSTFIX "d${DEBUG_POSTFIX}"
 )
-
-set(BINARIES ${GLEW_BINARY} ${GLFW_BINARY} ${SFML_BINARIES} ${LUA52_BINARY})
-
-if(WIN32)
-    foreach( binary ${BINARIES})
-    add_custom_command(TARGET ${target} POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different ${binary} $<TARGET_FILE_DIR:${target}>)
-    endforeach( binary )
-endif()
 
 set(DOCUMENTATION doc/howto.html doc/luaapi.html)
 
@@ -242,3 +240,8 @@ option(OPTION_ERRORS_AS_EXCEPTION "Throw exceptions" OFF)
 add_subdirectory(${GLOW_SOURCE_DIR}/source/glow)
 add_subdirectory(${GLOW_SOURCE_DIR}/source/glowutils)
 
+target_link_libraries(glow glm::glm)
+target_link_libraries(glowutils glm::glm)
+if(MSVC)
+    target_compile_options(glowutils PRIVATE /wd4834)
+endif()

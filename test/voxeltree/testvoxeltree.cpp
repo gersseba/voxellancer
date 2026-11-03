@@ -102,7 +102,6 @@ go_bandit([](){
         });
 
         it("supports basic rotation with voxel out of center", [&]() {
-            glm::vec3 v;
             Voxel v1(glm::ivec3(1, 1, 1));
             Voxel v2(glm::ivec3(0, 0, 0));
             Transform transform;
@@ -112,7 +111,7 @@ go_bandit([](){
             VoxelTreeNode *n = tree->root()->subnodes().front();
 
             tree->insert(&v2);
-            transform.setCenter(glm::vec3(0.5, 0.5, 0.5));
+            transform.setCenter(glm::vec3(0.5f, 0.5f, 0.5f));
             transform.setPosition(glm::vec3(0.5, 0.5, 0.5));
 
             AssertThat(n->sphere(transform).position(), EqualsWithDelta(glm::vec3(1,1,1), glm::vec3(0.01, 0.01, 0.01)));
@@ -145,4 +144,3 @@ go_bandit([](){
         });
     });
 });
-

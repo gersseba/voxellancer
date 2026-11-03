@@ -27,11 +27,8 @@ only for debugging:
 
 ## Commandline parameters
 
-	Usage: voxellancer [-fullscreen] [-stereo] [-hmd]
+	Usage: voxellancer [-fullscreen] [-stereo]
 
 	  -fullscreen  fullscreen mode
 	  -stereo      stereo rendering
-	  -hmd         use head mounted display (e.g. OculusRift)
-		           automatically activates fullscreen and stereo
-
 

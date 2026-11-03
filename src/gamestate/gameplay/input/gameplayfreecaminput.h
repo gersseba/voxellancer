@@ -14,7 +14,6 @@
 class WorldObject;
 class GameState;
 class HUD;
-class HMD;
 class CameraDolly;
 
 class GamePlayFreecamInput : public GamePlayInput {
@@ -45,7 +44,7 @@ protected:
 
     void processUpdate();
     void processMouseUpdate(float deltaSec);
-    void processHMDUpdate();
+    void resetHeadOrientation();
     void applyUpdates();
 
     void processMoveActions();

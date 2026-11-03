@@ -4,8 +4,6 @@
 #include <windows.h>
 #endif
 
-#include <OVR.h>
-
 #include <GL/glew.h>
 
 #ifdef WIN32
@@ -24,7 +22,6 @@
 #include <glowutils/AutoTimer.h>
 
 #include "etc/contextprovider.h"
-#include "etc/hmd/hmdmanager.h"
 #include "etc/cli/commandlineparser.h"
 
 #include "display/stereorenderinfo.h"
@@ -117,8 +114,6 @@ void setGLFWCallbacks(GLFWwindow* window) {
 }
 
 static void miscSettings() {
-    OVR::System::Init(OVR::Log::ConfigureDefaultLog(OVR::LogMask_All));
-
     glClearColor(0.0f, 0.0f, 0.3f, 1.0f);
 
 #ifdef WIN32 // TODO: find a way to correctly detect debug extension in linux
@@ -228,12 +223,8 @@ int main(int argc, char* argv[]) {
         loadingScreen->display("Loading... Game");
         game = new Game(clParser.showIntro() && Property<bool>::get("general.showIntro", true));
 
-        if(clParser.hmd()) {
-            game->hmdManager().setupHMD(game->viewer());
-        } else {
-            if(clParser.stereoView()) {
-                game->viewer().switchToStereoView(StereoRenderInfo::dummy());
-            }
+        if(clParser.stereoView()) {
+            game->viewer().switchToStereoView(StereoRenderInfo::dummy());
         }
         game->gamePlay().updateView();
 
@@ -256,9 +247,6 @@ int main(int argc, char* argv[]) {
     delete game;
     ContextProvider::instance()->shutdown();
     glfwTerminate();
-    OVR::System::Destroy();
-
     return 0;
 }
-
 

@@ -1,0 +1,50 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:81c47e13076dfa633888f5dfe9299b7b765c8b8ffcdb3119e41f3679fc588b37",
+  "claims": [
+    {
+      "id": "claim_bb4a65120cd24ba2a35b80b1d4d39203",
+      "statement": "VoxelCluster owns voxels keyed by cell coordinate and updates bounds and render data on each insertion or removal; removal deletes the voxel after erasing it from the cluster.",
+      "evidence": [
+        {
+          "resource": "repo://src/voxel/voxelcluster.cpp",
+          "version": "repo-file-v1:sha256:7ba153906e5dbb3877104da404a8275f50a267752668ec8a0d4c1bcba8fa954f"
+        }
+      ]
+    },
+    {
+      "id": "claim_ff1f36848cb244e2bc2ce77f31eb2792",
+      "statement": "Damager applies component damage compensation, records dead voxels and their WorldObject modifications, and can skip impacts on the player ship through the playerShipUndestroyable property.",
+      "evidence": [
+        {
+          "resource": "repo://src/world/handler/damager.cpp",
+          "version": "repo-file-v1:sha256:6aaceaaed8b84ffc2fd015bc9c1ddd2ad0002da9081692e42f0961800b32fa98"
+        }
+      ]
+    },
+    {
+      "id": "claim_5113925c1fc54070a9494496ed1e5e1b",
+      "statement": "SplitDetector flood-fills occupied voxel groups after modifications, retaining the group with the crucial voxel or otherwise the largest group, and emits all other groups as split data.",
+      "evidence": [
+        {
+          "resource": "repo://src/world/handler/splitdetector.cpp",
+          "version": "repo-file-v1:sha256:200cd1e9c133027153f0243b1cb8069e6984170fbaa5bb00761e4544dd2ae0f3"
+        }
+      ]
+    },
+    {
+      "id": "claim_077144ce56854821b0632b0f5a926e42",
+      "statement": "Splitter creates a new WorldObject with cloned voxels for each split-off and removes the extracted source voxels.",
+      "evidence": [
+        {
+          "resource": "repo://src/world/handler/splitter.cpp",
+          "version": "repo-file-v1:sha256:fbe258c40738473af113a94928ebabfc66cb9d2fe32c80a902856ca0e42d96bf"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.7.2",
+    "at": "2026-11-03T15:48:08.697Z"
+  }
+}

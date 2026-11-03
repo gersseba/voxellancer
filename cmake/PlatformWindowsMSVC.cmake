@@ -19,7 +19,7 @@ set(DEFAULT_COMPILE_DEFS_RELEASE
 
 
 set(WIN32_COMPILE_FLAGS
-	"/nologo /Zc:wchar_t /Zc:forScope /GF /GR /GS- /Zi /fp:precise /MP /wd4267 /wd4251 /wd4273 /W3 /WX "
+	"/nologo /Zc:wchar_t /Zc:forScope /GF /GR /GS- /Zi /fp:precise /MP /EHsc /wd4267 /wd4251 /wd4273 /wd4302 /wd4311 /wd4312 /W3 /WX "
 	# nologo       -> no logo
  	# Zc:wchar_t   -> treat wchar_t as built-in type: yes
  	# Zc:forScope  -> force conformance in for loop scope: Yes

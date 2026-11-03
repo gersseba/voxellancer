@@ -7,13 +7,8 @@
 #include "property/property.h"
 
 
-namespace OVR {
-    class HMDInfo;
-}
-
 class StereoRenderInfo {
 public:
-    static StereoRenderInfo fromOVRInfo(const OVR::HMDInfo& hmdInfo);
     static StereoRenderInfo dummy();
 
 
@@ -66,4 +61,3 @@ protected:
 
     float projectionCenterOffset() const;
 };
-

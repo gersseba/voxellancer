@@ -13,10 +13,14 @@ bool GeometryHelper::intersectRectangle(const Ray* ray, const glm::vec3& p, cons
 }
 
 bool GeometryHelper::intersectRectangle(const Ray* ray, const glm::vec3& p, const glm::vec3& q, const glm::vec3& r, const glm::vec3& s, glm::vec3& intersection) {
-    if (glm::intersectRayTriangle<glm::vec3>(ray->origin(), ray->direction(), p, r, s, intersection)) {
+    glm::vec2 barycentricCoordinates;
+    float distance;
+    if (glm::intersectRayTriangle(ray->origin(), ray->direction(), p, r, s, barycentricCoordinates, distance)) {
+        intersection = ray->origin() + distance * ray->direction();
         return true;
     }
-    if (glm::intersectRayTriangle<glm::vec3>(ray->origin(), ray->direction(), p, q, r, intersection)) {
+    if (glm::intersectRayTriangle(ray->origin(), ray->direction(), p, q, r, barycentricCoordinates, distance)) {
+        intersection = ray->origin() + distance * ray->direction();
         return true;
     }
     return false;

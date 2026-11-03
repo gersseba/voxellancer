@@ -2,6 +2,7 @@
 #include <list>
 #include <map>
 #include <memory>
+#include <string>
 #include <unordered_map>
 #include <utility>
 
@@ -34,4 +35,3 @@ protected:
     void setupRelations();
     std::pair<Faction*, Faction*> uniquePair(Faction& factionA, Faction& factionB);
 };
-

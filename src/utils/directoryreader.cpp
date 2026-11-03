@@ -35,11 +35,10 @@ std::list<std::string> DirectoryReader::read() const {
         filesystem::directory_iterator end;
         for (filesystem::directory_iterator iter(path); iter != end; ++iter) {
             if (filesystem::is_regular_file(iter->status())) {
-                files.push_back(iter->path().string());
+                files.push_back(iter->path().generic_string());
             }
         }
     }
 
     return files;
 }
-

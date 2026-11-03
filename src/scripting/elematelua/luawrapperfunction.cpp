@@ -1,6 +1,8 @@
 #include "luawrapperfunction.h"
 
-#include <lua5.2/lua.hpp>
+#include <limits>
+
+#include <lua.hpp>
 
 #include <glow/logging.h>
 
@@ -37,6 +39,15 @@ namespace Lua
 
 namespace Luaw
 {
+    template <typename T>
+    T _check_unsigned(lua_State * state, const int index) {
+        const lua_Integer value = luaL_checkinteger(state, index);
+        if (value < 0 || static_cast<lua_Unsigned>(value) > std::numeric_limits<T>::max()) {
+            luaL_argerror(state, index, "integer is outside the unsigned range");
+        }
+        return static_cast<T>(value);
+    }
+
     int _lua_dispatcher(lua_State * state)
     {
         BaseLuaFunction * function = (BaseLuaFunction *) lua_touserdata(state, lua_upvalueindex(1));
@@ -45,17 +56,17 @@ namespace Luaw
 
     template <>
     int _check_get<int>(lua_State * state, const int index) {
-        return luaL_checkint(state, index);
+        return static_cast<int>(luaL_checkinteger(state, index));
     };
 
     template <>
     unsigned long _check_get<unsigned long>(lua_State * state, const int index) {
-        return luaL_checkunsigned(state, index);
+        return _check_unsigned<unsigned long>(state, index);
     }
 
     template <>
     unsigned int _check_get<unsigned int>(lua_State * state, const int index) {
-        return luaL_checkunsigned(state, index);
+        return _check_unsigned<unsigned int>(state, index);
     }
 
     template <>
@@ -155,12 +166,16 @@ namespace Luaw
 
     void _push(lua_State * state, unsigned long && value)
     {
-        lua_pushunsigned(state, value);
+        if (value <= static_cast<unsigned long>(std::numeric_limits<lua_Integer>::max())) {
+            lua_pushinteger(state, static_cast<lua_Integer>(value));
+        } else {
+            lua_pushnumber(state, static_cast<lua_Number>(value));
+        }
     }
 
     void _push(lua_State * state, unsigned int && value)
     {
-        lua_pushunsigned(state, value);
+        lua_pushinteger(state, static_cast<lua_Integer>(value));
     }
 
     void _push(lua_State * state, float && value)

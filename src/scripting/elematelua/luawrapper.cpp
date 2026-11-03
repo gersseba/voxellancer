@@ -4,7 +4,7 @@
 
 #include <glow/logging.h>
 
-#include "lua5.2/lua.hpp"
+#include <lua.hpp>
 
 
 std::list<LuaWrapper *> LuaWrapper::s_instances;
@@ -224,7 +224,7 @@ unsigned long LuaWrapper::fetch<unsigned long>(const int index) const
     if (!lua_isnumber(m_state, index))
         glow::critical("LuaWrapper: Return value not a number.");
 
-    return lua_tounsigned(m_state, index);
+    return static_cast<unsigned long>(lua_tointeger(m_state, index));
 }
 
 template<>

@@ -1,24 +1,15 @@
 
-# GLM_FOUND
-# GLM_INCLUDE_DIR
+find_package(glm CONFIG QUIET)
 
+if(TARGET glm::glm)
+    set(GLM_FOUND TRUE)
+    get_target_property(GLM_INCLUDE_DIR glm::glm INTERFACE_INCLUDE_DIRECTORIES)
+    if(NOT GLM_INCLUDE_DIR OR GLM_INCLUDE_DIR MATCHES "-NOTFOUND$")
+        set(GLM_INCLUDE_DIR "${VCPKG_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET}/include")
+    endif()
+else()
+    set(GLM_FOUND FALSE)
+endif()
 
-FIND_PATH(GLM_INCLUDE_DIR glm/glm.hpp
-    ${LIB_DIR}/glm-0.9.4.6
-    ${LIB_DIR}/glm
-    $ENV{GLM_HOME}
-    $ENV{GLMDIR}
-    /usr/include
-    /usr/local/include
-    /sw/include
-    /opt/local/include
-    DOC "The directory where glm/glm.hpp resides.")
-    
-IF(GLM_INCLUDE_DIR)
-  SET(GLM_FOUND 1 CACHE STRING "Set to 1 if GLM is found, 0 otherwise")
-ELSE()
-  SET(GLM_FOUND 0 CACHE STRING "Set to 1 if GLM is found, 0 otherwise")
-  MESSAGE(WARNING "Note: an envvar GLM_HOME assists this script to locate glm.")
-ENDIF()
-
-MARK_AS_ADVANCED(GLM_FOUND)
+include(FindPackageHandleStandardArgs)
+find_package_handle_standard_args(GLM REQUIRED_VARS GLM_FOUND)

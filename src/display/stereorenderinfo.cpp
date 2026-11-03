@@ -1,7 +1,6 @@
 #include "stereorenderinfo.h"
 
 #include <cassert>
-#include <OVR.h>
 
 #include "geometry/size.h"
 #include "geometry/viewport.h"
@@ -10,40 +9,6 @@
 
 #include "utils/metrics.h"
 
-
-StereoRenderInfo StereoRenderInfo::fromOVRInfo(const OVR::HMDInfo& hmdInfo) {
-    StereoRenderInfo result;
-
-    result.m_hScreenSize = hmdInfo.HScreenSize;
-    result.m_vScreenSize = hmdInfo.VScreenSize;
-    result.m_vScreenCenter = hmdInfo.VScreenCenter;
-    result.m_eyeToScreenDistance = hmdInfo.EyeToScreenDistance;
-    result.m_lensSeparationDistance = hmdInfo.LensSeparationDistance;
-    result.m_interpupillaryDistance = hmdInfo.InterpupillaryDistance;
-    result.m_hResolution = hmdInfo.HResolution;
-    result.m_vResolution = hmdInfo.VResolution;
-
-    result.m_distortionKs = std::vector<float>{
-        hmdInfo.DistortionK[0],
-        hmdInfo.DistortionK[1],
-        hmdInfo.DistortionK[2],
-        hmdInfo.DistortionK[3]
-    };
-
-    OVR::Util::Render::StereoConfig stereoConfig;
-
-    Size<int> resolution(ContextProvider::instance()->resolution());
-
-    stereoConfig.SetFullViewport(OVR::Util::Render::Viewport(0, 0, resolution.width(), resolution.height()));
-    stereoConfig.SetHMDInfo(hmdInfo);
-    stereoConfig.SetStereoMode(OVR::Util::Render::Stereo_LeftRight_Multipass);
-    stereoConfig.SetDistortionFitPointVP(-1.0f, 0.0f);
-
-    result.m_distortionScale = stereoConfig.GetDistortionScale();
-    result.m_fovy = glm::radians(stereoConfig.GetYFOVDegrees());
-
-    return result;
-}
 
 StereoRenderInfo StereoRenderInfo::dummy() {
     StereoRenderInfo result;
@@ -166,4 +131,3 @@ float StereoRenderInfo::projectionCenterOffset() const {
     float eyeProjectionShift = viewCenter - m_lensSeparationDistance * 0.5f;
     return 4.0f * eyeProjectionShift / m_hScreenSize;
 }
-

@@ -1,6 +1,7 @@
 #include <bandit/bandit.h>
 
 #include <memory>
+#include <string>
 
 #include "../bandit_extension/vec3helper.h"
 
@@ -128,7 +129,7 @@ go_bandit([](){
                     setDebugStatus(p.x*100 + p.y*10 + p.z)
                 )");
 
-                AssertThat(script->debugStatus(), Equals("456"));
+                AssertThat(std::stof(script->debugStatus()), EqualsWithDelta(456.0f, 0.01f));
             });
 
             it("can set positions", [&]() {
@@ -303,4 +304,3 @@ go_bandit([](){
         });
     });
 });
-

@@ -19,7 +19,7 @@ TAABB<T>::TAABB():
 }
 
 template<typename T>
-TAABB<T>::TAABB(const glm::detail::tvec3<T> &llf, const glm::detail::tvec3<T> &urb):
+TAABB<T>::TAABB(const glm::vec<3, T> &llf, const glm::vec<3, T> &urb):
     m_llf(llf),
     m_urb(urb)
 {
@@ -29,28 +29,28 @@ TAABB<T>::TAABB(const glm::detail::tvec3<T> &llf, const glm::detail::tvec3<T> &u
 template<typename T>
 template<typename OtherT>
 TAABB<T>::TAABB(const TAABB<OtherT>& other) {
-    m_llf = static_cast<glm::detail::tvec3<T>>(other.llf());
-    m_urb = static_cast<glm::detail::tvec3<T>>(other.urb());
+    m_llf = static_cast<glm::vec<3, T>>(other.llf());
+    m_urb = static_cast<glm::vec<3, T>>(other.urb());
 }
 
 template<typename T>
-const glm::detail::tvec3<T> &TAABB<T>::llf() const {
+const glm::vec<3, T> &TAABB<T>::llf() const {
     return m_llf;
 }
 
 template<typename T>
-void TAABB<T>::setLLF(const glm::detail::tvec3<T> &llf) {
+void TAABB<T>::setLLF(const glm::vec<3, T> &llf) {
     assert(llf.x <= m_urb.x && llf.y <= m_urb.y && llf.z <= m_urb.z);
     m_llf = llf;
 }
 
 template<typename T>
-const glm::detail::tvec3<T> &TAABB<T>::urb() const {
+const glm::vec<3, T> &TAABB<T>::urb() const {
     return m_urb;
 }
 
 template<typename T>
-void TAABB<T>::setURB(const glm::detail::tvec3<T> &urb) {
+void TAABB<T>::setURB(const glm::vec<3, T> &urb) {
     assert(m_llf.x <= urb.x && m_llf.y <= urb.y && m_llf.z <= urb.z);
     m_urb = urb;
 }
@@ -66,7 +66,7 @@ T TAABB<T>::axisMax(Axis axis) const {
 }
 
 template<typename T>
-glm::detail::tvec3<T> TAABB<T>::middle() const {
+glm::vec<3, T> TAABB<T>::middle() const {
     return (m_urb + m_llf) / static_cast<T>(2);
 }
 
@@ -76,7 +76,7 @@ T TAABB<T>::extent(Axis axis) const {
 }
 
 template<typename T>
-glm::detail::tvec3<T> TAABB<T>::extent() const {
+glm::vec<3, T> TAABB<T>::extent() const {
     return m_urb - m_llf;
 }
 
@@ -93,7 +93,7 @@ TAABB<T> TAABB<T>::moved(Axis axis, T delta) const {
 }
 
 template<typename T>
-TAABB<T> TAABB<T>::moved(const glm::detail::tvec3<T> &delta) const {
+TAABB<T> TAABB<T>::moved(const glm::vec<3, T> &delta) const {
     return TAABB(m_llf + delta, m_urb + delta);
 }
 
@@ -104,7 +104,7 @@ void TAABB<T>::move(Axis axis, T delta) {
 }
 
 template<typename T>
-void TAABB<T>::move(const glm::detail::tvec3<T>& delta) {
+void TAABB<T>::move(const glm::vec<3, T>& delta) {
     m_llf += delta;
     m_urb += delta;
 }
@@ -192,7 +192,7 @@ bool TAABB<T>::contains(const TAABB& other) const {
 
 template<typename T>
 template<typename OtherT>
-bool TAABB<T>::contains(const glm::detail::tvec3<OtherT> &vec) const {
+bool TAABB<T>::contains(const glm::vec<3, OtherT> &vec) const {
     return
         vec.x >= m_llf.x &&
         vec.y >= m_llf.y &&
@@ -238,7 +238,7 @@ std::list<TAABB<T>> TAABB<T>::split(Axis axis) const {
 
 template<typename T>
 void TAABB<T>::split(TAABB &a, TAABB &b, Axis axis) const {
-    glm::detail::tvec3<T> newRub(m_urb), newLlf(m_llf);
+    glm::vec<3, T> newRub(m_urb), newLlf(m_llf);
     newRub[(int)axis] -= extent(axis)/2;
     newLlf[(int)axis] += extent(axis)/2;
 
@@ -280,7 +280,7 @@ TAABB<float> TAABB<T>::containing(const Sphere &sphere) {
 }
 
 template<typename T>
-void TAABB<T>::extend(const glm::detail::tvec3<T> &point) {
+void TAABB<T>::extend(const glm::vec<3, T> &point) {
     m_urb = glm::max(m_urb, point);
     m_llf = glm::min(m_llf, point);
 }

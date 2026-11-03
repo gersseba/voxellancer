@@ -1,0 +1,112 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:9d53613b5984335d8873cc7c6de3abba5dffa490ae0ad1c82b666023a27edfea",
+  "claims": [
+    {
+      "id": "claim_c12755f2cbe9488dba3edeb82c335f80",
+      "statement": "CMake builds a C++17 voxellancer executable from src/ and links OpenGL, GLM, GLEW, GLFW3, SFML Audio, Lua, OpenMP, and Glow; it adds the test subdirectory and obtains Bandit separately from the vcpkg runtime dependencies.",
+      "evidence": [
+        {
+          "resource": "repo://CMakeLists.txt#L103-L126",
+          "version": "repo-lines-v1:sha256:092be6be54259ee28c8e211056411872d4128f058ebbd2c65f603f4d81098e66:eyJzZWxlY3RlZExpbmVDb3VudCI6MjQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjE1ZDJjMzM5YjEyNDdjNWUwMzA5OWVkN2NlZDhlNDg0NDhiMjcwMDZjNDQzZjRlZjcyNWZlMDIxZDZiYzU5NGEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImRhYmE3NDQ3Mzk4MzUxZGExNWUxZTQxMDAzOWU5YjM3ZmZkNTRjNDQ0MTE2ODE3NDQ1MDVkMjYxMGZhNTdhNWIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjYwZTg1YTdiZmM2YTgwZjg0NGM0YzQ2MmM2NDBiNGY2YTc4ZDk4OWU5NDY1MGI5MGM5NjY1NDQ1ZWUzM2ZmZDQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjRmMDM0MjU3MDUzNTY3NGNlNjQzMzRmYmE1ZjgyYTU3MjYzMzlmMGEzNWM2MDcyMDZkODE1ZGUxOWNlYTYxMTYifQ"
+        },
+        {
+          "resource": "repo://CMakeLists.txt#L139-L203",
+          "version": "repo-lines-v1:sha256:df39e5f3028a758d9703d83063edc50b082614ddd4fc2f48bfc9a51f15f79ed7:eyJzZWxlY3RlZExpbmVDb3VudCI6NjUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjliMzllMDIyZTBkODU0MTIwMDAzZDc5MGMyOGI3NTk2MmVkZDMwMzc1NmQ1MTMzM2RmNzQ1Y2ZiODZlYTExY2UiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImI4MTYzOTljZDM1MGYwYzM1ZTgyODlhNzAwNTM1NzFkYjlkNDk4ZThmMGUxYTIyMDM2ZjBjZTllYTA2YTY2ZjAiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjNjNGQ4NTVhMzBmNmVmMjFhODBhYzExNTFlZmQ0ODkyZTVjOGY3NzcxZjQzYzNjZWY0NTIwOGUwYmY1OGJiNDMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImEwMjhjNGNmYjA2ZjgzODk5MjBlMjBlZjNkYjE3M2QwOGJkYjFkZTFkMGVlMTdlOGNhZTAwYjQzZWVlYTRkZjgifQ"
+        },
+        {
+          "resource": "repo://CMakeLists.txt#L231-L243",
+          "version": "repo-lines-v1:sha256:2f81a20126292176df19a18c4d22a890334257dee696f2f2f9c2006dbb310ed7:eyJzZWxlY3RlZExpbmVDb3VudCI6MTMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijk1NmQ3YzdhZTUxNTc3MjRmY2YwNWQ2YzQ2YTllYTAwN2VhZTk2ODJmZmMwYjQyMGY2Nzk0ZjA3OGE1MTIzYzMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ4NDA5YmZkMjg4ZTgwNDg3Njk4OWQxZDk1NTM5ZjgzMTQ5NDYwMWFhMzJkY2NmNjgwMmRhNWZhN2ZlNDRlZjEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjY4OGI1NGNmZWRiMWVjYjYyNDFhNWYyY2Y5N2ExNDdiZTE4MWZiMTg4Y2FiZjYwOTkwOTYzYmM4YTUxYzY5NmIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImQ2MGZjNTY3N2VhOTViZmIzZDRkYzc3NjlhYmI2ZGIxOTBmZDA5ZDFhYzMxOTc4MmJhOTJjZGMzZDg5Y2Y2MWQifQ"
+        },
+        {
+          "resource": "repo://CMakeLists.txt#L42-L43",
+          "version": "repo-lines-v1:sha256:710be32187594845631a6387b1133eb78c50547efe16c6c0ebddb8fdf83d6898:eyJzZWxlY3RlZExpbmVDb3VudCI6MiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMzBhZGQzYTJjZGU0ZmJlY2U4YzExNmZjMzhkNmExNDEzZjAwOGM3YzdmYTM4ZGJiYTY2OTA2ZjY4OTY0OTZkZCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMDUyMTE4MDg4Mzg3MGY1MmNhNmFhY2ZkODMxYTY1NGQ5MjBlZjE5YTI5YzViNWMwMWEzNTFmZjg2MjhkMTIwMSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNTE2NzUwZTg1ZTkzZWUwNzUwNjIxZjIyNWI5NDdhOTJhNWI1OTA1MWIyZjMyMzRhMDQ3ZGRkYjNiZjZkYWUyNiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiYjY1NGMyZDI1OGE2MzcxZjY2Y2E1ODViZTc4MTk1YWQ3MWY5ODgwZmNmMTBmOGQ5YmUwOTM3NWZlYjk2ZDYyOCJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_383a77de51224d88a440d4592ec67fb0",
+      "statement": "The agent-check harness requires VCPKG_ROOT and configures with the vcpkg CMake toolchain; Test mode builds all_tests and voxellancer then runs all_tests, while Run mode builds and launches voxellancer.",
+      "evidence": [
+        {
+          "resource": "repo://tools/agent-check.ps1#L103-L142",
+          "version": "repo-lines-v1:sha256:4439e1af824ce8b6b782be2c8542eba0ce0ed33bc18bd688a1bc58d646a1351a:eyJzZWxlY3RlZExpbmVDb3VudCI6NDAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImFmYjVjN2QzMzMyNGFiN2IyYTAzZTAwMTBjNGJhYzA4NWNkOTc1ZTdjNzNlYzRiMDE0ODBiNDQ3OWE1Yjc4NmUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjgyNDA5ZWI1NjlmNjgzY2NhM2E4MzEyMGU1ZjQwYmEwMjNmNmJiNGE5ZjBhZmVhN2NhZGM0MDUwZmFkNjRkZDEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImU5YjAyMjAwNzkxODdkZmIyNmExY2UxOGVjYzBiMTIzMTM1MzJmN2E1MTc5ZjY5YmFjOGNhMzY5YjNlY2VmODMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjoxLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjRhNTQ1NTRiOTcxMWQ2NGU1ZTJmYWM0YWIzYWM4MmE2MDkxYmU3ZDBmYzdjODk2YzEyOTFmODZkODZjOTI5NjQifQ"
+        },
+        {
+          "resource": "repo://tools/agent-check.ps1#L14-L24",
+          "version": "repo-lines-v1:sha256:42e3e930b6941178c26bbd8eba08f3bff02b10578169dbae9cddefe1197e0f8a:eyJzZWxlY3RlZExpbmVDb3VudCI6MTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI2NTU0MzJhZDJjZWZlODc1NmU1MGUzMDVjMzljZDY3Y2IwNmU2NzM5OTJkMDg1NTk4YzFhZWQ3ZjRmN2ZlZjIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjU2NGM0YTg3ZWEwMjIyMWMxNTE0YTQ0ZjNmZDkyNTA1MTNkMWQ5MWRmNjU1MDQ4ZjljNTJiZjU5ZGYzM2YxOGEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImNmODczMTY4M2UwOWE5ZDEzMGNmODA5MzdjN2Q2MWFkZDU4ODhmMTkzMjU1ZTFmYzc5YWQ0NzMxZGM1M2JhZjgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjFhOGYzZjZiYzY2MDVmMTI1ZWQyN2NkNzRlNzUxNDY0NTUwYjYwMGEzMDgzZGU0YTFiNjAyYjA3NTcxMTk0ZWQifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_92c04e1db8334188b18da53b1a3761ad",
+      "statement": "The test CMake configuration recursively aggregates test sources into all_tests, supports optional subsystem subtests, and excludes the performance test source from the aggregate target.",
+      "evidence": [
+        {
+          "resource": "repo://test/CMakeLists.txt",
+          "version": "repo-file-v1:sha256:a8006006b42e006a73154c0bfcad1d4ae1914091322a31dca610f621a98c368f"
+        }
+      ]
+    },
+    {
+      "id": "claim_6d631a445dcd4d1383bf3f7382f96391",
+      "statement": "The current build guide requires CMake 3.21 or newer, a C++17 compiler, platform OpenGL/OpenMP development support, and bootstrapped vcpkg configured through VCPKG_ROOT; it documents Windows and Linux setup.",
+      "evidence": [
+        {
+          "resource": "repo://doc/3_buildinstructions.md#L24-L60",
+          "version": "repo-lines-v1:sha256:cb3a4012449f972deb6a8a1e9a5314a7d3d72e390536f79479d31f11f56fd145:eyJzZWxlY3RlZExpbmVDb3VudCI6MzcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjY2YmFmMzIxOTE0MmJhYjBmNTc5OWE4M2VkNTYzMDU1OTllMGNlYmM4M2E5OGU2MWRjODkwNzljODg1ZWZiZWIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImJjYjJhNjE1YTFkNmRmOWY3Nzg0NWU1NmQzYTVjODg0NGFmMGYwMjY4ZTg3MjBmNjBlZWZiZTg0N2Q1YTJlMGYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjgyNmRjNmQ1N2YxNzk5YzllNjk2ODhmZjA3Mjk3MDg5YjZmMWQ3ZjNkZmZiNTAzZTE2NGMxODMwMDFjYTY2MTgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjoxLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjQ1ODdmMWRkMGEwNDhiYmVkOWYzZmY0Mzg3NTVkZWFhNzU3NTliMzA5ZmI2YmQzYWNkZjg5NzRiNDE0YjI4NjEifQ"
+        },
+        {
+          "resource": "repo://doc/3_buildinstructions.md#L3-L22",
+          "version": "repo-lines-v1:sha256:9815dc208d44c3a56f44e831d3f053b7bc4c1a869377ee74d549735f0b8459d3:eyJzZWxlY3RlZExpbmVDb3VudCI6MjAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjdlYjcwMjU3NTkzZGEwNmY2ODJhM2RkZGE1NGE5ZDI2MGQ0ZmM1MTRmNjQ1MjM3ZjVjYTc0YjA4ZjhkYTYxYTYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImUyYWUwMjE2MDc4N2NjMzFlYzM2MDBjZDAxOGEzYjMyZGYxZTljYTM2YTdmOTkzOWU5Y2U4NzQ1MWYzZDM0MDUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjoyLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjVlYjFjNGQ1NzYxNjc3Mzk3MjMzM2I2MGNhNzRmYWVmNjllYmM1NTVjZTI5YTU3ZGM4MzYyM2UzNTZjZmJkYTAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjA1MmZhYThlNzQwZTJmMmI5ZmFjODg3ZjEzOTY0OTc4ZTA0YTRlNDA0MmE0OGVhMjA3OTVmY2NlM2FkMjQwMzAifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_a2743d780c884c39b6829dded489e8b8",
+      "statement": "The vcpkg manifest pins registry baseline afa249f12f52ed8a3b919f195495ba8b330288d1 and declares GLEW, GLFW3, GLM, Lua, and SFML Audio; the documented resolved versions are GLEW 2.3.1, GLFW 3.5.1, GLM 1.0.3, Lua 5.5.1, and SFML 3.1.0.",
+      "evidence": [
+        {
+          "resource": "repo://doc/3_buildinstructions.md#L17-L22",
+          "version": "repo-lines-v1:sha256:d4424369e664e4ec179ad2a8267204622a33fe8d66ba21ec6557988c08c54737:eyJzZWxlY3RlZExpbmVDb3VudCI6NiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYzEzZWNmMzkwMjQ2ZWI2OWI1MTM2OTYxMDU2ZmQzNDFmZGY2M2ZlNjA1ZDJjNmRkMTc0ZmE2NjgwZTllNDhhYiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiZTJhZTAyMTYwNzg3Y2MzMWVjMzYwMGNkMDE4YTNiMzJkZjFlOWNhMzZhN2Y5OTM5ZTljZTg3NDUxZjNkMzQwNSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNjViMjNkZjFiOWQwM2U0NzVkNjU3ZjA5ODhhYjY2YTk2NjBmODM0YTc2NGY1MmJlNDhiOTczZTcyNzI4MWJjMSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMDUyZmFhOGU3NDBlMmYyYjlmYWM4ODdmMTM5NjQ5NzhlMDRhNGU0MDQyYTQ4ZWEyMDc5NWZjY2UzYWQyNDAzMCJ9"
+        },
+        {
+          "resource": "repo://vcpkg.json#L1-L18",
+          "version": "repo-lines-v1:sha256:46e7554a80dc0a82b29b7ef750b4efe0a95a6c02c704221f2001036396658073:eyJzZWxlY3RlZExpbmVDb3VudCI6MTgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjgzZWFlN2U2YTRkM2M3MWJjYzk2MzI4YzUxOWZiYTI5NDFlZTQ4Njk2OGE2ZDYzMjJmYjA4Y2ViNDRlM2VmZDYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImUyMmZhYTUzNWJkMmVhM2Q1MmU3NDFlZDQ1NDQzNWI3ZmU0OWU4MzU4NmU5NDNkOThkODJiYmZiMjRkMWY1YzUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_86c0d31dc27546d587c0ee86730ba9da",
+      "statement": "The project splits Maven-like responsibilities across vcpkg for native dependencies, CMake for the native target/build graph, and agent-check for the repository's build-and-run/test workflow.",
+      "evidence": [
+        {
+          "resource": "repo://CMakeLists.txt#L1-L43",
+          "version": "repo-lines-v1:sha256:8660a9b8b7084e2a3fce8edd0bd4050a09293c9ff0a8aaaaec7aa5c6ee52930e:eyJzZWxlY3RlZExpbmVDb3VudCI6NDMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjcyMGZhMDBhYzcxNWNmNjhkY2Q0NjU2NjJmNjI5Nzg4MWM0MWUzMzcxMWMzNmE5OTFkNDIwNzVmN2VjNThmOGMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjA1MjExODA4ODM4NzBmNTJjYTZhYWNmZDgzMWE2NTRkOTIwZWYxOWEyOWM1YjVjMDFhMzUxZmY4NjI4ZDEyMDEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImI2NTRjMmQyNThhNjM3MWY2NmNhNTg1YmU3ODE5NWFkNzFmOTg4MGZjZjEwZjhkOWJlMDkzNzVmZWI5NmQ2MjgifQ"
+        },
+        {
+          "resource": "repo://tools/agent-check.ps1#L103-L142",
+          "version": "repo-lines-v1:sha256:4439e1af824ce8b6b782be2c8542eba0ce0ed33bc18bd688a1bc58d646a1351a:eyJzZWxlY3RlZExpbmVDb3VudCI6NDAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImFmYjVjN2QzMzMyNGFiN2IyYTAzZTAwMTBjNGJhYzA4NWNkOTc1ZTdjNzNlYzRiMDE0ODBiNDQ3OWE1Yjc4NmUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjgyNDA5ZWI1NjlmNjgzY2NhM2E4MzEyMGU1ZjQwYmEwMjNmNmJiNGE5ZjBhZmVhN2NhZGM0MDUwZmFkNjRkZDEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImU5YjAyMjAwNzkxODdkZmIyNmExY2UxOGVjYzBiMTIzMTM1MzJmN2E1MTc5ZjY5YmFjOGNhMzY5YjNlY2VmODMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjoxLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjRhNTQ1NTRiOTcxMWQ2NGU1ZTJmYWM0YWIzYWM4MmE2MDkxYmU3ZDBmYzdjODk2YzEyOTFmODZkODZjOTI5NjQifQ"
+        },
+        {
+          "resource": "repo://vcpkg.json#L1-L18",
+          "version": "repo-lines-v1:sha256:46e7554a80dc0a82b29b7ef750b4efe0a95a6c02c704221f2001036396658073:eyJzZWxlY3RlZExpbmVDb3VudCI6MTgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjgzZWFlN2U2YTRkM2M3MWJjYzk2MzI4YzUxOWZiYTI5NDFlZTQ4Njk2OGE2ZDYzMjJmYjA4Y2ViNDRlM2VmZDYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImUyMmZhYTUzNWJkMmVhM2Q1MmU3NDFlZDQ1NDQzNWI3ZmU0OWU4MzU4NmU5NDNkOThkODJiYmZiMjRkMWY1YzUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_71ad1ccb5db246bd809186a48a1fbaa8",
+      "statement": "The VS Code Build and Run Game and Build and Test tasks invoke agent-check in Run and Test modes, respectively; Build and Test is the default build task.",
+      "evidence": [
+        {
+          "resource": "repo://.vscode/tasks.json#L3-L36",
+          "version": "repo-lines-v1:sha256:fa8d6ac1fb253fb1ac1a9d24164239d72685a1e6422f1e8866f3b7484f826082:eyJzZWxlY3RlZExpbmVDb3VudCI6MzQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjdkOWFjMTg5NTAzZTUwZGY1ZDZmNWUyMjRlNzYxYWZmYWQwODJmNTc1N2FmNzY0M2YwZjE4NmNjZTI0MGNhNTUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImZhMjE0ZmY5YzQwZDZhNmZiZjhmMDYyNDhiNmNlMzEzYTY0NDhjOTdkNWVjZWMzOWQwMmM5OTdiOTE3ZjEyZTciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjoyLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImYyM2Y5NDdjMmYwODRjZDE4NzQ2M2ZjZjg3ZTE5NTllODEzNGRhZmMyNDRjNzkwN2QyNjYyZDA2ZDZlNDA3M2YiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImZmNjZhY2RmYzVkMDZiZmY1MTNkY2VmNmM3MWZmODAwZjEyNmE4ZTc3M2ZkYThkM2NmNTA0MTBiMTg5YTE2NGUifQ"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.7.2",
+    "at": "2026-11-03T15:48:08.697Z"
+  }
+}

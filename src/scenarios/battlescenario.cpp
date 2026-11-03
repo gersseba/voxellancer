@@ -1,5 +1,8 @@
 #include "battlescenario.h"
 
+#include <algorithm>
+#include <random>
+
 #include <glm/glm.hpp>
 
 #include <glowutils/AutoTimer.h>
@@ -123,14 +126,14 @@ void BattleScenario::spawnCapital(const std::vector<Ship*>& enemies) {
 }
 
 void BattleScenario::setTargets(const std::vector<Ship*>& fleet, const std::vector<Ship*>& enemies) {
+    static std::mt19937 randomEngine(std::random_device{}());
     std::vector<Handle<WorldObject>> enemyHandles;
     for (Ship* enemy : enemies) {
         enemyHandles.push_back(enemy->handle<WorldObject>());
     }
     enemyHandles.push_back(World::instance()->player().ship()->handle<WorldObject>());
     for (Ship* ship : fleet) {
-        std::random_shuffle(enemyHandles.begin(), enemyHandles.end());
+        std::shuffle(enemyHandles.begin(), enemyHandles.end(), randomEngine);
         ship->character()->setTask(std::make_shared<FightTask>(ship->boardComputer(), enemyHandles));
     }
 }
-

@@ -7,7 +7,6 @@
 
 class GamePlay;
 class Intro;
-class HMDManager;
 class Viewer;
 
 /**
@@ -26,7 +25,6 @@ public:
 
     virtual InputHandler& inputHandler() override;
 
-    HMDManager& hmdManager();
     Viewer& viewer();
 
     virtual void update(float deltaSec) override;
@@ -34,10 +32,8 @@ public:
 
 
 protected:
-    std::shared_ptr<HMDManager> m_hmdManager;
     std::unique_ptr<Viewer> m_viewer;
 
     GamePlay* m_gamePlay;
     Intro* m_intro;
 };
-

@@ -72,19 +72,19 @@ go_bandit([](){
             glm::vec3 vtest(1.0, 2.0, 3.0);
             Transform w(glm::vec3(0), 2.0);
 
-            AssertThat(w.applyTo(vtest), EqualsWithDelta(glm::vec3(w.matrix() * glm::vec4(vtest, 1.0)), glm::vec3(0.01)));
+            AssertThat(w.applyTo(vtest), EqualsWithDelta(glm::vec3(w.matrix() * glm::vec4(vtest, 1.0)), glm::vec3(0.01f)));
 
             w.setPosition(glm::vec3(1, 2, 0));
-            AssertThat(w.applyTo(vtest), EqualsWithDelta(glm::vec3(w.matrix() * glm::vec4(vtest, 1.0)), glm::vec3(0.01)));
+            AssertThat(w.applyTo(vtest), EqualsWithDelta(glm::vec3(w.matrix() * glm::vec4(vtest, 1.0)), glm::vec3(0.01f)));
 
             w.setOrientation(glm::angleAxis(20.f, glm::vec3(6.0, 3.0, 1.0)));
-            AssertThat(w.applyTo(vtest), EqualsWithDelta(glm::vec3(w.matrix() * glm::vec4(vtest, 1.0)), glm::vec3(0.01)));
+            AssertThat(w.applyTo(vtest), EqualsWithDelta(glm::vec3(w.matrix() * glm::vec4(vtest, 1.0)), glm::vec3(0.01f)));
 
             w.setCenter(glm::vec3(6, 7, 0));
-            AssertThat(w.applyTo(vtest), EqualsWithDelta(glm::vec3(w.matrix() * glm::vec4(vtest, 1.0)), glm::vec3(0.01)));
+            AssertThat(w.applyTo(vtest), EqualsWithDelta(glm::vec3(w.matrix() * glm::vec4(vtest, 1.0)), glm::vec3(0.01f)));
 
             w.rotate(glm::angleAxis(123.f, glm::vec3(1.0, 2.0, 3.0)));
-            AssertThat(w.applyTo(vtest), EqualsWithDelta(glm::vec3(w.matrix() * glm::vec4(vtest, 1.0)), glm::vec3(0.01)));
+            AssertThat(w.applyTo(vtest), EqualsWithDelta(glm::vec3(w.matrix() * glm::vec4(vtest, 1.0)), glm::vec3(0.01f)));
         });
 
 
@@ -98,7 +98,7 @@ go_bandit([](){
 
             w2.setCenterAndAdjustPosition(w1.center() - vdiff);
 
-            AssertThat(w1.applyTo(vtest), EqualsWithDelta(w2.applyTo(vtest), glm::vec3(0.01)));
+            AssertThat(w1.applyTo(vtest), EqualsWithDelta(w2.applyTo(vtest), glm::vec3(0.01f)));
         });
 
 
@@ -119,4 +119,3 @@ go_bandit([](){
         });
     });
 });
-
