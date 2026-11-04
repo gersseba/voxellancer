@@ -231,10 +231,12 @@ const glm::quat& GamePlayFreecamInput::orientation() {
 
 void GamePlayFreecamInput::setPosition(const glm::vec3& position) {
     m_position = position;
+    m_cameraDolly->setPosition(position);
 }
 
 void GamePlayFreecamInput::setOrientation(const glm::quat& orientation) {
     m_orientation = orientation;
+    m_cameraDolly->setOrientation(orientation);
 
     double x = ContextProvider::instance()->resolution().width() / 2;
     double y = ContextProvider::instance()->resolution().height() / 2;

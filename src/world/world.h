@@ -17,6 +17,16 @@ class WorldObject;
 class WorldLogic;
 class WorldTree;
 
+struct WorldUpdateTimings {
+    double playerMs = 0.0;
+    double worldLogicMs = 0.0;
+    double scriptsMs = 0.0;
+    double eventPollerMs = 0.0;
+    double particleEngineMs = 0.0;
+    double missionSystemMs = 0.0;
+    double worldObjectsMs = 0.0;
+};
+
 class World {
 public:
     World();
@@ -39,6 +49,7 @@ public:
     void printStatus();
 
     void update(float deltaSecs);
+    const WorldUpdateTimings& lastUpdateTimings() const;
 
     float deltaSec() const;
 
@@ -56,6 +67,7 @@ protected:
     static World* s_instance;
 
     float m_deltaSec;
+    WorldUpdateTimings m_lastUpdateTimings;
 
     std::unique_ptr<Player> m_player;
     std::unique_ptr<ScriptEngine> m_scriptEngine;
@@ -71,4 +83,3 @@ protected:
     std::unordered_set<WorldObject*> m_worldObjects;
     std::unordered_set<Ship*> m_ships;
 };
-

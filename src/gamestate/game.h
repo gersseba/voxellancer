@@ -1,5 +1,6 @@
 #pragma once
 
+#include <chrono>
 #include <memory>
 
 #include "gamestate.h"
@@ -36,4 +37,6 @@ protected:
 
     GamePlay* m_gamePlay;
     Intro* m_intro;
+    std::chrono::steady_clock::time_point m_lastDrawTime;
+    float m_smoothedFps;
 };

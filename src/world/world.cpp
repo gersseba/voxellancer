@@ -1,5 +1,8 @@
 #include "world.h"
 
+#include <chrono>
+
+#include "benchmark/benchmarkprofiler.h"
 #include "events/eventpoller.h"
 
 #include "factions/factionmatrix.h"
@@ -89,18 +92,71 @@ std::unordered_set<Ship*> &World::ships() {
 }
 
 void World::update(float deltaSecs) {
+    using Clock = std::chrono::steady_clock;
+    BenchmarkCpuScope worldUpdateScope(BenchmarkMetric::WorldUpdate);
+    m_lastUpdateTimings = WorldUpdateTimings{};
     m_deltaSec = deltaSecs;
 
-    m_player->update(deltaSecs);
-    m_worldLogic->update(deltaSecs);
-    m_scriptEngine->update(deltaSecs);
-    m_eventPoller->update(deltaSecs);
-    m_particleEngine->update(deltaSecs);
-    m_missionSystem->update(deltaSecs);
-
-    for (WorldObject *worldObject : m_worldObjects) {
-        worldObject->update(deltaSecs);
+    auto sectionStart = Clock::now();
+    {
+        BenchmarkCpuScope scope(BenchmarkMetric::PlayerUpdate);
+        m_player->update(deltaSecs);
     }
+    m_lastUpdateTimings.playerMs =
+        std::chrono::duration<double, std::milli>(Clock::now() - sectionStart).count();
+
+    sectionStart = Clock::now();
+    {
+        m_worldLogic->update(deltaSecs);
+    }
+    m_lastUpdateTimings.worldLogicMs =
+        std::chrono::duration<double, std::milli>(Clock::now() - sectionStart).count();
+
+    sectionStart = Clock::now();
+    {
+        BenchmarkCpuScope scope(BenchmarkMetric::ScriptUpdate);
+        m_scriptEngine->update(deltaSecs);
+    }
+    m_lastUpdateTimings.scriptsMs =
+        std::chrono::duration<double, std::milli>(Clock::now() - sectionStart).count();
+
+    sectionStart = Clock::now();
+    {
+        BenchmarkCpuScope scope(BenchmarkMetric::EventPollerUpdate);
+        m_eventPoller->update(deltaSecs);
+    }
+    m_lastUpdateTimings.eventPollerMs =
+        std::chrono::duration<double, std::milli>(Clock::now() - sectionStart).count();
+
+    sectionStart = Clock::now();
+    {
+        BenchmarkCpuScope scope(BenchmarkMetric::ParticleEngineUpdate);
+        m_particleEngine->update(deltaSecs);
+    }
+    m_lastUpdateTimings.particleEngineMs =
+        std::chrono::duration<double, std::milli>(Clock::now() - sectionStart).count();
+
+    sectionStart = Clock::now();
+    {
+        BenchmarkCpuScope scope(BenchmarkMetric::MissionSystemUpdate);
+        m_missionSystem->update(deltaSecs);
+    }
+    m_lastUpdateTimings.missionSystemMs =
+        std::chrono::duration<double, std::milli>(Clock::now() - sectionStart).count();
+
+    sectionStart = Clock::now();
+    {
+        BenchmarkCpuScope scope(BenchmarkMetric::WorldObjectUpdate);
+        for (WorldObject *worldObject : m_worldObjects) {
+            worldObject->update(deltaSecs);
+        }
+    }
+    m_lastUpdateTimings.worldObjectsMs =
+        std::chrono::duration<double, std::milli>(Clock::now() - sectionStart).count();
+}
+
+const WorldUpdateTimings& World::lastUpdateTimings() const {
+    return m_lastUpdateTimings;
 }
 
 float World::deltaSec() const {
@@ -159,5 +215,3 @@ void World::printStatus() {
     glow::info("  VoxelCount: %;", voxelCount);
     glow::info("  ParticleCount: %;", particleCount);
 }
-
-

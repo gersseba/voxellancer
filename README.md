@@ -30,7 +30,7 @@ harness from the repository root:
 ```
 
 The first run configures a Visual Studio build under
-`build/agent-vcpkg-vs<major>` when Build Tools are installed, resolves the
+`build/agent-vcpkg-vs<major>-stable` when Build Tools are installed, resolves the
 manifest dependencies, builds the game and `all_tests`, and runs the tests.
 See [AGENTS.md](AGENTS.md) for the development workflow and
 [doc/5_engine_architecture.md](doc/5_engine_architecture.md) for where to look

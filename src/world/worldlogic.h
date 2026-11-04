@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include <list>
 
 #include "handler/mover.h"
@@ -18,11 +19,19 @@
 
 class World;
 
+struct WorldLogicTimings {
+    double movementMs = 0.0;
+    double collisionDamageMs = 0.0;
+    double lifecycleMs = 0.0;
+};
+
 class WorldLogic {
 public:
     WorldLogic(World &world);
 
     void update(float deltaSecs);
+    std::uint64_t voxelCollisionPairCount() const;
+    const WorldLogicTimings& lastUpdateTimings() const;
 
     DamageForwarder &damageForwarder();
 
@@ -30,6 +39,8 @@ public:
 protected:
     World &m_world;
     std::list<DamageImpact> m_damageImpacts;
+    std::uint64_t m_voxelCollisionPairCount;
+    WorldLogicTimings m_lastUpdateTimings;
 
     Mover m_mover;
     VoxelCollisionAccumulator m_voxelCollisionAccumulator;
@@ -46,4 +57,3 @@ protected:
 
     void damageForwardLoop(std::list<DamageImpact> damageImpulses);
 };
-

@@ -41,6 +41,7 @@ public:
 
     SoundManager& soundManager();
 
+    void setInitialScenario(int scenario);
     void loadScenario(int i);
 
     virtual void update(float deltaSec) override;
@@ -64,5 +65,5 @@ protected:
     std::unique_ptr<GamePlayFreecamInput> m_freecamInput;
 
     bool m_freecamActive;
+    int m_initialScenario;
 };
-

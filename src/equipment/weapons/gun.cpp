@@ -1,5 +1,7 @@
 #include "gun.h"
 
+#include "benchmark/benchmarkprofiler.h"
+
 #include "utils/geometryhelper.h"
 #include "utils/safenormalize.h"
 
@@ -86,6 +88,7 @@ void Gun::fireAtPoint(const glm::vec3& point, bool checkFriendlyFire) {
 }
 
 bool Gun::isBulletPathClear(const glm::vec3& point, bool checkFriendlyFire) {
+    BenchmarkCpuScope scope(BenchmarkMetric::BulletLineOfFireQuery);
     WorldObject* owner = m_hardpoint->components()->worldObject();
 
     glm::vec3 direction = glm::normalize(point - m_hardpoint->voxel()->position());

@@ -4,6 +4,8 @@
 
 #include <unordered_map>
 
+#include "benchmark/benchmarkmode.h"
+
 
 class CommandLineParser {
 public:
@@ -14,6 +16,7 @@ public:
     bool stereoView() const;
     bool fullScreen() const;
     bool showIntro() const;
+    BenchmarkMode benchmarkMode() const;
 
 private:
     std::unordered_map<std::string, std::string> m_options;

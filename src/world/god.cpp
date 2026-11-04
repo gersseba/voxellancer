@@ -4,6 +4,7 @@
 
 #include <glow/logging.h>
 
+#include "benchmark/benchmarkprofiler.h"
 #include "collision/collisiondetector.h"
 
 #include "scripting/scriptengine.h"
@@ -53,10 +54,21 @@ void God::spawn() {
         for (WorldObject* worldObject : spawnRequest.worldObjects()) {
             m_world.worldTree().insert(worldObject);
 
-            std::list<VoxelCollision> collisions = worldObject->collisionDetector().checkCollisions();
+            std::list<VoxelCollision> collisions;
+            if (worldObject->objectType() == WorldObjectType::Bullet) {
+                BenchmarkCpuScope scope(BenchmarkMetric::BulletSpawnCollision);
+                collisions = worldObject->collisionDetector().checkCollisions();
+            } else {
+                collisions = worldObject->collisionDetector().checkCollisions();
+            }
 
             if (!collisions.empty()) {
-                glow::warning("Failed to spawn %;", worldObject->info().name());
+                WorldObject* collider = collisions.front().a().worldObject();
+                if (collider == worldObject) {
+                    collider = collisions.front().b().worldObject();
+                }
+                glow::warning("Failed to spawn %; due to collision with %;",
+                    worldObject->info().name(), collider->info().name());
 
                 World::instance()->worldTree().remove(worldObject->collisionDetector().geode());
 
@@ -83,6 +95,4 @@ void God::remove() {
     }
     m_scheduledRemovals.clear();
 }
-
-
 

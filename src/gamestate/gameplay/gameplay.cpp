@@ -6,6 +6,7 @@
 #include "gamestate/gameplay/input/gameplaynormalinput.h"
 #include "gamestate/gameplay/input/gameplayfreecaminput.h"
 #include "gameplayscene.h"
+#include "benchmark/benchmarkmode.h"
 
 #include "utils/statemachine/trigger.h"
 #include "utils/statemachine/triggeredtransition.h"
@@ -18,6 +19,7 @@
 #include "scenarios/missionscenario.h"
 #include "scenarios/scriptedscenario.h"
 #include "scenarios/piratescenario.h"
+#include "scenarios/performancebenchmarkscenario.h"
 
 #include "sound/soundmanager.h"
 
@@ -37,13 +39,14 @@
 GamePlay::GamePlay(Game* game) :
     GameState("In Game", game),
     m_game(game),
+    m_scene(new GamePlayScene(*this)),
+    m_soundManager(new SoundManager()),
     m_runningState(new GamePlayRunning(this)),
     m_pausedState(new GamePlayPaused(this)),
     m_normalInput(new GamePlayNormalInput(*this)),
     m_freecamInput(new GamePlayFreecamInput(*this)),
     m_freecamActive(false),
-    m_scene(new GamePlayScene(*this)),
-    m_soundManager(new SoundManager())
+    m_initialScenario(0)
 {
     updateView();
     setInitialSubState(m_runningState);
@@ -108,12 +111,18 @@ SoundManager& GamePlay::soundManager() {
     return *m_soundManager;
 }
 
+void GamePlay::setInitialScenario(int scenario) {
+    m_initialScenario = scenario;
+}
+
 void GamePlay::loadScenario(int i) {
     TextureRenderer loadRenderer("data/textures/loading.dds");
     loadRenderer.display("Loading Scenario...");
 
     m_soundManager->stopAll();
-    m_scenario->clear();
+    if (m_scenario) {
+        m_scenario->clear();
+    }
     updateView();
 
     switch (i) {
@@ -134,6 +143,15 @@ void GamePlay::loadScenario(int i) {
         break;
     case 5:
         m_scenario.reset(new FriendlyFireScenario(this));
+        break;
+    case PerformanceBenchmarkScenario::RenderingScenarioId:
+        m_scenario.reset(new PerformanceBenchmarkScenario(this, BenchmarkMode::Rendering));
+        break;
+    case PerformanceBenchmarkScenario::CombatScenarioId:
+        m_scenario.reset(new PerformanceBenchmarkScenario(this, BenchmarkMode::Combat));
+        break;
+    case PerformanceBenchmarkScenario::LargeCombatVsyncScenarioId:
+        m_scenario.reset(new PerformanceBenchmarkScenario(this, BenchmarkMode::LargeCombatVsync));
         break;
     default:
         m_scenario.reset(new BaseScenario(this));
@@ -158,7 +176,7 @@ void GamePlay::update(float deltaSec) {
 void GamePlay::onEntered() {
     GameState::onEntered();
     m_soundManager->activate();
-    loadScenario(0);
+    loadScenario(m_initialScenario);
 }
 
 void GamePlay::onLeft() {
@@ -169,4 +187,3 @@ void GamePlay::onLeft() {
 void GamePlay::updateView() {
     World::instance()->player().hud().setView(&m_game->viewer().view());
 }
-

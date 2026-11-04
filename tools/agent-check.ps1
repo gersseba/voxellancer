@@ -3,6 +3,9 @@ param(
     [ValidateSet('Test', 'Run')]
     [string]$Mode = 'Test',
 
+    [ValidateSet('None', 'Rendering', 'Combat', 'LargeCombatVsync')]
+    [string]$Benchmark = 'None',
+
     [ValidateSet('Debug', 'Release')]
     [string]$Configuration = 'Release',
 
@@ -12,6 +15,11 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+if ($Benchmark -ne 'None' -and $Mode -ne 'Run') {
+    Write-Error 'Benchmark modes can only be used with -Mode Run.'
+    exit 1
+}
+
 $repositoryRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 $vcpkgRoot = $env:VCPKG_ROOT
 if ([string]::IsNullOrWhiteSpace($vcpkgRoot)) {
@@ -58,9 +66,9 @@ if ($Generator -match '^Visual Studio (\d+)') {
 
 if ([string]::IsNullOrWhiteSpace($BuildDirectory)) {
     if ($generatorMajor -gt 0) {
-        $BuildDirectory = "build/agent-vcpkg-vs$generatorMajor"
+        $BuildDirectory = "build/agent-vcpkg-vs$generatorMajor-stable"
     } else {
-        $BuildDirectory = 'build/agent-vcpkg'
+        $BuildDirectory = 'build/agent-vcpkg-stable'
     }
 }
 
@@ -139,5 +147,14 @@ if ($configuredExecutables.Count -eq 1) {
     exit 1
 }
 
-& $testExecutable.FullName
+$runArguments = @()
+if ($Benchmark -eq 'Rendering') {
+    $runArguments += '-benchmark-rendering'
+} elseif ($Benchmark -eq 'Combat') {
+    $runArguments += '-benchmark-combat'
+} elseif ($Benchmark -eq 'LargeCombatVsync') {
+    $runArguments += '-benchmark-large-combat'
+}
+
+& $testExecutable.FullName @runArguments
 exit $LASTEXITCODE

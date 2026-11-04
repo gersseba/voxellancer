@@ -1,5 +1,7 @@
 #include "boardcomputer.h"
 
+#include "benchmark/benchmarkprofiler.h"
+
 #include <cmath>
 
 #include <glm/gtc/quaternion.hpp>
@@ -131,6 +133,7 @@ glm::vec3 BoardComputer::rotateUpAuto(const glm::quat& rotation) {
 }
 
 void BoardComputer::shootBullet(const std::vector<Handle<WorldObject>>& targets) {
+    BenchmarkCpuScope scope(BenchmarkMetric::ShootingTargetSelection);
     float max_angle = glm::radians(45.0f);
 
     for (auto& targetHandle : targets) {
@@ -157,5 +160,4 @@ void BoardComputer::update(float deltaSec) {
     m_engineState.clear();
     m_overwriteEngineState = false;
 }
-
 

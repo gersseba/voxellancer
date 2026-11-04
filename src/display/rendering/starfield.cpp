@@ -8,6 +8,7 @@
 #include <glowutils/File.h>
 #include <glowutils/global.h>
 
+#include "benchmark/benchmarkprofiler.h"
 #include "player.h"
 #include "utils/randfloat.h"
 #include "display/rendering/framebuffer.h"
@@ -79,6 +80,8 @@ void Starfield::apply(FrameBuffer& frameBuffer, const RenderMetaData& metadata) 
     if (m_starCount == 0) {
         return;
     }
+    BenchmarkCpuScope cpuScope(BenchmarkMetric::StarfieldDraw);
+    BenchmarkGpuScope gpuScope(BenchmarkMetric::StarfieldDraw);
     int side = (metadata.eyeside() == EyeSide::Right);
 
     addLocation(metadata.camera(), side);
@@ -195,4 +198,3 @@ void Starfield::afterContextRebuild() {
     createAndSetupShaders();
     createAndSetupGeometry();
 }
-

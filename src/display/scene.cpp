@@ -2,6 +2,7 @@
 
 #include <glow/logging.h>
 
+#include "benchmark/benchmarkprofiler.h"
 #include "camera/camera.h"
 
 #include "geometry/viewport.h"
@@ -32,17 +33,29 @@ void Scene::draw(const Camera& camera, glow::FrameBufferObject* destination, con
     m_framebuffer->clear();
     m_framebuffer->setDrawBuffers({ BufferNames::Color, BufferNames::NormalZ, BufferNames::Emissisiveness });
 
-    drawImpl(camera);
+    {
+        BenchmarkCpuScope cpuScope(BenchmarkMetric::SceneContentDraw);
+        BenchmarkGpuScope gpuScope(BenchmarkMetric::SceneContentDraw);
+        drawImpl(camera);
+    }
 
     RenderMetaData metadata(camera, side);
-    m_renderPipeline->apply(*m_framebuffer, metadata);
+    {
+        BenchmarkCpuScope cpuScope(BenchmarkMetric::RenderPipeline);
+        BenchmarkGpuScope gpuScope(BenchmarkMetric::RenderPipeline);
+        m_renderPipeline->apply(*m_framebuffer, metadata);
+    }
 
     // set viewport to original resolution
     glViewport(destinationViewport.x(), destinationViewport.y(), destinationViewport.width(), destinationViewport.height());
 
     // transfer rendered image to target framebuffer
     m_outputBlitter->setInputMapping({ { "source", m_currentOutputBuffer } });
-    m_outputBlitter->apply(*m_framebuffer, destination);
+    {
+        BenchmarkCpuScope cpuScope(BenchmarkMetric::OutputBlit);
+        BenchmarkGpuScope gpuScope(BenchmarkMetric::OutputBlit);
+        m_outputBlitter->apply(*m_framebuffer, destination);
+    }
 }
 
 void Scene::setOutputBuffer(int i) {

@@ -29,6 +29,7 @@ public:
 
     bool worldTreeRendererEnabled() const;
     void setWorldTreeRendererEnabled(bool enabled);
+    void setFps(float fps);
 
 
 
@@ -42,8 +43,8 @@ protected:
     std::unique_ptr<WorldTreeRenderer> m_worldTreeRenderer;
 
     Property<glm::vec3> m_defaultLightDir;
+    float m_fps;
 
 
     void drawImpl(const Camera& camera) const override;
 };
-

@@ -1,4 +1,5 @@
 #include <omp.h>
+#include <iostream>
 
 #ifdef WIN32
 #include <windows.h>
@@ -23,6 +24,9 @@
 
 #include "etc/contextprovider.h"
 #include "etc/cli/commandlineparser.h"
+#include "benchmark/benchmarkmode.h"
+#include "benchmark/benchmarkrunner.h"
+#include "scenarios/performancebenchmarkscenario.h"
 
 #include "display/stereorenderinfo.h"
 #include "display/viewer.h"
@@ -113,7 +117,7 @@ void setGLFWCallbacks(GLFWwindow* window) {
     glfwSetMouseButtonCallback(window, onMouseButtonEvent);
 }
 
-static void miscSettings() {
+static bool miscSettings(bool enableVsync) {
     glClearColor(0.0f, 0.0f, 0.3f, 1.0f);
 
 #ifdef WIN32 // TODO: find a way to correctly detect debug extension in linux
@@ -121,11 +125,18 @@ static void miscSettings() {
 #endif
 
 #ifdef WIN32
-    wglSwapIntervalEXT(1); // glfw doesn't work!?
+    if (!wglSwapIntervalEXT || !wglSwapIntervalEXT(enableVsync ? 1 : 0)) {
+        return false;
+    }
 #else
-    glfwSwapInterval(1);
+    glfwSwapInterval(enableVsync ? 1 : 0);
+    const char* errorDescription = nullptr;
+    if (glfwGetError(&errorDescription) != GLFW_NO_ERROR) {
+        return false;
+    }
 #endif
     std::srand((unsigned int)time(NULL));
+    return true;
 }
 
 static void mainloop() {
@@ -160,8 +171,15 @@ void toggleFullScreen() {
 
 int main(int argc, char* argv[]) {
     glowutils::AutoTimer* initTimer = new glowutils::AutoTimer("Setup");
+    int exitCode = 0;
     CommandLineParser clParser;
     clParser.parse(argc, argv);
+    const BenchmarkMode benchmarkMode = clParser.benchmarkMode();
+    if (benchmarkMode == BenchmarkMode::Invalid) {
+        std::cerr << "Choose only one benchmark mode: -benchmark-rendering, -benchmark-combat, or -benchmark-large-combat.\n";
+        delete initTimer;
+        return 1;
+    }
 
     PropertyManager::instance()->load("data/config.ini");
     glow::info("Config Directory: %;", FileSystem::userConfigDir());
@@ -200,7 +218,15 @@ int main(int argc, char* argv[]) {
     }
     CheckGLError();
 
-    miscSettings();
+    const bool swapIntervalSet = miscSettings(benchmarkMode == BenchmarkMode::None ||
+        benchmarkMode == BenchmarkMode::LargeCombatVsync);
+    if (benchmarkMode == BenchmarkMode::LargeCombatVsync && !swapIntervalSet) {
+        std::cerr << "Could not enable VSync for the large combat benchmark.\n";
+        ContextProvider::instance()->shutdown();
+        glfwTerminate();
+        delete initTimer;
+        return 1;
+    }
 
 //#define TRYCATCH
 
@@ -221,7 +247,16 @@ int main(int argc, char* argv[]) {
         PropertyDirectory("data/equipment/projectiles").read();
 
         loadingScreen->display("Loading... Game");
-        game = new Game(clParser.showIntro() && Property<bool>::get("general.showIntro", true));
+        game = new Game(benchmarkMode == BenchmarkMode::None &&
+            clParser.showIntro() && Property<bool>::get("general.showIntro", true));
+
+        if (benchmarkMode == BenchmarkMode::Rendering) {
+            game->gamePlay().setInitialScenario(PerformanceBenchmarkScenario::RenderingScenarioId);
+        } else if (benchmarkMode == BenchmarkMode::Combat) {
+            game->gamePlay().setInitialScenario(PerformanceBenchmarkScenario::CombatScenarioId);
+        } else if (benchmarkMode == BenchmarkMode::LargeCombatVsync) {
+            game->gamePlay().setInitialScenario(PerformanceBenchmarkScenario::LargeCombatVsyncScenarioId);
+        }
 
         if(clParser.stereoView()) {
             game->viewer().switchToStereoView(StereoRenderInfo::dummy());
@@ -231,7 +266,11 @@ int main(int argc, char* argv[]) {
         delete loadingScreen;
         delete initTimer;
 
-        mainloop();
+        if (benchmarkMode == BenchmarkMode::None) {
+            mainloop();
+        } else {
+            exitCode = BenchmarkRunner(benchmarkMode).run(*game);
+        }
 
 #ifdef TRYCATCH
     }
@@ -247,6 +286,5 @@ int main(int argc, char* argv[]) {
     delete game;
     ContextProvider::instance()->shutdown();
     glfwTerminate();
-    return 0;
+    return exitCode;
 }
-

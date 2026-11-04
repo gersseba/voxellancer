@@ -44,6 +44,29 @@ cmake --build build --config Release --target voxellancer
 Or run `.\tools\agent-check.ps1` to build and test. In VS Code, choose **Build
 and Run Game** or **Build and Test** from **Terminal: Run Task**.
 
+To run a finite performance benchmark from the repository root after building:
+
+```powershell
+.\build\Release\voxellancer.exe -benchmark-rendering
+.\build\Release\voxellancer.exe -benchmark-combat
+.\build\Release\voxellancer.exe -benchmark-large-combat
+```
+
+The large combat benchmark enables VSync and runs 400 AI ships per team in
+reproducibly randomized, separated clusters for 3,600 measured frames. It
+reports the number and percentage of measured frames below 55 FPS, the longest
+consecutive below-target run, and the worst FPS. Each benchmark writes a JSON
+report, including per-frame timings, to `benchmark-results\`. Its
+`timing_profile` includes CPU timings for update, draw submission, buffer-swap
+wait, event polling, and world-update subsystems, plus GPU draw time when
+supported by the graphics driver. GPU work can overlap CPU work, and
+buffer-swap wait includes VSync, so these measurements should not be summed.
+The aligned `time_series` arrays record frame FPS, world-object voxel counts,
+ship/projectile counts, voxel-particle counts, and per-frame simulation timings
+for comparing workload changes with slow frames. Particle-buffer capacity is
+also recorded because the renderer submits allocated slots, including expired
+particles.
+
 ## Linux
 
 Install the compiler, CMake, OpenGL, and OpenMP development packages for your
