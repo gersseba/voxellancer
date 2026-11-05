@@ -2,7 +2,9 @@
 
 #include "benchmark/benchmarkprofiler.h"
 
+#include <algorithm>
 #include <cmath>
+#include <limits>
 
 #include <glm/gtc/quaternion.hpp>
 
@@ -11,15 +13,18 @@
 #include "utils/safenormalize.h"
 #include "utils/randvec3.h"
 #include "utils/geometryhelper.h"
+#include "utils/staggeredphase.h"
 
 #include "physics/physics.h"
 
 #include "worldobject/ship.h"
 #include "worldobject/worldobjectcomponents.h"
+#include "worldobject/helper/componentsinfo.h"
 
 #include "equipment/hardpoint.h"
 #include "equipment/weapon.h"
 #include "equipment/weapons/gun.h"
+#include "utils/worldobjectgeometryhelper.h"
 
 
 static const float s_minActDistance = 0.5f;
@@ -132,21 +137,153 @@ glm::vec3 BoardComputer::rotateUpAuto(const glm::quat& rotation) {
     return glm::vec3(0.0f);
 }
 
-void BoardComputer::shootBullet(const std::vector<Handle<WorldObject>>& targets) {
+void BoardComputer::shootBullet(
+    std::vector<Handle<WorldObject>>& targets,
+    float deltaSec
+) {
     BenchmarkCpuScope scope(BenchmarkMetric::ShootingTargetSelection);
-    float max_angle = glm::radians(45.0f);
+    shootBulletsAtTargets(&targets, nullptr, deltaSec);
+}
 
-    for (auto& targetHandle : targets) {
-        if (const WorldObject* target = targetHandle.get()) {
-            // Hardpoints check themselves whether they can fire, just tell everyone to shoot everything
-            glm::vec3 targetDirection = target->position() - m_worldObject->position();
-            glm::vec3 inaccuracyNoise = RandVec3::rand(0, 1) * glm::length(targetDirection) / 30.0f;
+void BoardComputer::shootBullet(Handle<WorldObject>& target, float deltaSec) {
+    BenchmarkCpuScope scope(BenchmarkMetric::ShootingTargetSelection);
+    shootBulletsAtTargets(nullptr, &target, deltaSec);
+}
 
-            glm::vec3 targetPoint = target->position() + inaccuracyNoise;
+void BoardComputer::shootBulletsAtTargets(
+    std::vector<Handle<WorldObject>>* targets,
+    Handle<WorldObject>* focusedTarget,
+    float deltaSec
+) {
+    constexpr float GunTargetSelectionInterval = 0.75f;
+    std::list<std::shared_ptr<Hardpoint>>& hardpoints = m_worldObject->components().hardpoints();
+    const float maxBulletRange = m_worldObject->components().componentsInfo().maxBulletRange();
 
-            m_worldObject->components().fireAtPoint(targetPoint, true);
+    m_gunTargetSelections.erase(
+        std::remove_if(
+            m_gunTargetSelections.begin(),
+            m_gunTargetSelections.end(),
+            [&hardpoints](const GunTargetSelection& selection) {
+                return std::none_of(hardpoints.begin(), hardpoints.end(),
+                    [&selection](const std::shared_ptr<Hardpoint>& hardpoint) {
+                        return hardpoint && hardpoint.get() == selection.hardpoint &&
+                            hardpoint->weapon() &&
+                            hardpoint->weapon()->type() == WeaponType::Gun;
+                    });
+            }),
+        m_gunTargetSelections.end());
+
+    for (const std::shared_ptr<Hardpoint>& hardpoint : hardpoints) {
+        if (!hardpoint || !hardpoint->weapon() ||
+            hardpoint->weapon()->type() != WeaponType::Gun) {
+            continue;
+        }
+
+        auto selectionIterator = std::find_if(
+            m_gunTargetSelections.begin(),
+            m_gunTargetSelections.end(),
+            [&hardpoint](const GunTargetSelection& selection) {
+                return selection.hardpoint == hardpoint.get();
+            });
+        if (selectionIterator == m_gunTargetSelections.end()) {
+            m_gunTargetSelections.push_back(GunTargetSelection{});
+            selectionIterator = m_gunTargetSelections.end() - 1;
+            selectionIterator->hardpoint = hardpoint.get();
+        }
+
+        GunTargetSelection& selection = *selectionIterator;
+        if (selection.weapon != hardpoint->weapon().get()) {
+            selection.weapon = hardpoint->weapon().get();
+            selection.target = Handle<WorldObject>();
+            selection.initialized = false;
+        }
+
+        WorldObject* currentTarget = selection.target.get();
+        if (!selection.initialized) {
+            selection.refreshCountdown =
+                StaggeredPhase::forObject(hardpoint.get(), GunTargetSelectionInterval);
+            selection.initialized = true;
+        }
+        selection.refreshCountdown -= deltaSec;
+        if (selection.refreshCountdown <= 0.0f) {
+            BenchmarkProfiler::instance().addCounter(BenchmarkCounter::GunTargetRefreshes);
+            const Handle<WorldObject> selectedTarget = selectGunTarget(
+                hardpoint.get(), targets, focusedTarget, selection.target);
+            if (selectedTarget.get() && selectedTarget.get() != currentTarget) {
+                BenchmarkProfiler::instance().addCounter(BenchmarkCounter::GunTargetsAssigned);
+            }
+            selection.target = selectedTarget;
+            selection.refreshCountdown = GunTargetSelectionInterval;
+        }
+
+        WorldObject* target = selection.target.get();
+        if (target && WorldObjectGeometryHelper::sphereToSphereDistance(
+                m_worldObject, target) < maxBulletRange) {
+            const glm::vec3 targetDirection = target->position() - m_worldObject->position();
+            const glm::vec3 inaccuracyNoise =
+                RandVec3::rand(0, 1) * glm::length(targetDirection) / 30.0f;
+            Gun* gun = static_cast<Gun*>(hardpoint->weapon().get());
+            gun->fireAtPoint(target->position() + inaccuracyNoise, true);
         }
     }
+}
+
+Handle<WorldObject> BoardComputer::selectGunTarget(
+    Hardpoint* hardpoint,
+    std::vector<Handle<WorldObject>>* targets,
+    Handle<WorldObject>* focusedTarget,
+    Handle<WorldObject>& currentTarget
+) {
+    constexpr float BetterTargetDistanceRatio = 0.75f;
+    WorldObject* current = currentTarget.get();
+    const float maxBulletRange = m_worldObject->components().componentsInfo().maxBulletRange();
+    const float currentDistance = current
+        ? WorldObjectGeometryHelper::sphereToSphereDistance(m_worldObject, current)
+        : std::numeric_limits<float>::infinity();
+    bool currentEligible = current && currentDistance < maxBulletRange;
+    if (currentEligible) {
+        BenchmarkProfiler::instance().addCounter(BenchmarkCounter::WeaponAimChecks);
+        currentEligible = hardpoint->inFieldOfAim(current->position());
+    }
+
+    Handle<WorldObject> bestTarget;
+    float bestDistance = std::numeric_limits<float>::infinity();
+    const auto considerTarget = [&](Handle<WorldObject>& targetHandle) {
+        WorldObject* target = targetHandle.get();
+        if (!target) {
+            return;
+        }
+        BenchmarkProfiler::instance().addCounter(
+            BenchmarkCounter::GunTargetCandidatesConsidered);
+
+        const float distance =
+            WorldObjectGeometryHelper::sphereToSphereDistance(m_worldObject, target);
+        if (distance >= maxBulletRange) {
+            return;
+        }
+        BenchmarkProfiler::instance().addCounter(BenchmarkCounter::WeaponAimChecks);
+        if (!hardpoint->inFieldOfAim(target->position())) {
+            return;
+        }
+
+        if ((!currentEligible || distance < currentDistance * BetterTargetDistanceRatio) &&
+            distance < bestDistance) {
+            bestDistance = distance;
+            bestTarget = targetHandle;
+        }
+    };
+
+    if (focusedTarget) {
+        considerTarget(*focusedTarget);
+    } else if (targets) {
+        for (Handle<WorldObject>& target : *targets) {
+            considerTarget(target);
+        }
+    }
+
+    return bestTarget.get()
+        ? bestTarget
+        : (current ? currentTarget : Handle<WorldObject>());
 }
 
 void BoardComputer::shootRockets(WorldObject* target) {
@@ -160,4 +297,3 @@ void BoardComputer::update(float deltaSec) {
     m_engineState.clear();
     m_overwriteEngineState = false;
 }
-

@@ -100,6 +100,11 @@ and particle-buffer capacity are reported separately. The particle renderer
 submits the allocated buffer capacity, so this value can remain high after
 particles expire. Comparing these series can show whether a slowdown tracks
 with projectile population, voxel count, simulation work, or rendering.
+The target-profiling series also record primary- and per-gun candidate counts,
+target switches and assignments, weapon aim checks, line-of-fire queries, and
+scheduled bullets. Candidate counts are collected when target selection runs;
+they are not counts of every target handle checked for validity during list
+maintenance.
 
 ### 800-ship VSync baseline and optimization plan
 

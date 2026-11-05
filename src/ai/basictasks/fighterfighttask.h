@@ -32,11 +32,12 @@ protected:
     };
 
     void updateState();
+    void selectPrimaryTarget();
     void setState(State newState);
 
     glm::vec3 findRandomEvasionPoint();
     float pointDistance(const glm::vec3& point);
-    float angleToTarget();
+    float angleToTarget(WorldObject* target);
 
 
     State m_state;
@@ -44,4 +45,3 @@ protected:
     float m_minEnemyDistance;
     glm::vec3 m_positionBehindTarget;
 };
-

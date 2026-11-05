@@ -139,6 +139,13 @@ void BenchmarkProfiler::addCpuTime(BenchmarkMetric metric, double elapsedMs) {
     m_samples[m_currentFrameIndex].cpuMs[static_cast<std::size_t>(metric)] += elapsedMs;
 }
 
+void BenchmarkProfiler::addCounter(BenchmarkCounter counter, std::uint64_t count) {
+    if (!recording()) {
+        return;
+    }
+    m_samples[m_currentFrameIndex].counters[static_cast<std::size_t>(counter)] += count;
+}
+
 void BenchmarkProfiler::beginGpuTime(BenchmarkMetric metric) {
     if (!recording() || !m_gpuSlotUsable) {
         return;

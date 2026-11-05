@@ -29,11 +29,14 @@ public:
 
 protected:
     std::vector<Handle<WorldObject>> m_targets;
-    WorldObject* m_primaryTarget;
+    Handle<WorldObject> m_primaryTarget;
 
-    void updateTargets();
+    bool updateTargets(float deltaSec, float selectionInterval);
     float targetDistance();
 
     const ComponentsInfo& componentsInfo();
-};
 
+private:
+    float m_targetSelectionCountdown;
+    bool m_targetSelectionInitialized;
+};

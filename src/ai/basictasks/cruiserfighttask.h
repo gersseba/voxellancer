@@ -31,9 +31,8 @@ protected:
     };
 
     void updateState();
+    void selectPrimaryTarget();
     void setState(State newState);
-
-    float anyTargetDistance();
 
     State m_state;
     bool m_stateChanged;
