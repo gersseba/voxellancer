@@ -14,6 +14,7 @@ public:
     static constexpr int CombatScenarioId = 7;
     static constexpr int LargeCombatVsyncScenarioId = 8;
     static constexpr std::uint32_t LargeCombatPlacementSeed = 20261104;
+    static constexpr unsigned int SimulationRandomSeed = 20261105;
 
     PerformanceBenchmarkScenario(GamePlay* gamePlay, BenchmarkMode mode);
 

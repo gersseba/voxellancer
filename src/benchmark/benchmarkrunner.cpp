@@ -780,6 +780,7 @@ int BenchmarkRunner::run(Game& game) const {
     result << std::fixed << std::setprecision(4)
         << "{\n"
         << "  \"mode\": \"" << modeName(m_mode) << "\",\n"
+        << "  \"random_seed\": " << PerformanceBenchmarkScenario::SimulationRandomSeed << ",\n"
         << "  \"warmup_frames\": " << WarmupFrames << ",\n"
         << "  \"measured_frames\": " << measuredFrames << ",\n"
         << "  \"resolution\": \"" << resolution.width() << "x" << resolution.height() << "\",\n"

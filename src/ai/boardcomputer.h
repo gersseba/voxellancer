@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include <vector>
 #include <list>
 
@@ -41,6 +42,8 @@ protected:
         Weapon* weapon = nullptr;
         Handle<WorldObject> target;
         float refreshCountdown = 0.0f;
+        std::uint32_t scheduleKey = 0;
+        std::uint32_t refreshCycle = 0;
         bool initialized = false;
     };
 

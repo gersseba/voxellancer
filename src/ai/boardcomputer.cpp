@@ -25,6 +25,7 @@
 #include "equipment/weapon.h"
 #include "equipment/weapons/gun.h"
 #include "utils/worldobjectgeometryhelper.h"
+#include "voxel/specialvoxels/hardpointvoxel.h"
 
 
 static const float s_minActDistance = 0.5f;
@@ -195,13 +196,16 @@ void BoardComputer::shootBulletsAtTargets(
         if (selection.weapon != hardpoint->weapon().get()) {
             selection.weapon = hardpoint->weapon().get();
             selection.target = Handle<WorldObject>();
+            selection.scheduleKey = StaggeredPhase::keyForPosition(
+                hardpoint->voxel()->position());
+            selection.refreshCycle = 0;
             selection.initialized = false;
         }
 
         WorldObject* currentTarget = selection.target.get();
         if (!selection.initialized) {
-            selection.refreshCountdown =
-                StaggeredPhase::forObject(hardpoint.get(), GunTargetSelectionInterval);
+            selection.refreshCountdown = StaggeredPhase::initialPhase(
+                selection.scheduleKey, GunTargetSelectionInterval);
             selection.initialized = true;
         }
         selection.refreshCountdown -= deltaSec;
@@ -213,7 +217,10 @@ void BoardComputer::shootBulletsAtTargets(
                 BenchmarkProfiler::instance().addCounter(BenchmarkCounter::GunTargetsAssigned);
             }
             selection.target = selectedTarget;
-            selection.refreshCountdown = GunTargetSelectionInterval;
+            selection.refreshCountdown = StaggeredPhase::period(
+                selection.scheduleKey,
+                GunTargetSelectionInterval,
+                selection.refreshCycle++);
         }
 
         WorldObject* target = selection.target.get();

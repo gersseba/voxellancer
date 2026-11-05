@@ -1,4 +1,6 @@
 #include <omp.h>
+#include <cstdlib>
+#include <ctime>
 #include <iostream>
 
 #ifdef WIN32
@@ -135,7 +137,6 @@ static bool miscSettings(bool enableVsync) {
         return false;
     }
 #endif
-    std::srand((unsigned int)time(NULL));
     return true;
 }
 
@@ -180,6 +181,10 @@ int main(int argc, char* argv[]) {
         delete initTimer;
         return 1;
     }
+    const unsigned int randomSeed = benchmarkMode == BenchmarkMode::None
+        ? static_cast<unsigned int>(std::time(nullptr))
+        : PerformanceBenchmarkScenario::SimulationRandomSeed;
+    std::srand(randomSeed);
 
     PropertyManager::instance()->load("data/config.ini");
     glow::info("Config Directory: %;", FileSystem::userConfigDir());

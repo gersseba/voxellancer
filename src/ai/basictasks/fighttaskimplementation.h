@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include <vector>
 
 #include <glm/glm.hpp>
@@ -39,4 +40,6 @@ protected:
 private:
     float m_targetSelectionCountdown;
     bool m_targetSelectionInitialized;
+    std::uint32_t m_targetSelectionKey;
+    std::uint32_t m_targetSelectionCycle;
 };

@@ -13,7 +13,10 @@ FightTaskImplementation::FightTaskImplementation(BoardComputer* boardComputer, c
     AiTask(boardComputer),
     m_targets(targets),
     m_targetSelectionCountdown(0.0f),
-    m_targetSelectionInitialized(false)
+    m_targetSelectionInitialized(false),
+    m_targetSelectionKey(StaggeredPhase::keyForPosition(
+        boardComputer->worldObject()->transform().position())),
+    m_targetSelectionCycle(0)
 {
     for (const Handle<WorldObject>& target : m_targets) {
         if (target.get()) {
@@ -44,8 +47,8 @@ void FightTaskImplementation::setTargets(const std::vector<Handle<WorldObject>>&
 
 bool FightTaskImplementation::updateTargets(float deltaSec, float selectionInterval) {
     if (!m_targetSelectionInitialized) {
-        m_targetSelectionCountdown = StaggeredPhase::forObject(
-            boardComputer()->worldObject(), selectionInterval);
+        m_targetSelectionCountdown =
+            StaggeredPhase::initialPhase(m_targetSelectionKey, selectionInterval);
         m_targetSelectionInitialized = true;
     }
 
@@ -71,7 +74,10 @@ bool FightTaskImplementation::updateTargets(float deltaSec, float selectionInter
         m_primaryTarget = Handle<WorldObject>();
     }
 
-    m_targetSelectionCountdown = selectionInterval;
+    m_targetSelectionCountdown = StaggeredPhase::period(
+        m_targetSelectionKey,
+        selectionInterval,
+        m_targetSelectionCycle++);
     return true;
 }
 
