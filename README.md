@@ -16,6 +16,7 @@ clusters describe ships and equipment.
 - [How to play](doc/1_howto.md)
 - [Build instructions](doc/3_buildinstructions.md)
 - [Lua API reference](doc/2_luaapi.md)
+- [Server-side simulation and client/server migration plan](doc/performance-plan/06-server-side-simulation.md)
 - [Agent development guide](AGENTS.md)
 
 ## Quick start for contributors
