@@ -13,7 +13,7 @@ EquipmentChanger<EquipmentSlotType, EquipmentType>::EquipmentChanger(EquipmentSl
 
 template<typename EquipmentSlotType, typename EquipmentType>
 void EquipmentChanger<EquipmentSlotType, EquipmentType>::change() {
-    assert(m_slot.mountable(m_newEquipment->equipmentKey()));
+    assert(!m_newEquipment || m_slot.mountable(m_newEquipment->equipmentKey()));
 
     if (m_target == m_newEquipment) {
         return;
@@ -31,5 +31,4 @@ void EquipmentChanger<EquipmentSlotType, EquipmentType>::change() {
 
     m_slot.notifyObservers();
 }
-
 

@@ -1,5 +1,7 @@
 #include "worldobject.h"
 
+#include <stdexcept>
+
 #include "collision/collisiondetector.h"
 #include "collision/collisionfilter.h"
 
@@ -69,6 +71,17 @@ const Physics& WorldObject::physics() const {
 
 WorldObjectInfo& WorldObject::info() {
     return *m_info;
+}
+
+World* WorldObject::world() const {
+    return m_world;
+}
+
+void WorldObject::setWorld(World& world) {
+    if (m_world != nullptr && m_world != &world) {
+        throw std::logic_error("A world object cannot be attached to multiple worlds.");
+    }
+    m_world = &world;
 }
 
 WorldObjectComponents& WorldObject::components() {

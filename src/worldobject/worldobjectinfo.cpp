@@ -10,6 +10,7 @@
 WorldObjectInfo::WorldObjectInfo(WorldObject& worldObject):
     m_worldObject(worldObject),
     m_name("Object"),
+    m_definitionKey(),
     m_showOnHud(false),
     m_canLockOn(false)
 {
@@ -21,6 +22,14 @@ std::string WorldObjectInfo::name(){
 
 void WorldObjectInfo::setName(const std::string& name){
     m_name = name;
+}
+
+const std::string& WorldObjectInfo::definitionKey() const {
+    return m_definitionKey;
+}
+
+void WorldObjectInfo::setDefinitionKey(const std::string& key) {
+    m_definitionKey = key;
 }
 
 bool WorldObjectInfo::showOnHud(){
@@ -57,4 +66,3 @@ std::string WorldObjectInfo::shieldStatus() {
 
     return "";
 }
-

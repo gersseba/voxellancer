@@ -36,6 +36,15 @@ go_bandit([](){
             AssertThat(cluster->voxel(glm::ivec3(1, 2, 3)) == nullptr, Equals(true));
         });
 
+        it("preserves maximum HP when copying a damaged voxel", [&]() {
+            Voxel original(glm::ivec3(1, 2, 3), 0xFF8000, 1.0f, 10.0f);
+            original.applyDamage(3.0f);
+            Voxel copy(original);
+
+            AssertThat(copy.hp(), Equals(7.0f));
+            AssertThat(copy.maxHP(), Equals(10.0f));
+        });
+
         it("test generate texture", [&]() {
             cluster->addVoxel(new Voxel(glm::ivec3('a', 'b', 'c'), 0xFF8000));
             cluster->addVoxel(new Voxel(glm::ivec3(3, 4, 5), 0x808000));
@@ -64,4 +73,3 @@ go_bandit([](){
         });
     });
 });
-

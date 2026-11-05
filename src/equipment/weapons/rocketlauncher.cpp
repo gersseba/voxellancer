@@ -1,5 +1,7 @@
 #include "rocketlauncher.h"
 
+#include <stdexcept>
+
 #include <glm/glm.hpp>
 #include <glm/gtx/quaternion.hpp>
 
@@ -34,10 +36,15 @@ RocketLauncher::RocketLauncher(const std::string& equipmentKey):
 
 void RocketLauncher::fireAtObject(WorldObject* target) {
     if (canFire()) {
-        Rocket* rocket = WorldObjectBuilder(projectileName()).buildRocket();
+        WorldObject* owner = hardpoint()->components()->worldObject();
+        World* world = owner ? owner->world() : nullptr;
+        if (world == nullptr) {
+            throw std::logic_error("Rocket launcher owner is not attached to a world.");
+        }
+        Rocket* rocket = WorldObjectBuilder(projectileName(), *world).buildRocket();
         setupRocket(rocket, target);
 
-        World::instance()->god().scheduleSpawn(rocket);
+        world->god().scheduleSpawn(rocket);
         onFired();
     }
 }
@@ -62,9 +69,13 @@ void RocketLauncher::setupRocket(Rocket* rocket, WorldObject* target) {
 }
 
 float RocketLauncher::rocketRange() {
-    Rocket* rocket = WorldObjectBuilder(projectileName()).buildRocket();
+    WorldObject* owner = hardpoint()->components()->worldObject();
+    World* world = owner ? owner->world() : nullptr;
+    if (world == nullptr) {
+        throw std::logic_error("Rocket launcher owner is not attached to a world.");
+    }
+    Rocket* rocket = WorldObjectBuilder(projectileName(), *world).buildRocket();
     float range = rocket->lifetime() * rocket->components().enginePower().directional().x;
     delete rocket;
     return range;
 }
-

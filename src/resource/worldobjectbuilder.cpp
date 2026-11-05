@@ -1,7 +1,9 @@
 #include "worldobjectbuilder.h"
 
 #include <cassert>
+#include <stdexcept>
 #include <type_traits>
+#include <utility>
 
 #include <glow/logging.h>
 
@@ -34,6 +36,12 @@ WorldObjectBuilder::WorldObjectBuilder(const std::string& name):
 {
 }
 
+WorldObjectBuilder::WorldObjectBuilder(const std::string& name, World& world):
+    m_name(name),
+    m_world(&world)
+{
+}
+
 WorldObject* WorldObjectBuilder::build() {
     std::string type = Property<std::string>(m_name + ".general.type");
 
@@ -63,11 +71,14 @@ Bullet* WorldObjectBuilder::buildBullet() {
 }
 
 Rocket* WorldObjectBuilder::buildRocket() {
-    Rocket* rocket;
+    if (m_world == nullptr) {
+        throw std::logic_error("Building a rocket requires an explicit world.");
+    }
 
     std::string subtype = Property<std::string>(m_name + ".general.subtype", "");
+    Rocket* rocket;
     if (subtype == "split") {
-        SplitRocket* splitRocket = makeWorldObject<SplitRocket>();
+        SplitRocket* splitRocket = makeWorldObject<SplitRocket>(*m_world);
 
         splitRocket->setChildrenCount(Property<int>(m_name + ".special.childrenCount"));
         splitRocket->setChildrenType(Property<std::string>(m_name + ".special.childrenType"));
@@ -81,7 +92,7 @@ Rocket* WorldObjectBuilder::buildRocket() {
 
         rocket = splitRocket;
     } else {
-        rocket = makeWorldObject<Rocket>();
+        rocket = makeWorldObject<Rocket>(*m_world);
     }
 
     rocket->setLifetime(Property<float>(m_name + ".general.lifetime"));
@@ -90,7 +101,10 @@ Rocket* WorldObjectBuilder::buildRocket() {
 }
 
 Ship* WorldObjectBuilder::buildShip() {
-    Ship* ship = makeWorldObject<Ship>();
+    if (m_world == nullptr) {
+        throw std::logic_error("Building a ship requires an explicit world.");
+    }
+    Ship* ship = makeWorldObject<Ship>(*m_world);
     if (ship->crucialVoxel() == nullptr) {
         glow::warning("WorldObjectBuilder: ship %; has no crucial voxel", m_name);
     }
@@ -105,14 +119,18 @@ WorldObject* WorldObjectBuilder::buildWorldObject() {
     return worldObject;
 }
 
-template<typename T>
-T* WorldObjectBuilder::makeWorldObject() {
+template<typename T, typename... Args>
+T* WorldObjectBuilder::makeWorldObject(Args&&... args) {
     static_assert(std::is_base_of<WorldObject, T>::value, "T needs to be derived from WorldObject");
 
-    T* object = new T();
+    T* object = new T(std::forward<Args>(args)...);
     WorldObject* worldObject = object;
+    if (m_world != nullptr) {
+        worldObject->setWorld(*m_world);
+    }
 
     worldObject->info().setName(m_name);
+    worldObject->info().setDefinitionKey(m_name);
 
     setupVoxelCluster(worldObject);
     setupComponents(worldObject->components());
@@ -206,4 +224,3 @@ void WorldObjectBuilder::equipSomehow(WorldObject* worldObject) {
         }
     }
 }
-

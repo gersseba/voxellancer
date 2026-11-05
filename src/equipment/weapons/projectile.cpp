@@ -1,8 +1,12 @@
 #include "projectile.h"
 
+#include <stdexcept>
+
 #include "collision/collisionfilterignoringcreator.h"
 
+#ifndef VOXELLANCER_HEADLESS_SERVER
 #include "sound/soundmanager.h"
+#endif
 
 #include "world/god.h"
 #include "world/world.h"
@@ -56,7 +60,11 @@ void Projectile::update(float deltaSec) {
     m_lifetime -= deltaSec;
 
     if (m_lifetime <= 0.0f) {
-        World::instance()->god().scheduleRemoval(this);
+        World* owningWorld = world();
+        if (owningWorld == nullptr) {
+            throw std::logic_error("Projectile is not attached to a world.");
+        }
+        owningWorld->god().scheduleRemoval(this);
         onLifetimeOver();
     }
 }
@@ -66,13 +74,20 @@ void Projectile::onLifetimeOver() {
 }
 
 void Projectile::onCollision() {
-    SoundManager::current()->play(hitSound(), position());
+    World* owningWorld = world();
+    if (owningWorld == nullptr) {
+        throw std::logic_error("Projectile is not attached to a world.");
+    }
+#ifndef VOXELLANCER_HEADLESS_SERVER
+    if (owningWorld->hasPresentation()) {
+        SoundManager::current()->play(hitSound(), position());
+    }
+#endif
 
-    World::instance()->god().scheduleRemoval(this);
+    owningWorld->god().scheduleRemoval(this);
     spawnExplosion();
 }
 
 void Projectile::onSpawnFail() {
     spawnExplosion();
 }
-

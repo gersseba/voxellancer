@@ -2,13 +2,10 @@
 
 #include "scenarios/basescenario.h"
 
-class GamePlay;
-
 class FriendlyFireScenario : public BaseScenario {
 public:
-    FriendlyFireScenario(GamePlay* inGame);
+    explicit FriendlyFireScenario(World& world);
 
 protected:
     virtual void populateWorld() override;
 };
-

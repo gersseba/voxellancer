@@ -5,8 +5,6 @@
 
 #include <glm/glm.hpp>
 
-#include <glowutils/AutoTimer.h>
-
 #include "ai/character.h"
 #include "ai/basictasks/fighttask.h"
 
@@ -19,9 +17,6 @@
 #include "equipment/weapons/gun.h"
 #include "worldobject/ship.h"
 
-#include "gamestate/gameplay/gameplay.h"
-#include "sound/soundmanager.h"
-
 #include "world/world.h"
 #include "world/god.h"
 
@@ -29,31 +24,41 @@
 
 #include "utils/randvec3.h"
 #include "utils/handle/handle.h"
+#ifndef VOXELLANCER_HEADLESS_SERVER
 #include "player.h"
+#endif
 #include "worldobject/worldobjectinfo.h"
 
 
-BattleScenario::BattleScenario(GamePlay* gamePlay):
-    BaseScenario(gamePlay)
+BattleScenario::BattleScenario(World& world):
+    BaseScenario(world)
 {
+}
 
+Ship* BattleScenario::playerShip() const {
+    return m_playerShip;
 }
 
 void BattleScenario::populateWorld() {
 
     glow::debug("Create WorldObjects");
 
-    Ship *playerShip = WorldObjectBuilder("mox").buildShip();
+    Ship *playerShip = worldObjectBuilder("mox").buildShip();
+    m_playerShip = playerShip;
     playerShip->transform().setPosition(glm::vec3(0, 0, 10));
     playerShip->info().setName("basicship");
     playerShip->info().setShowOnHud(false);
     playerShip->info().setCanLockOn(false);
 
     m_world->god().scheduleSpawn(playerShip);
-    World::instance()->player().setShip(playerShip);
+#ifndef VOXELLANCER_HEADLESS_SERVER
+    if (m_world->hasPresentation()) {
+        m_world->player().setShip(playerShip);
+    }
+#endif
 
     // create enemy ai driven ship
-    Ship *aitester = WorldObjectBuilder("basicship").buildShip();
+    Ship *aitester = worldObjectBuilder("basicship").buildShip();
     aitester->transform().setPosition(glm::vec3(0, 0, 10));
 
     aitester->info().setName("basicship");
@@ -63,7 +68,7 @@ void BattleScenario::populateWorld() {
     //m_world->god().scheduleSpawn(aitester);
 
 
-    WorldObject* banner = WorldObjectBuilder("banner").buildWorldObject();
+    WorldObject* banner = worldObjectBuilder("banner").buildWorldObject();
     banner->transform().setScale(30.0f);
     banner->transform().move(glm::vec3(0, 0, -600));
     banner->info().setShowOnHud(false);
@@ -81,7 +86,7 @@ void BattleScenario::populateBattle(int numberOfEnemies1, int numberOfEnemies2) 
     std::vector<Ship*> fleet1;
     std::vector<Ship*> fleet2;
     for (int e = 0; e < numberOfEnemies1; e++) {
-        Ship *ship = WorldObjectBuilder("basicship").buildShip();
+        Ship *ship = worldObjectBuilder("basicship").buildShip();
         float r = 600;
         ship->transform().move(RandVec3::rand(0.0f, r) + glm::vec3(-200, 0, -200));
 
@@ -93,7 +98,7 @@ void BattleScenario::populateBattle(int numberOfEnemies1, int numberOfEnemies2) 
         fleet2.push_back(ship);
     }
     for (int e = 0; e < numberOfEnemies2; e++) {
-        Ship *ship = WorldObjectBuilder("basicship").buildShip();
+        Ship *ship = worldObjectBuilder("basicship").buildShip();
         float r = 600;
         ship->transform().move(RandVec3::rand(0.0f, r) + glm::vec3(200, 0, -200));
         ship->info().setName("enemy1");
@@ -110,7 +115,7 @@ void BattleScenario::populateBattle(int numberOfEnemies1, int numberOfEnemies2) 
 }
 
 void BattleScenario::spawnCapital(const std::vector<Ship*>& enemies) {
-    Ship *ship = WorldObjectBuilder("normandy").buildShip();
+    Ship *ship = worldObjectBuilder("normandy").buildShip();
     ship->info().setShowOnHud(true);
     ship->info().setCanLockOn(true);
 
@@ -131,7 +136,9 @@ void BattleScenario::setTargets(const std::vector<Ship*>& fleet, const std::vect
     for (Ship* enemy : enemies) {
         enemyHandles.push_back(enemy->handle<WorldObject>());
     }
-    enemyHandles.push_back(World::instance()->player().ship()->handle<WorldObject>());
+    if (m_playerShip) {
+        enemyHandles.push_back(m_playerShip->handle<WorldObject>());
+    }
     for (Ship* ship : fleet) {
         std::shuffle(enemyHandles.begin(), enemyHandles.end(), randomEngine);
         ship->character()->setTask(std::make_shared<FightTask>(ship->boardComputer(), enemyHandles));

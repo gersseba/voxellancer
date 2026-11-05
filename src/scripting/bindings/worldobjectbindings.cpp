@@ -12,7 +12,9 @@
 
 #include "worldobject/worldobjectinfo.h"
 
+#ifndef VOXELLANCER_HEADLESS_SERVER
 #include "player.h"
+#endif
 
 #include "resource/worldobjectbuilder.h"
 
@@ -55,15 +57,20 @@ void WorldObjectBindings::bind() {
 }
 
 apikey WorldObjectBindings::apiPlayerShip() {
-    if (World::instance()->player().ship()) {
-        return World::instance()->player().ship()->scriptKey();
+#ifdef VOXELLANCER_HEADLESS_SERVER
+    return 0;
+#else
+    if (m_scriptEngine.world().hasPresentation() &&
+        m_scriptEngine.world().player().ship()) {
+        return m_scriptEngine.world().player().ship()->scriptKey();
     } else {
         return 0;
     }
+#endif
 }
 
 apikey WorldObjectBindings::apiCreateShip(const std::string& name) {
-    Ship* ship = WorldObjectBuilder(name).buildShip();
+    Ship* ship = WorldObjectBuilder(name, m_scriptEngine.world()).buildShip();
 
     if (!ship) {
         glow::warning("WorldObjectBindings: Couldn't create ship '%;'", name);
@@ -76,7 +83,7 @@ apikey WorldObjectBindings::apiCreateShip(const std::string& name) {
 }
 
 apikey WorldObjectBindings::apiCreateWorldObject(const std::string& name) {
-    WorldObject* worldObject = WorldObjectBuilder(name).buildWorldObject();
+    WorldObject* worldObject = WorldObjectBuilder(name, m_scriptEngine.world()).buildWorldObject();
 
     if (!worldObject) {
         glow::warning("WorldObjectBindings: Couldn't create worldObject '%;'", name);
@@ -95,8 +102,9 @@ int WorldObjectBindings::apiSpawn(apikey worldObjectKey) {
         return -1;
     }
 
-    World::instance()->god().scheduleSpawn(SpawnRequest(worldObject, false));
-    World::instance()->god().spawn(); // should this really happen?
+    World& world = m_scriptEngine.world();
+    world.god().scheduleSpawn(SpawnRequest(worldObject, false));
+    world.god().spawn();
 
     return worldObject->spawnState() == SpawnState::Spawned;
 }
@@ -108,8 +116,9 @@ int WorldObjectBindings::apiRemove(apikey worldObjectKey) {
         return -1;
     }
 
-    World::instance()->god().scheduleRemoval(worldObject);
-    World::instance()->god().remove();
+    World& world = m_scriptEngine.world();
+    world.god().scheduleRemoval(worldObject);
+    world.god().remove();
 
     return 0;
 }
@@ -188,7 +197,7 @@ apikey WorldObjectBindings::apiOnWorldObjectDestroyed(apikey key, const std::str
 
     auto destructionPoll = std::make_shared<WorldObjectDestroyedPoll>(worldObject, createCallback(callback, key));
 
-    World::instance()->eventPoller().addPoll(destructionPoll);
+    m_scriptEngine.world().eventPoller().addPoll(destructionPoll);
     m_script.addLocal(destructionPoll);
 
     return destructionPoll->scriptKey();
@@ -203,9 +212,8 @@ apikey WorldObjectBindings::apiOnAABBEntered(apikey key, const glm::vec3& llf, c
 
     auto enteredPoll = std::make_shared<AABBEnteredPoll>(worldObject, AABB(llf, urb), createCallback(callback, key));
 
-    World::instance()->eventPoller().addPoll(enteredPoll);
+    m_scriptEngine.world().eventPoller().addPoll(enteredPoll);
     m_script.addLocal(enteredPoll);
 
     return enteredPoll->scriptKey();
 }
-

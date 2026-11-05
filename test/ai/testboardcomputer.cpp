@@ -6,6 +6,7 @@
 #include "ai/boardcomputer.h"
 #include "physics/physics.h"
 #include "worldobject/worldobjectcomponents.h"
+#include "world/world.h"
 
 
 
@@ -23,7 +24,7 @@ go_bandit([](){
 
 
         before_each([&](){
-            ship = new Ship();
+            ship = new Ship(*World::instance());
             ship->transform().setPosition(glm::vec3(0, 0, 0));
         });
 
@@ -52,6 +53,23 @@ go_bandit([](){
             AssertThat(ship->components().engineState().angular().z, Equals(0));
         });
 
+        it("uses a reproducible random stream owned by the ship", [&]() {
+            BoardComputer first(ship);
+            BoardComputer second(ship);
+            BoardComputer control(ship);
+            first.seedRandom(1234);
+            second.seedRandom(1234);
+            control.seedRandom(1234);
+
+            const float firstValue = first.randomFloat(-1.0f, 1.0f);
+            AssertThat(second.randomFloat(-1.0f, 1.0f), Equals(firstValue));
+            control.randomFloat(-1.0f, 1.0f);
+            first.randomFloat(-1.0f, 1.0f);
+            AssertThat(
+                second.randomFloat(-1.0f, 1.0f),
+                Equals(control.randomFloat(-1.0f, 1.0f))
+            );
+        });
+
     });
 });
-

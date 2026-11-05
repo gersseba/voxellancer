@@ -1,6 +1,7 @@
 #include "aimer.h"
 
 #include <glm/glm.hpp>
+#include <stdexcept>
 
 #include "collision/collisiondetector.h"
 #include "collision/collisionfilter.h"
@@ -10,7 +11,6 @@
 #include "voxel/voxeltreenode.h"
 
 #include "world/world.h"
-
 #include "worldobject/worldobject.h"
 
 #include "worldtree/worldtreegeode.h"
@@ -37,10 +37,13 @@ void Aimer::setWorldObject(WorldObject* worldObject) {
 glm::vec3 Aimer::aim(const Ray& ray) {
     assert(m_worldObject);
     assert(m_worldObject->collisionDetector().geode());
+    if (m_worldObject->world() == nullptr) {
+        throw std::logic_error("Aiming requires an object attached to a world.");
+    }
 
     glm::vec3 targetPoint;
 
-    WorldTreeQuery query(&World::instance()->worldTree(), &ray, m_worldObject->collisionDetector().geode()->hint(), &m_worldObject->collisionFilter());
+    WorldTreeQuery query(&m_worldObject->world()->worldTree(), &ray, m_worldObject->collisionDetector().geode()->hint(), &m_worldObject->collisionFilter());
 
     std::unordered_set<Voxel*> intersectingVoxels = query.intersectingVoxels();
 
@@ -79,4 +82,3 @@ float Aimer::distanceTo(Voxel* voxel, const glm::vec3& origin) const {
 glm::vec3 Aimer::infinity(const Ray& ray) const {
     return ray.origin() + ray.direction() * m_lastDistance;
 }
-

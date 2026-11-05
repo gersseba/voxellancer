@@ -2,7 +2,9 @@
 
 #include <algorithm>
 #include <cstdint>
+#ifndef VOXELLANCER_HEADLESS_SERVER
 #include <GL/glew.h>
+#endif
 
 BenchmarkProfiler::BenchmarkProfiler() :
     m_currentFrameIndex(0),
@@ -35,8 +37,8 @@ void BenchmarkProfiler::beginRun(std::size_t frameCount) {
         slot.fill(false);
     }
     m_pendingSlots.fill(false);
+#ifndef VOXELLANCER_HEADLESS_SERVER
     m_gpuAvailable = GLEW_VERSION_3_3 || GLEW_ARB_timer_query;
-
     if (m_gpuAvailable) {
         constexpr std::size_t queryCount =
             QueryFramesInFlight * BenchmarkMetricCount * 2;
@@ -49,6 +51,9 @@ void BenchmarkProfiler::beginRun(std::size_t frameCount) {
             m_gpuAvailable = false;
         }
     }
+#else
+    m_gpuAvailable = false;
+#endif
 
     m_active = true;
 }
@@ -59,6 +64,7 @@ void BenchmarkProfiler::beginFrame(std::size_t frameIndex) {
     m_frameOpen = true;
     m_gpuSlotUsable = m_gpuAvailable;
 
+#ifndef VOXELLANCER_HEADLESS_SERVER
     if (m_gpuAvailable && m_pendingSlots[m_currentSlot]) {
         bool ready = true;
         for (std::size_t metric = 0; metric < BenchmarkMetricCount; ++metric) {
@@ -80,6 +86,7 @@ void BenchmarkProfiler::beginFrame(std::size_t frameIndex) {
             m_gpuSlotUsable = false;
         }
     }
+#endif
 
     if (frameIndex < m_samples.size()) {
         m_samples[frameIndex].gpuTimingAvailable = m_gpuSlotUsable;
@@ -110,6 +117,7 @@ void BenchmarkProfiler::endRun() {
         return;
     }
 
+#ifndef VOXELLANCER_HEADLESS_SERVER
     if (m_gpuAvailable) {
         glFinish();
         for (std::size_t slot = 0; slot < QueryFramesInFlight; ++slot) {
@@ -122,6 +130,7 @@ void BenchmarkProfiler::endRun() {
             m_gpuQueries.data());
         m_gpuQueries.clear();
     }
+#endif
 
     m_frameOpen = false;
     m_active = false;
@@ -147,6 +156,9 @@ void BenchmarkProfiler::addCounter(BenchmarkCounter counter, std::uint64_t count
 }
 
 void BenchmarkProfiler::beginGpuTime(BenchmarkMetric metric) {
+#ifdef VOXELLANCER_HEADLESS_SERVER
+    (void)metric;
+#else
     if (!recording() || !m_gpuSlotUsable) {
         return;
     }
@@ -160,9 +172,13 @@ void BenchmarkProfiler::beginGpuTime(BenchmarkMetric metric) {
     glQueryCounter(
         m_gpuQueries[queryIndex(m_currentSlot, metricIndex, false)],
         GL_TIMESTAMP);
+#endif
 }
 
 void BenchmarkProfiler::endGpuTime(BenchmarkMetric metric) {
+#ifdef VOXELLANCER_HEADLESS_SERVER
+    (void)metric;
+#else
     if (!recording() || !m_gpuSlotUsable) {
         return;
     }
@@ -176,6 +192,7 @@ void BenchmarkProfiler::endGpuTime(BenchmarkMetric metric) {
         m_gpuQueries[queryIndex(m_currentSlot, metricIndex, true)],
         GL_TIMESTAMP);
     m_completed[m_currentSlot][metricIndex] = true;
+#endif
 }
 
 const std::vector<BenchmarkMetricSample>& BenchmarkProfiler::samples() const {
@@ -191,6 +208,9 @@ std::size_t BenchmarkProfiler::queryIndex(
 }
 
 void BenchmarkProfiler::resolveSlot(std::size_t slot) {
+#ifdef VOXELLANCER_HEADLESS_SERVER
+    (void)slot;
+#else
     const std::size_t frameIndex = m_pendingFrameIndices[slot];
     BenchmarkMetricSample& sample = m_samples[frameIndex];
 
@@ -218,6 +238,7 @@ void BenchmarkProfiler::resolveSlot(std::size_t slot) {
     }
 
     m_pendingSlots[slot] = false;
+#endif
 }
 
 BenchmarkCpuScope::BenchmarkCpuScope(BenchmarkMetric metric) :

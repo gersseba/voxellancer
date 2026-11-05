@@ -1,15 +1,22 @@
 #include "internalmissionbindings.h"
 
+#include <glow/logging.h>
+
 #include "missions/mission.h"
 
 #include "scripting/elematelua/luawrapper.h"
+#include "scripting/scriptengine.h"
 #include "scripting/missionscript.h"
 
+#ifndef VOXELLANCER_HEADLESS_SERVER
 #include "ui/hud/hud.h"
+#endif
 
 #include "world/world.h"
 
+#ifndef VOXELLANCER_HEADLESS_SERVER
 #include "player.h"
+#endif
 
 
 InternalMissionBindings::InternalMissionBindings(MissionScript& script):
@@ -48,17 +55,34 @@ int InternalMissionBindings::apiMissionFail() {
 }
 
 int InternalMissionBindings::apiMissionMessage(const std::string& message) {
-    World::instance()->player().hud().showMissionMessage(message);
+#ifdef VOXELLANCER_HEADLESS_SERVER
+    (void)message;
+#else
+    if (m_scriptEngine.world().hasPresentation()) {
+        m_scriptEngine.world().player().hud().showMissionMessage(message);
+    }
+#endif
     return 0;
 }
 
 int InternalMissionBindings::apiMissionFailureMessage(const std::string& message) {
-    World::instance()->player().hud().showMissionMessage(message);
+#ifdef VOXELLANCER_HEADLESS_SERVER
+    (void)message;
+#else
+    if (m_scriptEngine.world().hasPresentation()) {
+        m_scriptEngine.world().player().hud().showMissionMessage(message);
+    }
+#endif
     return 0;
 }
 
 int InternalMissionBindings::apiMissionSuccessMessage(const std::string& message) {
-    World::instance()->player().hud().showMissionMessage(message);
+#ifdef VOXELLANCER_HEADLESS_SERVER
+    (void)message;
+#else
+    if (m_scriptEngine.world().hasPresentation()) {
+        m_scriptEngine.world().player().hud().showMissionMessage(message);
+    }
+#endif
     return 0;
 }
-

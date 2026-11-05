@@ -12,7 +12,9 @@
 
 
 class Voxel;
+#ifndef VOXELLANCER_HEADLESS_SERVER
 class VoxelRenderData;
+#endif
 class VoxelClusterBounds;
 
 /**
@@ -41,7 +43,9 @@ public:
     const std::unordered_map<glm::ivec3, Voxel*>& voxelMap() const;
     int voxelCount() const;
 
+#ifndef VOXELLANCER_HEADLESS_SERVER
     VoxelRenderData* voxelRenderData();
+#endif
 
     float emissiveness() const;
     void setEmissiveness(float emissiveness);
@@ -49,9 +53,10 @@ public:
 
 protected:
     std::unordered_map<glm::ivec3, Voxel*> m_voxels;
+#ifndef VOXELLANCER_HEADLESS_SERVER
     std::unique_ptr<VoxelRenderData> m_voxelRenderData;
+#endif
     std::unique_ptr<VoxelClusterBounds> m_bounds;
     float m_emissiveness;
     Transform m_transform;
 };
-

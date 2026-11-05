@@ -6,7 +6,6 @@
 #include "benchmark/benchmarkprofiler.h"
 #include "utils/geometryhelper.h"
 #include "utils/safenormalize.h"
-#include "utils/randfloat.h"
 #include "utils/worldobjectgeometryhelper.h"
 #include "voxel/voxelclusterbounds.h"
 #include "worldobject/ship.h"
@@ -22,7 +21,7 @@ FighterFightTask::FighterFightTask(BoardComputer* boardComputer, const std::vect
 }
 
 void FighterFightTask::update(float deltaSec) {
-    if (updateTargets(deltaSec, 0.5f)) {
+    if (updateTargets(30)) {
         selectPrimaryTarget();
     }
     updateState();
@@ -45,7 +44,7 @@ void FighterFightTask::update(float deltaSec) {
             }
 
             if (targetDistance() < componentsInfo().maxBulletRange()) {
-                boardComputer()->shootBullet(m_primaryTarget, deltaSec);
+                boardComputer()->shootBullet(m_primaryTarget);
             }
             break;
         case State::ENGAGE:
@@ -61,7 +60,7 @@ void FighterFightTask::update(float deltaSec) {
             }
 
             if (targetDistance() < componentsInfo().maxBulletRange()) {
-                boardComputer()->shootBullet(m_primaryTarget, deltaSec);
+                boardComputer()->shootBullet(m_primaryTarget);
             }
             break;
         case State::EVADE:
@@ -193,7 +192,11 @@ float FighterFightTask::pointDistance(const glm::vec3& point) {
 
 glm::vec3 FighterFightTask::findRandomEvasionPoint() {
     WorldObject* worldObject = boardComputer()->worldObject();
-    glm::vec3 point = glm::vec3(RandFloat::rand(-0.25f, 0.25), RandFloat::rand(-0.25f, 0.25), -1);
+    glm::vec3 point(
+        boardComputer()->randomFloat(-0.25f, 0.25f),
+        boardComputer()->randomFloat(-0.25f, 0.25f),
+        -1.0f
+    );
     point *= 3 * m_minEnemyDistance;
     point = point * worldObject->transform().orientation();
     point += worldObject->transform().position();

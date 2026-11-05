@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <random>
 #include <vector>
 #include <list>
 
@@ -12,6 +13,7 @@
 #include "utils/handle/handle.h"
 
 class WorldObject;
+class World;
 class Hardpoint;
 class Weapon;
 
@@ -20,17 +22,20 @@ class Weapon;
  */
 class BoardComputer {
 public:
-    BoardComputer(WorldObject* worldObject);
+    explicit BoardComputer(WorldObject* worldObject);
+    BoardComputer(WorldObject* worldObject, World& world);
 
     WorldObject* worldObject();
+    void seedRandom(std::uint64_t seed);
+    float randomFloat(float from, float to);
 
     const EngineState& engineState() const;
 
     void moveTo(const glm::vec3& position, bool decelerate = true);
     void rotateTo(const glm::vec3& position, const glm::vec3& up = glm::vec3(0, 0, 0));
 
-    void shootBullet(std::vector<Handle<WorldObject>>& targets, float deltaSec);
-    void shootBullet(Handle<WorldObject>& target, float deltaSec);
+    void shootBullet(std::vector<Handle<WorldObject>>& targets);
+    void shootBullet(Handle<WorldObject>& target);
     void shootRockets(WorldObject* target);
 
     void update(float deltaSec);
@@ -41,16 +46,18 @@ protected:
         Hardpoint* hardpoint = nullptr;
         Weapon* weapon = nullptr;
         Handle<WorldObject> target;
-        float refreshCountdown = 0.0f;
+        std::uint64_t nextRefreshTick = 0;
         std::uint32_t scheduleKey = 0;
         std::uint32_t refreshCycle = 0;
         bool initialized = false;
     };
 
     WorldObject* m_worldObject;
+    World* m_world;
     EngineState m_engineState;
     bool m_overwriteEngineState;
     std::vector<GunTargetSelection> m_gunTargetSelections;
+    std::mt19937 m_randomEngine;
 
     /* Return the euler angles needed to adjust 'up' */
     glm::vec3 rotateUpTo(const glm::vec3& up);
@@ -60,7 +67,7 @@ private:
     void shootBulletsAtTargets(
         std::vector<Handle<WorldObject>>* targets,
         Handle<WorldObject>* focusedTarget,
-        float deltaSec
+        std::uint64_t tick
     );
     Handle<WorldObject> selectGunTarget(
         Hardpoint* hardpoint,

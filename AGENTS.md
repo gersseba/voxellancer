@@ -3,7 +3,8 @@
 ## Project orientation
 
 - Read [README.md](README.md) for a project overview and doc links.
-- See [game design](doc/4_game_design.md) for gameplay and content authoring.
+- See [how to play](doc/1_howto.md) for gameplay and controls, and
+  [Lua API](doc/2_luaapi.md) for scripting and content authoring.
 - See [engine architecture](doc/5_engine_architecture.md) for subsystem
   ownership and runtime flow.
 - Build prerequisites and historical setup steps are in

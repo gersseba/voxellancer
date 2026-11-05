@@ -1,10 +1,12 @@
 #include "fighttaskimplementation.h"
 
 #include <algorithm>
+#include <stdexcept>
 
 #include "ai/boardcomputer.h"
 #include "utils/staggeredphase.h"
 #include "utils/worldobjectgeometryhelper.h"
+#include "world/world.h"
 #include "worldobject/worldobject.h"
 #include "worldobject/worldobjectcomponents.h"
 #include "worldobject/helper/componentsinfo.h"
@@ -12,7 +14,7 @@
 FightTaskImplementation::FightTaskImplementation(BoardComputer* boardComputer, const std::vector<Handle<WorldObject>>& targets) :
     AiTask(boardComputer),
     m_targets(targets),
-    m_targetSelectionCountdown(0.0f),
+    m_nextTargetSelectionTick(0),
     m_targetSelectionInitialized(false),
     m_targetSelectionKey(StaggeredPhase::keyForPosition(
         boardComputer->worldObject()->transform().position())),
@@ -45,15 +47,20 @@ void FightTaskImplementation::setTargets(const std::vector<Handle<WorldObject>>&
     }
 }
 
-bool FightTaskImplementation::updateTargets(float deltaSec, float selectionInterval) {
+bool FightTaskImplementation::updateTargets(std::uint32_t selectionIntervalTicks) {
+    WorldObject* owner = boardComputer()->worldObject();
+    World* world = owner ? owner->world() : nullptr;
+    if (world == nullptr) {
+        throw std::logic_error("Fight task owner is not attached to a world.");
+    }
+    const std::uint64_t tick = world->simulationTickIndex();
     if (!m_targetSelectionInitialized) {
-        m_targetSelectionCountdown =
-            StaggeredPhase::initialPhase(m_targetSelectionKey, selectionInterval);
+        m_nextTargetSelectionTick = tick + StaggeredPhase::initialPhaseTicks(
+            m_targetSelectionKey, selectionIntervalTicks);
         m_targetSelectionInitialized = true;
     }
 
-    m_targetSelectionCountdown -= deltaSec;
-    if (m_targetSelectionCountdown > 0.0f) {
+    if (tick < m_nextTargetSelectionTick) {
         return false;
     }
 
@@ -74,9 +81,9 @@ bool FightTaskImplementation::updateTargets(float deltaSec, float selectionInter
         m_primaryTarget = Handle<WorldObject>();
     }
 
-    m_targetSelectionCountdown = StaggeredPhase::period(
+    m_nextTargetSelectionTick = tick + StaggeredPhase::periodTicks(
         m_targetSelectionKey,
-        selectionInterval,
+        selectionIntervalTicks,
         m_targetSelectionCycle++);
     return true;
 }

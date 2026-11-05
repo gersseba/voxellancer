@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:b90d8a228654a9fff7535b8a780fa06c0d981e2f5c92340c053c9e48437474b8",
+  "pageVersion": "sha256:87b3b344f3f21a97398c71299394c51126533ade70dac98c3fa41bd9bb6f297b",
   "claims": [
     {
       "id": "claim_7083a2d67caa4aa2b49d742fcfab50cd",
@@ -14,31 +14,63 @@
     },
     {
       "id": "claim_12cd15f04ef0446fb98e1ff70796a0fb",
-      "statement": "ScriptedScenario loads a GamePlayScript from its path, creates and schedules the player ship, assigns it to the player, and adds the script to the world ScriptEngine.",
+      "statement": "The graphical demo loads ScriptedScenario with its Lua path. The scenario schedules the mox ship, assigns it as the player ship only when the world has presentation, and loads a GamePlayScript into that same world's ScriptEngine; BaseScenario starts the engine after world population and spawning.",
       "evidence": [
         {
-          "resource": "repo://src/scenarios/scriptedscenario.cpp",
-          "version": "repo-file-v1:sha256:a06706fda7668dd2c912d9fccfff529244b0f0822c0f51990b6ca13c37682a2c"
+          "resource": "repo://src/gamestate/gameplay/gameplay.cpp#L129-L132",
+          "version": "repo-lines-v1:sha256:69a361b208cf1f0159ad27d634de9bea453a8410b8e3a12efd04b9fdb200c451:eyJzZWxlY3RlZExpbmVDb3VudCI6NCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNmIzMGMwMmU3NGQ3MGExODAzOTAyMjJlNTY0M2Q4MGE4M2Y3NzgzMGU2NDQxYTM0OGEzYzI5YWQ4NDY3NTg3NCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNzM3MTg4ZjRiZTU3MGI5NDI1M2M1NzExYTIzMjM2M2RhYTVkNGM0YzRmZDE3YTZlN2QwMTQyOGY3NmFmZTg1YyIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNWZmZGNiYWQzZjFhZmE3ODVlN2EwN2ZjNWQ1NWM4ODA1NzkzNjRjYjhhYTJjZGQyMGEwMzE5MzI3MGQ5OTZkNCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMDMxMjMwMTQ2YmM1N2UwYjkzOWZjMTJiYmY0MDVkMjNiNDcxYjdiYzYyOTE4MWI4NzE5ZmQ0MWM1NTI5YmJlNCJ9"
+        },
+        {
+          "resource": "repo://src/scenarios/basescenario.cpp#L19-L25",
+          "version": "repo-lines-v1:sha256:55cd972b9c4f719ef66892a9e397d7d521493c2d509a0205561eec09f6677146:eyJzZWxlY3RlZExpbmVDb3VudCI6NywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiN2ViNzAyNTc1OTNkYTA2ZjY4MmEzZGRkYTU0YTlkMjYwZDRmYzUxNGY2NDUyMzdmNWNhNzRiMDhmOGRhNjFhNiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiODlhZDQ5OWE1NzFmMWZlNjkzNmEyOTkzMWY0MzliNTdkZWZmZjYwMWU1YjM3OGY3ZDZlNjdhZWQyNzJkMGE5MiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMjRmYmMxOWNlMDE0NzZiNGJjYWI5OThjNWY0NzQ5MDQwZjNlNWM4MzFkMDU1OWZkYTAxM2EwZDYwZTViNDZlMyIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNzIwYmZkOGY0NzM5YzgxYTM3NGFiYjc2YTRlZTU3ODFhZGVlMDFhMmJmMmExNzBiN2UzYWFhNzNiNzY5OTM2NiJ9"
+        },
+        {
+          "resource": "repo://src/scenarios/basescenario.cpp#L26-L32",
+          "version": "repo-lines-v1:sha256:2ee4025cdd61f60774a3b09fa45ff6a1c650df7d853e9edfc1e9fa377c0afb59:eyJzZWxlY3RlZExpbmVDb3VudCI6NywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYmRlMDlhY2QyOTA5NmJkY2RmMTIxMzg3NDRkNjE1NDI4NmU4Yzk4NjhlZjNhZWQ2Nzk1MjE5OGZkM2U5NTgyOCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiYWRjNWI2NWIzMDNlOTRkNTQzYjEwMTIyMWY5NTkwZjdiMjVlNGFjNGE0ZWQ0NTExZTU5NGJlNDllNGFkZjE1MyIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMjBmNDliMmU2ZWJhMWZiZjBkNmY2NTMzYTI3OGM2YWI4YmEwNzY2YWI5Mzk2NzQ3ZWZiMWQ0MTU5NWVkNjBiYSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZTFlMTNkN2JkZjhjYTk5MWY1ZGFmOTA0NzE3MGY1MTRkNjkzOGVkMTkyZDIwMDk3ZGZkYWMyZmEwNTVjZjgxZSJ9"
+        },
+        {
+          "resource": "repo://src/scenarios/scriptedscenario.cpp#L44-L50",
+          "version": "repo-lines-v1:sha256:3a03d7ae1b0799fc57cde1c84915c9ad95464ed829653caa84987da478668dbe:eyJzZWxlY3RlZExpbmVDb3VudCI6NywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYzc0MzkwYmE0Njg0ZjU0ZTMzMDM5MWYzMGVjNDZjMmIxZDNhZDg5M2FmNGFlNDNkMmM5YjAyNjdjN2QzMDU1YyIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMGRmYWMxYzRhOGYyMzdiMDkyNzM4NDFkNDE1ZDkxZGYxNzVlYzkxZTM3OTczNmEzNmM2YjEwNDZlOGNlYWRjMiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZTc5OTA2ODk1ZGQ3MzNhODY4OWNhMzNhZTZjOGYwNmQ0MWFiODBiYjYyMjk2YjEwNzMxNTQ3ZDMzMTZjYWZhNiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNjdhMDZjMDkxYjdiNjE5NWY1NjY0ODViNDAzN2U3Nzk2YThkNmI0ZGUxYmVkNTFkM2Y1ZjNkODFlMDliNzg1OSJ9"
+        },
+        {
+          "resource": "repo://src/scenarios/scriptedscenario.cpp#L51-L59",
+          "version": "repo-lines-v1:sha256:a5852258d4c504224b42b2de066393ac7b75bcb9997f76cb5c4e50ba70f7b66f:eyJzZWxlY3RlZExpbmVDb3VudCI6OSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMmYxZWU3YTc0YjY0NDk4YjU4ZmI1NGVmMTIyZTczZjA3ZDgzN2VmYTRjZmI2ZWEyNDcxM2FkMjY0MmZlZjU2ZiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiZTIyZmFhNTM1YmQyZWEzZDUyZTc0MWVkNDU0NDM1YjdmZTQ5ZTgzNTg2ZTk0M2Q5OGQ4MmJiZmIyNGQxZjVjNSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNzYxZDA3NTBjODk3MjE5NjMyZTlmZThlNjIwNjgwNzRkMWJkZjY3OTYzN2Q2ZjZjMzZkYjcyZmU5N2JiN2NmMSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjAsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZTNiMGM0NDI5OGZjMWMxNDlhZmJmNGM4OTk2ZmI5MjQyN2FlNDFlNDY0OWI5MzRjYTQ5NTk5MWI3ODUyYjg1NSJ9"
         }
       ]
     },
     {
       "id": "claim_84edf4a4263d41b9a635b8aafd0b681a",
-      "statement": "GamePlayScript installs common, world-object, AI, squad, and external-mission bindings and cleans up registered local scriptables and event polls when destroyed.",
+      "statement": "GamePlayScript installs common, world-object, AI, squad, and external-mission binding groups against its owning ScriptEngine. It tracks local scriptables and event polls, removes still-live polls on destruction, and unregisters local keys that remain valid.",
       "evidence": [
         {
-          "resource": "repo://src/scripting/gameplayscript.cpp",
-          "version": "repo-file-v1:sha256:a2c481113b8d6ae3083bf6126e69889d233ff4f2526384991739c111b9a3b0f8"
+          "resource": "repo://src/scripting/gameplayscript.cpp#L20-L28",
+          "version": "repo-lines-v1:sha256:6775c4af4cfa5a674cdad7a5ebf044cfad2c35c3e92861d26ddcfe7ac924b994:eyJzZWxlY3RlZExpbmVDb3VudCI6OSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMWYyMTgxMDcyYWRjMTg2NjhkMmZiODhlMmU1NTk1ZjA2NmU3MzYyZTgwNDg0ODhmZmJkZjYxMWMzZDJjMzgyMCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiZTIyZmFhNTM1YmQyZWEzZDUyZTc0MWVkNDU0NDM1YjdmZTQ5ZTgzNTg2ZTk0M2Q5OGQ4MmJiZmIyNGQxZjVjNSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMDgyZWU5YzdiNDAyN2IwYWU1ZmI5NDRjMDFiOWVhN2E3ZTE0MGJlODA2YWVjMTM1OTc2MmI2Nzk3ZWNjMTA3NCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiOWEyZmVlNmVlNmEwYTAyYjI0YWZmMGU2NTZhMWViYTA3NzU1MDgyZDI2MTE4OTk4M2Y1OTYyOGZlYmNlNjczOCJ9"
+        },
+        {
+          "resource": "repo://src/scripting/gameplayscript.cpp#L30-L36",
+          "version": "repo-lines-v1:sha256:426530960f947ae1c7ca72caf70d938951efaa40c05e71da268c5a0dc580af84:eyJzZWxlY3RlZExpbmVDb3VudCI6NywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYzAyNDRjYzBhOWE0MjEzZTljMmJlZDdiNGNmMWQ0ZmIwNjZlNzBlOTgzMzdlOTQ4ZWMxNWNmYmZhNDczODM1NyIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiN2ViNzAyNTc1OTNkYTA2ZjY4MmEzZGRkYTU0YTlkMjYwZDRmYzUxNGY2NDUyMzdmNWNhNzRiMDhmOGRhNjFhNiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMGI5NDAzZGJkM2M2NGFkMWQwNmVlYmQ1YjlmMTc1NDY4NDg1YWE3ZjA4Njg3NDUyNzk5MjQzY2YzOTFkYjM5MCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiOGU5N2U3MWI3MTFlZjk2ODBjNTM0ZjNjZDQ2YTNkZmQ3MjQyYWVkYzRkYzZmMzk4N2Q1MjczMTVhM2I0NjA1ZSJ9"
+        },
+        {
+          "resource": "repo://src/scripting/gameplayscript.cpp#L37-L42",
+          "version": "repo-lines-v1:sha256:ce712d8a788517422e49f0631e99b9b3fa2640cd06189695aab4c0880c692a1e:eyJzZWxlY3RlZExpbmVDb3VudCI6NiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiOWFlZjIyZGVjZjYxZWI1MWFkZjU3M2JlMzRhZGU0YmFiM2MyMWYyMmRkNDdmZDM1OWMyNDMxODIxYjg5OWFmNyIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiZTIyZmFhNTM1YmQyZWEzZDUyZTc0MWVkNDU0NDM1YjdmZTQ5ZTgzNTg2ZTk0M2Q5OGQ4MmJiZmIyNGQxZjVjNSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiYzc1NGViYmZkOGVmZWE0ZDQ5ZWM1YzdhMzhiODcxNjA1Y2U0ZjMwYzk1Njc2ZDZlNTkxMGZjNDhmNTAzNDUxMCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNWFiMTk0NDhmZDYxNDQwZDM0MzJiMjc3ODQxM2QxMmZhOWVjZGFlNWFiMjNiNDQ1OTc1NmZjMmYwOWRjOGQ5MiJ9"
+        },
+        {
+          "resource": "repo://src/scripting/gameplayscript.cpp#L52-L62",
+          "version": "repo-lines-v1:sha256:6ce3c0e67cb82f0998ef67ccf3e3ac73a500fd7c46af3cbec1972a4cf6509147:eyJzZWxlY3RlZExpbmVDb3VudCI6MTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImNhZWY1NDY0OWIxZjllZjk4Y2UzODU1MWYyNTBjYmI5NGM2OGQ0ZjEzNGE2YWRhNjU1ZDYwYThlNjg5YzlkZWEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImUyMmZhYTUzNWJkMmVhM2Q1MmU3NDFlZDQ1NDQzNWI3ZmU0OWU4MzU4NmU5NDNkOThkODJiYmZiMjRkMWY1YzUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjQwZDk2ZjMyMjg4NjljZWZkNTVhMTU2NGQzYmMzNmQ2NDI0MDU4OTlmZWMyMTQ1NDYxM2Y1ZTZlYjM4MjQ0MTIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
         }
       ]
     },
     {
       "id": "claim_d47821b046a44e62893f9a0cd11aa751",
-      "statement": "MissionSystem registers and starts added missions, updates them each frame, removes non-running missions, and unregisters explicitly removed missions.",
+      "statement": "MissionSystem registers and starts missions when added, updates them each world frame, removes missions once they are no longer running, and unregisters a mission's scriptable identity when explicitly removed.",
       "evidence": [
         {
-          "resource": "repo://src/missions/missionsystem.cpp",
-          "version": "repo-file-v1:sha256:0dba6a1691adffcfd8be03c3d57634cede02c96a3c75bd78fbb245a81eba3b44"
+          "resource": "repo://src/missions/missionsystem.cpp#L19-L30",
+          "version": "repo-lines-v1:sha256:ee1396de1adfbde31d3d8c29124bfcfd1802514558e5de5232551449ac5b0ec1:eyJzZWxlY3RlZExpbmVDb3VudCI6MTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImMyZWU1YTgwMjMyZTZmNDg3ZjNkM2JlMzgxNTE4OGUzNjc5YjQ2MTY2YWE4YjUxZjQxM2E2OGFkYmJlNDhmMDIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjE0MTlhNmRjYzA0ZTIxM2EzYzdhNzdhNDU2YjAxZTc2ZDFlZjc4Y2QwMGJiZWMxZDhmODE0NThmZTkzZWRjNTYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImEzYzg0ODY2YzdjYWUzNTYyNmE0MzA2MTJkYTdiZjA2MDEyMDIzN2NiNTQxYzVjNWNjYWFiYjE2MjUxMzQzNDMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijg4MDIwMTg0YWVmOWVkYTlmM2IyMmZlNjkwZjBjYzBjNGYzMDY1ZDk4YmE1MzhjNmM3MzA5NWNkZjNmZDBjNzYifQ"
+        },
+        {
+          "resource": "repo://src/missions/missionsystem.cpp#L40-L49",
+          "version": "repo-lines-v1:sha256:67522d3e684bef52bbd26e63d1a803291e6090fc0422b94c800df279568e1b0e:eyJzZWxlY3RlZExpbmVDb3VudCI6MTAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjkzNTE4N2M3MTJhNGRiNDQyNmViMjMyMDQyY2I5YjUwOTllMDFmZjI5MjY1MzZiODFhNjE0ZjIzYjg4ODQyNjEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImUyMmZhYTUzNWJkMmVhM2Q1MmU3NDFlZDQ1NDQzNWI3ZmU0OWU4MzU4NmU5NDNkOThkODJiYmZiMjRkMWY1YzUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImU5YjAyMjAwNzkxODdkZmIyNmExY2UxOGVjYzBiMTIzMTM1MzJmN2E1MTc5ZjY5YmFjOGNhMzY5YjNlY2VmODMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjU4ZTY4NzdmMjQ3MWNlMmMwNmRkNDY4Y2IzNzYyZjQ0OWQzNmNjMDE5YjA3NzY5MTM3ODBmNjQ1MDVhNmQ0ODkifQ"
         }
       ]
     },
@@ -47,16 +79,20 @@
       "statement": "The project requires Lua 5.5, and gameplay function bindings use the Luaw wrapper to convert values between Lua and C++.",
       "evidence": [
         {
-          "resource": "repo://CMakeLists.txt#L103-L109",
-          "version": "repo-lines-v1:sha256:a7e7095687d172bcb5267be56bd1f2f00f20005cd1618562249c5e8369e26938:eyJzZWxlY3RlZExpbmVDb3VudCI6NywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMTVkMmMzMzliMTI0N2M1ZTAzMDk5ZWQ3Y2VkOGU0ODQ0OGIyNzAwNmM0NDNmNGVmNzI1ZmUwMjFkNmJjNTk0YSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMDJkMTg2NzY2ZTNlMGNkM2FkOGNlNzliMGIwYzUzNDQwZTA3ZTgxOGI5NjEzYzMxNWJiODNlMDlhMjEzZjAyYiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNjBlODVhN2JmYzZhODBmODQ0YzRjNDYyYzY0MGI0ZjZhNzhkOTg5ZTk0NjUwYjkwYzk2NjU0NDVlZTMzZmZkNCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNzliMmExODM2ZTU4OWE2YTQ2ODcyZWY4OTEzOTE2NDlhNzhjYjJkNWNjNjU3N2JhOGI5NjM5MDUzNzdjNGExZCJ9"
+          "resource": "repo://CMakeLists.txt#L128-L131",
+          "version": "repo-lines-v1:sha256:734bc5ae42290bad5918c0d1fa230c9736ec90a84d0a269a16b6bb0e32833ef7:eyJzZWxlY3RlZExpbmVDb3VudCI6NCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZTlkZmRjOWNhMjYwNWQ0MmVkMjZjNGI2NTYxNGM2YzZiYThkNzQxYTJiYjI5NDJiNjE2NWI5ZDcwNTBjYmVhNCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNDQzMjhlOTkxNzI2MzlhZmUwODEzMDg2YzEyNDY3NmVjYWNmNzE4NjRmYWY5MjEzOTNiZWFiNDg4N2RiY2U5ZiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMWQ2YTUxZTYxMDliYzVjODg5MDNlY2U2MmUyMmQ0YmY3NWJiM2RmZDMwNGFlOWE2NTFiNzk4ODczYTEzNTcwZiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNzliMmExODM2ZTU4OWE2YTQ2ODcyZWY4OTEzOTE2NDlhNzhjYjJkNWNjNjU3N2JhOGI5NjM5MDUzNzdjNGExZCJ9"
         },
         {
-          "resource": "repo://src/scripting/elematelua/luawrapperfunction.cpp#L153-L203",
-          "version": "repo-lines-v1:sha256:e7fb2e9113eb53e0ca7c6fe5f9c8d16ccb8319e40a7dab6fc826f8590209bb03:eyJzZWxlY3RlZExpbmVDb3VudCI6NTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImM0MWNkZTk4YzE3MGNjYjExNDQ2YTg3ZDVhMDM1MjlhOTgxOGQzZGNhODg4NzQ1NGQ0YjY4NGE5MmMzMzA4ZDIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjM2YTYwODAzZjQ1M2M5NzJlZDZlOTdlZGE4YzhjNWRiZGFmZjlhMzQ3MDMwZDFjODQ4YmE1ZDBiZWQ1MzZkYmYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjA2ZjRmOTc1NGY5ODRlZWI5NmE5MmRjMjg2ZWFjYjk1MTQ1Y2VlMTY3ZDY0OTczYWYyZGY3OWI5NzZjNTlkOTIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjBjMzZiNjhhZmY3OTRjNWQ2ZmJkNDc2NGI2NTViNzhmZDMyNjE2YjJhNDEwZWM3ZjM4OGYzNDU4YmRjMDhiNjEifQ"
+          "resource": "repo://src/scripting/elematelua/luawrapperfunction.cpp#L167-L174",
+          "version": "repo-lines-v1:sha256:dc5cba116a41b85f0f94d8555b3192094d671dd929574fbb30714aba523e8cf0:eyJzZWxlY3RlZExpbmVDb3VudCI6OCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMTMwMzBlMTdiZmVkMTMzYWY0MjVhMjBmMDJmYjI3YmI5NDRjNDhiOTVkZjQyYzEyYTE2NzYzN2FmZmMxYWM2MCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMTQxOWE2ZGNjMDRlMjEzYTNjN2E3N2E0NTZiMDFlNzZkMWVmNzhjZDAwYmJlYzFkOGY4MTQ1OGZlOTNlZGM1NiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNmM4MmMzYmY1YjM5MWQ2ZGMyNTZjZTllYzEyNDY2YzA1YzA3MzQ4N2Q1MjNhM2ZlNDRmMzQwYjQwY2NmNzNlNiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiYmEyNDNjMTIyN2U4MWNmYTgyMWJjMjJlYzhmZjE4NDExNWZkMTQ4NzhhNmVkMTk5NTU5NGRkNWUyNDg2NTMwZiJ9"
         },
         {
-          "resource": "repo://src/scripting/elematelua/luawrapperfunction.cpp#L43-L46",
-          "version": "repo-lines-v1:sha256:85c6b6fb5cca91fcc28aaa7ad270b032a38c425d8532e9ccf10f2d95a4c7b126:eyJzZWxlY3RlZExpbmVDb3VudCI6NCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNzc0MDYzZTg3ZmZmYWQ3ZjUyNGYwMDNhZTBkYjYyZTU0OTIyMWJhMTg4NzM4NzY5ZTU3MjEyMTAwZDkwZWY5OSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNDc3OWI5Yjg5ZThlMTg4NjU4ZmI5OGEyMWExODM1NTk4MDkwNTgyMDNmMTU5MmJhNTE1ODgyNjE1ZmVkMzQ5ZCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMDdhZmFlODBlYmRjMmQxYzk3YWViNDM5OGJkNDEzN2MwMWJhYjA3ZGFmNTQwZWJkNzYzYTg3YjhiZDA5YWQ4NSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMGY5N2ViMDA2ZWJiNDAzNDcxNTBiMzVjM2FhYzJjMzIwODk2YzdmNjEzODM2ZjlmZmYxZmE2NGY5ZmQxZjlkZCJ9"
+          "resource": "repo://src/scripting/elematelua/luawrapperfunction.cpp#L43-L49",
+          "version": "repo-lines-v1:sha256:1a74253161674eae569c1ab802cdf175919b032e5f83f7a4258b4c71f89422fa:eyJzZWxlY3RlZExpbmVDb3VudCI6NywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNzc0MDYzZTg3ZmZmYWQ3ZjUyNGYwMDNhZTBkYjYyZTU0OTIyMWJhMTg4NzM4NzY5ZTU3MjEyMTAwZDkwZWY5OSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMTQxOWE2ZGNjMDRlMjEzYTNjN2E3N2E0NTZiMDFlNzZkMWVmNzhjZDAwYmJlYzFkOGY4MTQ1OGZlOTNlZGM1NiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMDdhZmFlODBlYmRjMmQxYzk3YWViNDM5OGJkNDEzN2MwMWJhYjA3ZGFmNTQwZWJkNzYzYTg3YjhiZDA5YWQ4NSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiN2U3YTFlYjNkY2UyNTI4ZGY4ZmM5MDkzNzgxZTEyY2JmZWRjOWYzYWJiMDNmYWU3MDM1NjU5MGExYzc4Yzg2MiJ9"
+        },
+        {
+          "resource": "repo://src/scripting/elematelua/luawrapperfunction.cpp#L93-L103",
+          "version": "repo-lines-v1:sha256:73c3225d3789291726945dc5d2c0b9a2f52845701eb6aa53b696ac1d7d119147:eyJzZWxlY3RlZExpbmVDb3VudCI6MTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijc2ZWMzYTVjYmIzNTNhYzlkODViYzg0ZmI0YzljNTJjNDljMDYzNjNlNWVlZDQzZTg2NDdhNDAxYmViZDliMjEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjEwZTllMTEzOWM0NGZiYjBjYzE3MjkzNmY1YzNhZGMzYWE4NTk4YWNhZWUzYjRjZmZlNzhlYmM2ODJmN2VlOWYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImYwZDkwZDE2ZmZjNmFhOThhOWU1ZTgzODU4ZmFkM2I3MDc5ZGJlNTNiNmQxOTkyNmJiYjAyZWVmODQwMTJkYzUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImYwZDkwZDE2ZmZjNmFhOThhOWU1ZTgzODU4ZmFkM2I3MDc5ZGJlNTNiNmQxOTkyNmJiYjAyZWVmODQwMTJkYzUifQ"
         }
       ]
     },
@@ -76,7 +112,7 @@
     },
     {
       "id": "claim_6af6e5e9e77d48bd977c0143d089162e",
-      "statement": "Luaw represents glm::vec3 values with named x, y, and z fields, and Bandit scripting tests exercise vector operations and gameplay bindings.",
+      "statement": "Luaw represents glm::vec3 values with named x, y, and z fields on both input and output, and Bandit scripting tests exercise vector operations and gameplay bindings.",
       "evidence": [
         {
           "resource": "repo://src/scripting/elematelua/luawrapperfunction.cpp#L196-L204",
@@ -87,18 +123,90 @@
           "version": "repo-lines-v1:sha256:73c3225d3789291726945dc5d2c0b9a2f52845701eb6aa53b696ac1d7d119147:eyJzZWxlY3RlZExpbmVDb3VudCI6MTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijc2ZWMzYTVjYmIzNTNhYzlkODViYzg0ZmI0YzljNTJjNDljMDYzNjNlNWVlZDQzZTg2NDdhNDAxYmViZDliMjEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjEwZTllMTEzOWM0NGZiYjBjYzE3MjkzNmY1YzNhZGMzYWE4NTk4YWNhZWUzYjRjZmZlNzhlYmM2ODJmN2VlOWYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImYwZDkwZDE2ZmZjNmFhOThhOWU1ZTgzODU4ZmFkM2I3MDc5ZGJlNTNiNmQxOTkyNmJiYjAyZWVmODQwMTJkYzUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImYwZDkwZDE2ZmZjNmFhOThhOWU1ZTgzODU4ZmFkM2I3MDc5ZGJlNTNiNmQxOTkyNmJiYjAyZWVmODQwMTJkYzUifQ"
         },
         {
-          "resource": "repo://test/scripting/testscripting.cpp#L70-L86",
-          "version": "repo-lines-v1:sha256:d9a2123524613a44d69080c3a92e645256e834093887221d98dafa30517947a2:eyJzZWxlY3RlZExpbmVDb3VudCI6MTcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjM3NDM5ODI3NWYxZDhjYzQxNDFiY2QwNzlkZWYzM2Q0YzU1MjA1ZmMwZGJlYTliNzM4NTQyZmVhYzFkYTZiOTEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjkzNzhkOTJhMWVhYTk0NzVlNDM5NWJlZmY0N2IwNTE5ZTE4Y2FjY2UyMjk0ZmE4YTM5ZWE1ZWMxMzYyMzFhYWQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImQ0Y2ZmNDhlMmQ3ZWJhNWNhYWFmMGVkYTUzMWY5ZTVkN2JiOGFiOGM2ZWQyMmZlMGFmMjFjMzk3MjVlZDcwODQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjYxMWIyMDNhZWY4OTk1MWY4YTQ1MTEyMTg2MGE3YjI0M2I0M2UxYjZmODcxNzFhNWQ2M2RkZjhkZjQxODdjZDkifQ"
+          "resource": "repo://test/scripting/testscripting.cpp#L81-L88",
+          "version": "repo-lines-v1:sha256:aa6e27d75b7ca3120f213f3f5bffc185eeb9f67af608b264008b2e34a1b7d151:eyJzZWxlY3RlZExpbmVDb3VudCI6OCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYjgwNjAxZjdjMGZiYjk3ZDNmZDI0MTY2ZTIwN2Y1MjQyNGU0YTczOGExNjQwYzAwY2FiNjg1YmEyNzAyMjhkNiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMzc0Mzk4Mjc1ZjFkOGNjNDE0MWJjZDA3OWRlZjMzZDRjNTUyMDVmYzBkYmVhOWI3Mzg1NDJmZWFjMWRhNmI5MSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiYjAzZmNjMWRjNjQzMjQ1NjI1NGVkOWIwNmQxNThjNWEwMmZmZDRhMzY5MDExMzk1ZDdlMzg5Mjg0NDQ4ZDgwMyIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZjQ2YWNhNjlkZjE0NTE4YjI5ZDIyODBlZDkxMGExMjk3N2EyNGE1NDlmZGRmOTNiZWU2MTQ0NDYyNmUwODkwOSJ9"
         },
         {
-          "resource": "repo://test/scripting/testvectorextension.cpp#L32-L82",
-          "version": "repo-lines-v1:sha256:e11e647059d8fcddae4a8b5df9411096f02ddfa2211688095d52835f7b4e1c70:eyJzZWxlY3RlZExpbmVDb3VudCI6NTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijc3ZDUxNTMxZGU2NmM4MzNiNGUwZDA3ODZhOWM3MjY0NzBkZjZkZTA0MTBkNTU4ZTY5ODgyY2Y4NTlmNjRlNzUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjM3NDM5ODI3NWYxZDhjYzQxNDFiY2QwNzlkZWYzM2Q0YzU1MjA1ZmMwZGJlYTliNzM4NTQyZmVhYzFkYTZiOTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImIwM2ZjYzFkYzY0MzI0NTYyNTRlZDliMDZkMTU4YzVhMDJmZmQ0YTM2OTAxMTM5NWQ3ZTM4OTI4NDQ0OGQ4MDMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjoyLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImU3YmI4MTg3MjY5ODU5NjIzN2VhNzBkZmI5NTIwYTkzMWZjM2FlZTcwY2I0MWZkNjgzNGVlODQ0ZTI1ZjRmODAifQ"
+          "resource": "repo://test/scripting/testvectorextension.cpp#L32-L38",
+          "version": "repo-lines-v1:sha256:710cd74e85b36b461441f181af53bcb43df1ee39ea65c0bd2fa9baf2cf3257aa:eyJzZWxlY3RlZExpbmVDb3VudCI6NywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNzdkNTE1MzFkZTY2YzgzM2I0ZTBkMDc4NmE5YzcyNjQ3MGRmNmRlMDQxMGQ1NThlNjk4ODJjZjg1OWY2NGU3NSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiZmY2NWM2ZDY2ZGUwZjJiOGMxNmFiNzUwYzNiZWQwZjMxYTQ5NDQ1ZTllYTMxNjg2N2QwOTI3MTI1ZTIwZTI5ZCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiYjAzZmNjMWRjNjQzMjQ1NjI1NGVkOWIwNmQxNThjNWEwMmZmZDRhMzY5MDExMzk1ZDdlMzg5Mjg0NDQ4ZDgwMyIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZDNiOTUyNjljMzBkZjE5MjM4MTY0MWMyMTNiZTA1OWViMWZhMWU4MzM4ZjgyMWNiYTYwZDk4NjAxNzZlY2I4NiJ9"
+        },
+        {
+          "resource": "repo://test/scripting/testvectorextension.cpp#L43-L47",
+          "version": "repo-lines-v1:sha256:d3496acec10b37abf68a7c8f8ffd6800c2ad478e5db6739f8c6a0057a7a3f7cf:eyJzZWxlY3RlZExpbmVDb3VudCI6NSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZDIyODhjNmI5MzNkODNhOWY0YjEyYjk5M2MxNGFiNDEzOTQ0M2VkNTJlOTFhZDUyM2ZkYTQ5NzE1N2IyODI5OSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNjM5ZGE5YzM4YTg3ZjYzYTVkOWZhYWJjNzE0MTRjZWY1NmU5ZDNmZmQ4ZmNlNGU5ZjU0NzdiZmJiNjVjYmI4ZiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNmJkMDdjNzg5ZjI1YjM4NGY2ZWM3MWIxZDg4ZWVhZjhlZGYyZWIxMTFiMGM1MDQyODljOTI0NjEyMTcxNWFmMiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiN2QwOGIyN2I2OTNlOGU0NGRkOWQ0Y2QzY2YzYzJkODU2YzRmNGJmMmQyOTk3ZDhiZWU4M2Q3NTAzMGM4YjRkOSJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_af7ff98fc90f49f68f2a5d50bb18a957",
+      "statement": "A World owns its ScriptEngine, and World::update advances that engine as part of world simulation. Scripts attached to a server-mode world's engine resolve gameplay APIs against that world; the scripting tests verify server-world ship creation and callbacks do not affect the global client world.",
+      "evidence": [
+        {
+          "resource": "repo://src/world/world.cpp#L182-L190",
+          "version": "repo-lines-v1:sha256:bd77822337db4fda7fb647dea3db7fb759154951de3f4630eeff93eeb0f9dd6b:eyJzZWxlY3RlZExpbmVDb3VudCI6OSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMTAzZDczNTkxOTgwN2Q1NmY3NjNiMWU1NmQ1ZDdhNjNkNDllMmZjYmUxNzRkMTFlMTM5MTg0MmI2YTE4ZjNjMCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiM2YyMWI1MTZmZjZkMTMyMmI1MzRkNmU0NDc5ODhjN2NiYzkxMjAwOWQwNzgxNDJiNDZkODE0MTQ2Nzk5MWVlZCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMmU1MjFmMDQxY2RhMzg0MGE0YzMyMmE0N2JhY2NiMzgxNDFhYjczODM4NjlhMjA2ZDliMjdhMzkxMjk0OTFmNCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNWI3MTRlZTVlMGNiY2Q2YmVkMzU4ZjRkYWZhYTZhZjEyOGVhN2IzMzEzMTI0YjM4YzYyMDAxYjhiMmU2NjdjZiJ9"
+        },
+        {
+          "resource": "repo://src/world/world.cpp#L199-L210",
+          "version": "repo-lines-v1:sha256:7a1973b15ccfdfb28465fbf604099ae9fe8a21218eb0c4b01e786a6b8b40740b:eyJzZWxlY3RlZExpbmVDb3VudCI6MTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAzMTgwNGU1NmVkMTNlNGI2MTdlZjBkYWZkODkyM2NlZWNlOWFmOTUxMGIyNjdiNDcxNDQwZGNkNjk2ODExZjgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjE0MTlhNmRjYzA0ZTIxM2EzYzdhNzdhNDU2YjAxZTc2ZDFlZjc4Y2QwMGJiZWMxZDhmODE0NThmZTkzZWRjNTYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjQzNjMzZmE1YmEzYWIxOGI2MDdhOTI0Yzk3NmU2YTI2NTUzYjYxMjAyMjViZmVmMDhjOTdjM2MyODkyOTVjYjAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjNhNjQxNmI2NjEwZTAwNmUxOTJmM2Q4Yjk0MGE2ZjA4YzJmMzQ2ODE1ZWNkNTFmOTEyZjUwNTA4MDUyNzM4ZGQifQ"
+        },
+        {
+          "resource": "repo://src/world/world.cpp#L53-L56",
+          "version": "repo-lines-v1:sha256:8c9657bdde7b99130066dd0fbe8724b571cd5952ac3018f0771d81eaea9243a1:eyJzZWxlY3RlZExpbmVDb3VudCI6NCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMmNjYmNmMDQ1ZDFjZjY0MDBjZDU4NTY3NGY5Yjc3YmQ5MTZmMmVlNDY1ZDkxMjY4MmIwYzVlN2Q1YWFhM2NlNyIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiM2YyMWI1MTZmZjZkMTMyMmI1MzRkNmU0NDc5ODhjN2NiYzkxMjAwOWQwNzgxNDJiNDZkODE0MTQ2Nzk5MWVlZCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNWY5YTc3MzRmMTZiNzcxYzA4NGY0OTdhZTFhMTEzZmEwOWQ1YTU3NTFkODBkNmU5NTQ3MzlmNTFjNjVlYmU0ZiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZTMzZDExNTY1ZDVkY2E3ZmYxMmZmYWU2NGVmMTA0ZDIwZjAyNmY0NDYwZWU3OGQ1MDYxYzdiNjhhOGM3MWQzYiJ9"
+        },
+        {
+          "resource": "repo://test/scripting/testscripting.cpp#L90-L98",
+          "version": "repo-lines-v1:sha256:9cc5247b85551ab44b1ae1364a75803bdbab2aca006115e85829ac5305d9ea29:eyJzZWxlY3RlZExpbmVDb3VudCI6OSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiODdkMTE5ODg2MjA3NDVhZGYwZmJmMDdjOWI0NDM2ZDFmZWI4YjU1OWRjZmY1MjRkZjc2NWMwYzZmN2M2OWUzYyIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiOTM3OGQ5MmExZWFhOTQ3NWU0Mzk1YmVmZjQ3YjA1MTllMThjYWNjZTIyOTRmYThhMzllYTVlYzEzNjIzMWFhZCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiODU2ODRiOTQ4ODU2NDU5ODYzMDg3ZjU0YmI2ZDE4MGE5YmI3OTJkZmVjZWZjZmMwMjYyNzI3NWZkNmVjMGU3NCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZGZkYTUyMTkwNDg0ZWJkZjljMDJhMTZkYzhjM2Y5OWUyMmE0OTQ3NDY5ZTJiNWU1MTY3NWY3ODc1YTdiZTY4NyJ9"
+        },
+        {
+          "resource": "repo://test/scripting/testscripting.cpp#L99-L106",
+          "version": "repo-lines-v1:sha256:3d7a2e2a3de26b6b8f178c8b0f1427554eb531a9a583dc969e35bb06437ca130:eyJzZWxlY3RlZExpbmVDb3VudCI6OCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZTI2MmFmMTIzNzlhMDJhNTc3MTVkMGFjNDZiZTQ2MDFkMDNlNmQzMGU1OGMwY2QwYzU5MTk1MzE5MzIyNjg5MyIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiN2ViNzAyNTc1OTNkYTA2ZjY4MmEzZGRkYTU0YTlkMjYwZDRmYzUxNGY2NDUyMzdmNWNhNzRiMDhmOGRhNjFhNiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMzlmNjM4YTIxYTM2MGU0NWJlZTBhZDVhNmY5NWFjNWFkOGIwMWVhM2E5YmUxZGJjZDRmNjg5NDk3Y2UwOTFlYSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNjc2NTM1MWVhYmU2OWQ1YTIzZjZhY2ZiYjc3YTA0MmE3YmE5NWFjNzczN2FhM2I3MWZhMmE3NmQxYjM4NWIyZiJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_429d71c4da2142799a9d8417f4e67c23",
+      "statement": "Mission-state replication is an explicit C++ path: Mission records start, success, and failure transitions; MissionSystem queues events only when replication is enabled; TcpServer enables that queue for its lifetime, drains it, and sends protocol events to clients. Lua script memory is not replicated by this mechanism.",
+      "evidence": [
+        {
+          "resource": "repo://src/missions/mission.cpp#L29-L36",
+          "version": "repo-lines-v1:sha256:b9e605a28c024bced232be7c0504cc13c2b7119ecb2707b72f8c55673bc6ca92:eyJzZWxlY3RlZExpbmVDb3VudCI6OCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiN2FhMzQ1NzhkNzVhNzk3N2YxODZjM2Q0ZDViMWM0NDljMzM1OGQxNDkxZWRjZWFmZmU2MDg0ZTk0YzdhYjFkNSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNDYxZDI3MDBkMGEwYWZiZmE3NGU1MWMyNjAxYTU0ZWQwYTQ4MTgzMjU1NzY3YTdhZDY0ODAzNGIxZmMzNzE0NSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiYzBlNWNlZWIxMDAwODkwYTZiY2I0MDFjOWZiOTFmYTM3MDNmZDMwOTJjMWE5YTIxMGFhODRlZjc3MDk3NTRlOCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMTlmZTQ0NzI0NjU2MDgyZDQ1ZTViM2Q4ZDJhOTYzMmFmMGRkYTE3ZTMyM2MxMWM3ZmY4M2YzZTI4ZWEwZmZmNyJ9"
+        },
+        {
+          "resource": "repo://src/missions/mission.cpp#L48-L57",
+          "version": "repo-lines-v1:sha256:6aa11f81ca5fcaf050c0d53f8edd2598f5fe9ad76cd879a61ce6dc3a124b3102:eyJzZWxlY3RlZExpbmVDb3VudCI6MTAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImM1ZDVlZTU4MDZhODc1NThjZjU1OWIwYzhlYzg1YzBkNjZhM2U2ZWYzYzJlMDI3NDI1NzhkN2EyODY2MmU0YjMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImUyMmZhYTUzNWJkMmVhM2Q1MmU3NDFlZDQ1NDQzNWI3ZmU0OWU4MzU4NmU5NDNkOThkODJiYmZiMjRkMWY1YzUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImE0Y2VkNTMxYmM2Nzc2ZmYxMWVlZTg3NGE2NjllODFlNDFjNTViNWU4NjlhZjQyNGY2NGYyNDVhNjA2MWExNjQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjhhZDM3MmQwMjk2NDcxZTJkZTBjOTkyMjk4OGExNjdiZGIwMDg2NjkyMjIyYjUyYmZiMjJiMzhhMTViMTI1ZTEifQ"
+        },
+        {
+          "resource": "repo://src/missions/mission.cpp#L59-L67",
+          "version": "repo-lines-v1:sha256:28f361391a3d5963203607242df54983f3bc6dfc2fbd619c76d49a922e33e8ae:eyJzZWxlY3RlZExpbmVDb3VudCI6OSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZjY5MWM2NTlkYTA4ZGY4ZjBmNDk4YjdlZWEzMTBlYmMyZTAyMDMxNTJmNmY3NGM0NjZlNDA4ZDNmZWRkNTE4ZiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiYmI1MmNhOGE1YmZmZjcyZTEwY2U0NzAxOGZiYjM3NWZlNDgwMDNiZWRiYjlhYmNkMzdjNjE5YWFlOTQ0NmRhNCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiYzk2NGNjYjJiYzA0NGM5NjdlMjc1OWJkZjZkZjQ2ZmRhMzk4ZTc2Nzg2YzIxZDg1YmM4OTgyMzkyOTM5NTkzZSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMDMxNTY1OWUxMGI1YWYyMTQ4ZWJlM2E4NTVjYWVjNjA5MzA2YWRkZTQwMTY5Y2VhOTc3YmQ1ZmE2NjM1OWIyNSJ9"
+        },
+        {
+          "resource": "repo://src/missions/missionsystem.cpp#L33-L43",
+          "version": "repo-lines-v1:sha256:1bfda14d8b2c3ac4c39eb709d415d73852c4cb315b2676261253951284126e92:eyJzZWxlY3RlZExpbmVDb3VudCI6MTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjViYjk3NDI3ZGQyZmFiMmQ0NjBlZDNkZWI4ZDkxMDJlYWE0YTI5NDY0OGU3NGVjN2U0MmMxZjlkMWQyMDhmMGQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxZDkyZDRlYzAwZDNlZTBjMDBlMjdjY2RkZjA0YTUyM2U3MjU1ZWFlYTAxZjY1NzU5ZDViMjVlNTA1MWZkODAiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImU5YjAyMjAwNzkxODdkZmIyNmExY2UxOGVjYzBiMTIzMTM1MzJmN2E1MTc5ZjY5YmFjOGNhMzY5YjNlY2VmODMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImQ3M2VlMTk1MGU3NTE0N2I1ZGQzZDFmZmJmNmVmZGJjNTFhNmMzNWE2YjZkMDVhNGI3MWI0ZDNiZmMwYTQwYWUifQ"
+        },
+        {
+          "resource": "repo://src/missions/missionsystem.cpp#L51-L61",
+          "version": "repo-lines-v1:sha256:a3fa4b7c66f0653cc93efa64b3bdf46dbd9fbbac28133e74c8ffc33d72e37e0b:eyJzZWxlY3RlZExpbmVDb3VudCI6MTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImI4MGVmYjUxMzM1ZjgwYmFlYzZiMTQ1Y2Q2OGJkMTcwYjRlOGZjZGJlNDVjZjk2YmQzNWMxN2RlMzc1NWEzMTQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImUyZjBiNDcxYTlkYmRmOTVhMmI4MzhjOTMxMDZmNmY4MzcyNDg2MmU4Y2E5YThkNTkxMzM2NGZkOGIyOWFhYzgiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjIzMTNhNDQwN2Y3NWQ5ZTExNzYzZTEwMTdmZDZkNGQ4ZWU4MmQ3ZDRjYmYzOWZkMzg2MmRjOGY3YmM5MGEyOTciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjBhZDUwY2MxYzYyYThlYjIyZGNmMjZlYzU1NmQwZmVjNzIxZGQ2MGUwNDUxMWNiZTAyYTgwYTczOWJkZTdmMDYifQ"
+        },
+        {
+          "resource": "repo://src/missions/missionsystem.cpp#L66-L77",
+          "version": "repo-lines-v1:sha256:4fbfa31e0beea69784ee23346c0acd55382ad882fdf68561cb280b24892034ab:eyJzZWxlY3RlZExpbmVDb3VudCI6MTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQyY2FkOTY5NjQwOTllNGJmOTljNGIxNjdjN2M0OGQxMTYxYmI1N2M1MTdkMTViMzE2YjQ1OTM4ODUxMzE5ZGIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjZhMGFhMzYxZDU1YWEwNWJhNDY5NjZiYmVlZmFjZjU3Y2RmNjI2YzMyOWFjYjMxMjBjNjRmMDgyNjM3YzE5MTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjU4YTZjMWZmMmE2ZDk5Y2M3OGJhNTU5MTU2NDExYTRjNTRjOGMyMjNmMWVmZTM5MzI3NmU1MTRjZTM3MGQzZTMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjoxLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUyMmZhYTUzNWJkMmVhM2Q1MmU3NDFlZDQ1NDQzNWI3ZmU0OWU4MzU4NmU5NDNkOThkODJiYmZiMjRkMWY1YzUifQ"
+        },
+        {
+          "resource": "repo://src/server/tcpserver.cpp#L150-L161",
+          "version": "repo-lines-v1:sha256:a050819209851ef23b19d956a4ac45b13e89125aeb0586df1bdafccedf56f665:eyJzZWxlY3RlZExpbmVDb3VudCI6MTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijk0OTAxNjQ1NGMyZGZjYTZhMWU2ZDMwMGI5YjgwNmUzYTBlOGVhM2FlNDJmZGQyMTVkZWIyMDU5MDA4ZDllYWMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjFmMDY5NDU3NjEzNDBkNzVkMTBkMGYxNzg4MzliNjc2ZTEwYzE0ZDY5MGEyMzY2NGY5MDJhYzBmN2Q3NTJiZjMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjEyMDIzZGVkZGVhMGRiYjUwMmUzNjBlOTJmZTU1YzIyODEwYzNmNWJlYTFkZjJmZjk2YTRlNDc4OTljYzMxYmQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjRjMmY2ZTdiMDM0M2QzOTU4NWQ2MTdmZWRiNmEyNDg4NWExZTRjNTg1OWYwZGIxYzNiNTA3YjY3MjJlZWZlODkifQ"
+        },
+        {
+          "resource": "repo://src/server/tcpserver.cpp#L205-L209",
+          "version": "repo-lines-v1:sha256:e6a9c2af81828964199277985f0ec7b7673fc8062db688e5eb11bcab8d4d28eb:eyJzZWxlY3RlZExpbmVDb3VudCI6NSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNDVlYTg2N2NkNDJiYzk0ZjU5MzVlNzc0ZTJjYzY5NTY4MWZhNzI3NzlhNWMzMTY0MzZiNDc5MGIxNzAxZWNlMCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMDdlZmY2ODc3MTcwNWU3MTUwNDU0YzlkZGU5MjdiZTcxZTE0YjQ3OGI4YWM5ZGQ5Y2I4NTM4NDJlZGRkZDY2MCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiOWI3OTY5NjUzNzU0YTcxMDgwZWIxNGE2NDQ3MWQ3NGQ0ZWFlOGU3MjkxYzBjYjQ0YTgzMTA5ZTc4YWQ2OWIyZiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMzJiNDY3MWNlOWJjOWUxN2U2NjViZmY3N2FmMWFiMjQzYWNjYjQyOGM2YzNlYzVhMTVmODA3Yjg5YjJjNzE0ZSJ9"
+        },
+        {
+          "resource": "repo://src/server/tcpserver.cpp#L614-L623",
+          "version": "repo-lines-v1:sha256:96e5a3cfb842c37427343d8e038c2b4915accc5a0b821659b766c40da07b7f03:eyJzZWxlY3RlZExpbmVDb3VudCI6MTAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImFmOTcwMjcxMDkxOTExMTliYmYyMThmNmJjYjI4NWM5NzFkZWY4YjUxYWE4YTcyY2IyZmUwOTAwYTNkMmJmNWEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjhmYzNkMmM1MWJlOTQzMDFlNjFmODlmOTMzOTY0ZGYyOGI0NTk4MzVkZmYxMjAwNTkyNGJiYjRhZGJmNzVhNTAiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImU5YjAyMjAwNzkxODdkZmIyNmExY2UxOGVjYzBiMTIzMTM1MzJmN2E1MTc5ZjY5YmFjOGNhMzY5YjNlY2VmODMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImY1NzIzNTU1NjkwYTAxOGE1NTJlOTgzNmJlOTZlZjM5ZDM1YThmNWQ3OTUzODhmOTkzMWEwYzU0ZWNhY2I4MDMifQ"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.2",
-    "at": "2026-11-03T15:48:08.697Z"
+    "at": "2026-11-05T22:43:09.174Z"
   }
 }

@@ -7,20 +7,20 @@
 #include "world/world.h"
 
 
-EventPoller::EventPoller()
+EventPoller::EventPoller(World& world):
+    m_world(world)
 {
-
 }
 
 EventPoller::~EventPoller() = default;
 
 void EventPoller::addPoll(std::shared_ptr<EventPoll> eventPoll) {
     m_eventPolls[eventPoll.get()] = eventPoll;
-    World::instance()->scriptEngine().registerScriptable(eventPoll.get());
+    m_world.scriptEngine().registerScriptable(eventPoll.get());
 }
 
 void EventPoller::removePoll(EventPoll* eventPoll) {
-    World::instance()->scriptEngine().unregisterScriptable(eventPoll);
+    m_world.scriptEngine().unregisterScriptable(eventPoll);
     m_eventPolls.erase(eventPoll);
 }
 

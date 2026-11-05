@@ -3,6 +3,7 @@
 
 
 #include <glow/logging.h>
+#include <unordered_set>
 
 #include "benchmark/benchmarkprofiler.h"
 #include "collision/collisiondetector.h"
@@ -70,7 +71,7 @@ void God::spawn() {
                 glow::warning("Failed to spawn %; due to collision with %;",
                     worldObject->info().name(), collider->info().name());
 
-                World::instance()->worldTree().remove(worldObject->collisionDetector().geode());
+                m_world.worldTree().remove(worldObject->collisionDetector().geode());
 
                 worldObject->setSpawnState(SpawnState::Rejected);
                 worldObject->onSpawnFail();
@@ -96,3 +97,21 @@ void God::remove() {
     m_scheduledRemovals.clear();
 }
 
+void God::clearPending() {
+    std::unordered_set<WorldObject*> discarded;
+    for (SpawnRequest& request : m_spawnRequests) {
+        if (!request.deleteOnRejection()) {
+            continue;
+        }
+        for (WorldObject* worldObject : request.worldObjects()) {
+            if (worldObject != nullptr &&
+                m_world.worldObjects().find(worldObject) ==
+                    m_world.worldObjects().end() &&
+                discarded.insert(worldObject).second) {
+                delete worldObject;
+            }
+        }
+    }
+    m_spawnRequests.clear();
+    m_scheduledRemovals.clear();
+}

@@ -2,13 +2,10 @@
 
 #include "scenarios/basescenario.h"
 
-class GamePlay;
-
 class FrozenGameScenario : public BaseScenario {
 public:
-    FrozenGameScenario(GamePlay* inGame);
+    explicit FrozenGameScenario(World& world);
 
 protected:
     virtual void populateWorld() override;
 };
-

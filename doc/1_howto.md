@@ -40,10 +40,12 @@ only for debugging:
 
 The current gameplay FPS is shown in the top-left corner.
 
-In VS Code, choose **Terminal: Run Task**, then select **Build and Run Rendering
-Benchmark**, **Build and Run Combat Benchmark**, or **Build and Run Large Fleet
-VSync Benchmark**. Each task builds the game before running the selected
-benchmark.
+In VS Code, choose **Terminal: Run Task**. The client tasks
+(**Build and Run Client Rendering Benchmark**, **Build and Run Client Combat
+Benchmark**, and **Build and Run Client Large Fleet VSync Benchmark**) build the
+graphical game before running the selected benchmark. **Build and Run Server
+Large Combat Benchmark** builds and runs the headless server with the same
+seeded 800-ship workload for 1,800 fixed simulation ticks.
 
 You can also run the built executable from the repository root so it can load
 the game data. For the default Visual Studio 2026 build directory:
@@ -52,6 +54,7 @@ the game data. For the default Visual Studio 2026 build directory:
 .\build\agent-vcpkg-vs18-stable\Release\voxellancer.exe -benchmark-rendering
 .\build\agent-vcpkg-vs18-stable\Release\voxellancer.exe -benchmark-combat
 .\build\agent-vcpkg-vs18-stable\Release\voxellancer.exe -benchmark-large-combat
+.\build\agent-vcpkg-vs18-stable\Release\voxellancer-server.exe --ticks 1800 --ships-per-team 400
 ```
 
 The rendering and standard combat modes disable VSync. The large fleet mode
@@ -61,12 +64,17 @@ mode measures 1,800 frames (nominally 30 seconds at 60 FPS); the other modes
 measure 600 frames. Rendering draws a voxel tunnel without advancing world
 simulation; the standard combat mode updates 24 AI ships while rendering.
 
-All modes print average FPS, median/p95/p99 frame times, 1% low FPS, and
+Client modes print average FPS, median/p95/p99 frame times, 1% low FPS, and
 workload counts, then write those metrics and all measured frame times to a
 unique JSON file in `benchmark-results\` at the repository root. The large
 fleet run also reports how many measured frames fell below 55 FPS, the
 percentage, longest consecutive below-target run, and worst FPS. The VS Code
 task terminal prints the result file path when the run finishes.
+
+The server task runs 1,800 fixed ticks with 400 ships per team. It prints
+tick-time percentiles, missed deadlines, entity/ship counts, and simulation
+backlog as JSON. Server tick times exclude rendering, so compare them to the
+16.67 ms simulation-tick budget rather than treating them as client frame times.
 
 The JSON `timing_profile` breaks each frame into CPU game-update, draw
 submission, buffer-swap wait, event polling, and other work, with averages,

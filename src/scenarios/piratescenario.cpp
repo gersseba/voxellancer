@@ -29,8 +29,8 @@
 #include "worldobject/worldobjectinfo.h"
 
 
-PirateScenario::PirateScenario(GamePlay* gamePlay) :
-    BaseScenario(gamePlay)
+PirateScenario::PirateScenario(World& world) :
+    BaseScenario(world)
 {
 }
 
@@ -45,7 +45,7 @@ void PirateScenario::populateWorld() {
         glm::vec3(-600, 0, -400), glm::vec3(0, 100, -600),
         glm::vec3(-100, 150, -900) }));
 
-    Ship* normandy = WorldObjectBuilder("piratefrigatte").buildShip();
+    Ship* normandy = worldObjectBuilder("piratefrigatte").buildShip();
     normandy->transform().setPosition(glm::vec3(0, 0, -100));
     normandy->info().setName("Frigatte");
     normandy->info().setShowOnHud(true);
@@ -55,7 +55,7 @@ void PirateScenario::populateWorld() {
 
     int nmember_count = 4;
     for (int i = 0; i < nmember_count; i++) {
-        Ship *follower = WorldObjectBuilder("piratelight").buildShip();
+        Ship *follower = worldObjectBuilder("piratelight").buildShip();
         follower->transform().setPosition(glm::vec3(100 * (-nmember_count / 2.0f + i), 50, 0));
         follower->info().setName("Light");
         follower->info().setShowOnHud(true);
@@ -70,8 +70,8 @@ void PirateScenario::populateWorld() {
         std::list<glm::vec3>{ glm::vec3(500, 0, 500), glm::vec3(-500, 0, 500),
         glm::vec3(-500, 0, -500), glm::vec3(500, 0, -500) }));
 
-    Ship *leader = WorldObjectBuilder("pirategunboat").buildShip();
-    leader->character()->setFaction(World::instance()->factionMatrix().pirateFaction());
+    Ship *leader = worldObjectBuilder("pirategunboat").buildShip();
+    leader->character()->setFaction(m_world->factionMatrix().pirateFaction());
     leader->transform().setPosition(glm::vec3(0, 200, -100));
     leader->info().setName("leader");
     leader->info().setShowOnHud(true);
@@ -81,8 +81,8 @@ void PirateScenario::populateWorld() {
 
     int lmember_count = 2;
     for (int i = 0; i < lmember_count; i++) {
-        Ship *follower = WorldObjectBuilder("pirateheavy").buildShip();
-        follower->character()->setFaction(World::instance()->factionMatrix().pirateFaction());
+        Ship *follower = worldObjectBuilder("pirateheavy").buildShip();
+        follower->character()->setFaction(m_world->factionMatrix().pirateFaction());
         follower->transform().setPosition(glm::vec3(100 * (-lmember_count / 2.0f + i), 200, 0));
         follower->info().setName("member");
         follower->info().setShowOnHud(true);
@@ -91,13 +91,15 @@ void PirateScenario::populateWorld() {
         m_world->god().scheduleSpawn(follower);
     }
 
-    Ship *testCluster = WorldObjectBuilder("pirateheavy").buildShip();
+    Ship *testCluster = worldObjectBuilder("pirateheavy").buildShip();
     testCluster->transform().setPosition(glm::vec3(0, 0, 10));
     testCluster->info().setName("basicship");
     testCluster->info().setShowOnHud(false);
     m_world->god().scheduleSpawn(testCluster);
 
-    World::instance()->player().setShip(testCluster);
+    if (m_world->hasPresentation()) {
+        m_world->player().setShip(testCluster);
+    }
 
     WorldObject *wall = new WorldObject();
     wall->transform().move(glm::vec3(-30, 0, -50));
@@ -147,26 +149,27 @@ void PirateScenario::createArmada() {
             glm::vec3(1400, 500, 0),
         }));
 
-    Ship* chief = WorldObjectBuilder("normandy").buildShip();
+    Ship* chief = worldObjectBuilder("normandy").buildShip();
     chief->transform().setPosition(glm::vec3(700, 0, 0));
     chief->info().setName("Normandy");
     chief->info().setShowOnHud(true);
     chief->info().setCanLockOn(true);
     chief->squadLogic()->joinSquad(armada);
-    chief->character()->setFaction(World::instance()->factionMatrix().policeFaction());
+    chief->character()->setFaction(m_world->factionMatrix().policeFaction());
     m_world->god().scheduleSpawn(chief);
 
     int memberCount = 12;
     for (int i = 0; i < memberCount; i++) {
-        Ship *follower = i < 6 ? WorldObjectBuilder("flyingtortress").buildShip() : WorldObjectBuilder("startortress").buildShip();
+        Ship *follower = i < 6
+            ? worldObjectBuilder("flyingtortress").buildShip()
+            : worldObjectBuilder("startortress").buildShip();
         follower->transform().setPosition(glm::vec3(700, 50* (-memberCount / 2.0f + i), 0));
         follower->info().setName("Turtle");
         follower->info().setShowOnHud(true);
         follower->info().setCanLockOn(true);
         follower->squadLogic()->joinSquad(armada);
-        follower->character()->setFaction(World::instance()->factionMatrix().policeFaction());
+        follower->character()->setFaction(m_world->factionMatrix().policeFaction());
         m_world->god().scheduleSpawn(follower);
     }
 
 }
-

@@ -2,15 +2,12 @@
 
 #include "scenarios/basescenario.h"
 
-class GamePlay;
-
 class PirateScenario : public BaseScenario {
 public:
-    PirateScenario(GamePlay* inGame);
+    explicit PirateScenario(World& world);
 
 protected:
     virtual void populateWorld() override;
 
     void createArmada();
 };
-

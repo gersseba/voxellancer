@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cassert>
+#include <stdexcept>
 #include <unordered_set>
 
 #include "geometry/sphere.h"
@@ -9,7 +10,6 @@
 #include "voxel/voxeltreequery.h"
 
 #include "world/world.h"
-
 #include "worldobject/worldobject.h"
 
 #include "worldtree/worldtreequery.h"
@@ -105,10 +105,13 @@ void WorldTreeScanner::scan(WorldObject* worldObject, const glm::vec3& position)
 }
 
 std::unordered_set<WorldObject*> WorldTreeScanner::worldObjectsInRange(WorldObject* worldObject, const glm::vec3& position) {
+    if (worldObject == nullptr || worldObject->world() == nullptr) {
+        throw std::logic_error("World-tree scans require an object attached to a world.");
+    }
     std::unordered_set<WorldObject*> result;
     Sphere scanSphere(position, m_scanRadius);
 
-    WorldTreeQuery worldTreeQuery(&World::instance()->worldTree(), &scanSphere, worldObject->collisionDetector().geode()->hint(), &worldObject->collisionFilter());
+    WorldTreeQuery worldTreeQuery(&worldObject->world()->worldTree(), &scanSphere, worldObject->collisionDetector().geode()->hint(), &worldObject->collisionFilter());
     std::unordered_set<WorldTreeGeode*> foundGeodes = worldTreeQuery.nearGeodes();
 
     for (WorldTreeGeode* foundGeode : foundGeodes) {
@@ -121,4 +124,3 @@ std::unordered_set<WorldObject*> WorldTreeScanner::worldObjectsInRange(WorldObje
 
     return result;
 }
-

@@ -18,9 +18,9 @@
 #include "world/world.h"
 
 
-Rocket::Rocket():
+Rocket::Rocket(World& world):
     Projectile(),
-    m_boardComputer(this),
+    m_boardComputer(this, world),
     m_aiTask(nullptr)
 {
     collisionFilter().setCollideableWith(WorldObjectType::Rocket, false);
@@ -75,4 +75,3 @@ void Rocket::spawnExplosion() {
 void Rocket::onLifetimeOver() {
     spawnExplosion();
 }
-

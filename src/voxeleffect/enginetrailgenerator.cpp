@@ -14,7 +14,7 @@
 
 
 EngineTrailGenerator::EngineTrailGenerator(Engine& engine, const WorldObject& creator) :
-    m_generator(new VoxelExplosionGenerator(nullptr)),
+    m_generator(new VoxelExplosionGenerator(nullptr, creator.world())),
     m_creator(creator),
     m_engine(engine),
     m_spawnOffset(0.5f),
@@ -109,4 +109,3 @@ void EngineTrailGenerator::updateTrailSettings() {
     m_generator->setScale(worldObject->transform().scale() / 15.0f);
     m_generator->setRadius(worldObject->transform().scale() * 0.3f);
 }
-

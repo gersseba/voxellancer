@@ -16,13 +16,18 @@ public:
     static constexpr std::uint32_t LargeCombatPlacementSeed = 20261104;
     static constexpr unsigned int SimulationRandomSeed = 20261105;
 
-    PerformanceBenchmarkScenario(GamePlay* gamePlay, BenchmarkMode mode);
+    PerformanceBenchmarkScenario(
+        World& world,
+        BenchmarkMode mode,
+        int shipsPerTeam = 400
+    );
 
 protected:
     void populateWorld() override;
 
 private:
     BenchmarkMode m_mode;
+    int m_shipsPerTeam;
 
     void populateRenderingBenchmark();
     void populateCombatBenchmark();

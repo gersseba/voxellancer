@@ -1,7 +1,9 @@
 #include "simplewayfind.h"
 
-#include "world/world.h"
+#include <stdexcept>
+
 #include "geometry/capsule.h"
+#include "world/world.h"
 #include "worldtree/worldtreequery.h"
 #include "worldobject/worldobject.h"
 #include "utils/safenormalize.h"
@@ -13,13 +15,16 @@
 
 
 glm::vec3 SimpleWayfind::calculateTravelPoint(WorldObject& object, glm::vec3 targetPoint) {
+    if (object.world() == nullptr) {
+        throw std::logic_error("Wayfinding requires an object attached to a world.");
+    }
     // Wayfinding doesn't care about projectiles
     CollisionFilter filter(object.collisionFilter());
     filter.setCollideableWith(WorldObjectType::Bullet, false);
     filter.setCollideableWith(WorldObjectType::Rocket, false);
 
     Capsule capsule = Capsule(object.transform().position(), targetPoint - object.transform().position(), object.bounds().sphere().radius());
-    std::unordered_set<WorldObject*> obstacles = WorldTreeQuery(&World::instance()->worldTree(), &capsule, object.collisionDetector().geode()->hint(), &filter).intersectingWorldObjects();
+    std::unordered_set<WorldObject*> obstacles = WorldTreeQuery(&object.world()->worldTree(), &capsule, object.collisionDetector().geode()->hint(), &filter).intersectingWorldObjects();
 
     if (!obstacles.empty()) {
         WorldObject* obstacle = WorldObjectGeometryHelper::closestObject(object, &obstacles);
@@ -51,4 +56,3 @@ glm::vec3 SimpleWayfind::calculateEvasionPointFor(WorldObject& self, WorldObject
         + self.bounds().sphere().radius()) * 2.f;
     return obstacle.transform().position() + evasionDirection * evasionDistance;
 }
-

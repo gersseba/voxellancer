@@ -1,11 +1,14 @@
 #pragma once
 
+#include <string>
+
 class World;
 class GamePlay;
+class WorldObjectBuilder;
 
 class BaseScenario {
 public:
-    BaseScenario(GamePlay* gamePlay);
+    explicit BaseScenario(World& world);
 
     void load();
     void clear();
@@ -13,10 +16,8 @@ public:
 
 
 protected:
-    GamePlay* m_gamePlay;
     World* m_world;
 
-    virtual void createWorld();
     virtual void populateWorld();
+    WorldObjectBuilder worldObjectBuilder(const std::string& name) const;
 };
-

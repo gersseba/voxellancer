@@ -13,7 +13,8 @@
 #include "world/world.h"
 
 
-VoxelParticleEngine::VoxelParticleEngine():
+VoxelParticleEngine::VoxelParticleEngine(World& world):
+    m_world(world),
     m_time(0.0f),
     m_initialized(false),
     m_renderer(new VoxelParticleRenderer(this)),
@@ -28,6 +29,10 @@ VoxelParticleEngine::VoxelParticleEngine():
 }
 
 VoxelParticleEngine::~VoxelParticleEngine() = default;
+
+World& VoxelParticleEngine::world() const {
+    return m_world;
+}
 
 float VoxelParticleEngine::time() const {
     return m_time;
@@ -153,4 +158,3 @@ void VoxelParticleEngine::beforeContextDestroy() {
 void VoxelParticleEngine::afterContextRebuild() {
     updateGPUBuffers(0, m_cpuParticleBuffer.size()-1);
 }
-

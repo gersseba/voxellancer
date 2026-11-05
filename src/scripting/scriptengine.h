@@ -6,6 +6,7 @@
 
 class Script;
 class Scriptable;
+class World;
 
 /**
  * Main class for accessing scripts during gameplay.
@@ -14,8 +15,10 @@ class Scriptable;
  */
 class ScriptEngine {
 public:
-    ScriptEngine();
+    explicit ScriptEngine(World& world);
     ~ScriptEngine();
+
+    World& world() const;
 
     void addScript(std::shared_ptr<Script> script);
 
@@ -44,6 +47,7 @@ public:
 
 
 protected:
+    World& m_world;
     std::list<std::shared_ptr<Script>> m_scripts;
     std::unordered_map<int, Scriptable*> m_scriptables;
 

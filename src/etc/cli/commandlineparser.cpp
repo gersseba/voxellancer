@@ -37,6 +37,14 @@ bool CommandLineParser::showIntro() const {
     return !isSet("nointro");
 }
 
+bool CommandLineParser::serverPreview() const {
+    return isSet("server-preview");
+}
+
+bool CommandLineParser::localSingleplayer() const {
+    return isSet("local-singleplayer");
+}
+
 BenchmarkMode CommandLineParser::benchmarkMode() const {
     const bool rendering = isSet("benchmark-rendering");
     const bool combat = isSet("benchmark-combat");
@@ -64,10 +72,12 @@ bool CommandLineParser::isSet(const std::string& arg) const {
 
 void CommandLineParser::checkHelp() {
     if (isSet("help") || isSet("-help") || isSet("h")) {
-        glow::debug("Usage: voxellancer [-fullscreen] [-stereo] [-benchmark-rendering | -benchmark-combat | -benchmark-large-combat]\n");
+        glow::debug("Usage: voxellancer [-fullscreen] [-stereo] [-server-preview] [-local-singleplayer] [-benchmark-rendering | -benchmark-combat | -benchmark-large-combat]\n");
         glow::debug("  -fullscreen  fullscreen mode");
         glow::debug("  -stereo      stereo rendering");
         glow::debug("  -nointro     [dev] don't show the intro");
+        glow::debug("  -server-preview  show interpolated snapshots from 127.0.0.1:27800");
+        glow::debug("  -local-singleplayer  start a local authoritative battle server");
         glow::debug("  -benchmark-rendering  render a fixed high-voxel scene and write benchmark results");
         glow::debug("  -benchmark-combat     simulate AI ships fighting and write benchmark results");
         glow::debug("  -benchmark-large-combat  run 800 ships with VSync and count frames below 55 FPS");

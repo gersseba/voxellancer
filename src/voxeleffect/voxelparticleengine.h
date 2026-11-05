@@ -10,6 +10,7 @@
 
 class Player;
 class Camera;
+class World;
 struct VoxelParticleData;
 class VoxelParticleSetup;
 class VoxelParticleRenderer;
@@ -22,9 +23,10 @@ class VoxelCluster;
  */
 class VoxelParticleEngine : ContextDependant {
 public:
-    VoxelParticleEngine();
+    explicit VoxelParticleEngine(World& world);
     ~VoxelParticleEngine();
 
+    World& world() const;
     float time() const;
 
     int particleCount() const;
@@ -42,6 +44,7 @@ public:
 
 
 protected:
+    World& m_world;
     float m_time;
     bool m_initialized;
 
@@ -62,4 +65,3 @@ protected:
     virtual void beforeContextDestroy();
     virtual void afterContextRebuild();
 };
-

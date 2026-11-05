@@ -14,20 +14,21 @@
 #include "worldobject/ship.h"
 
 
-MissionScenario::MissionScenario(GamePlay* gamePlay, const std::string& path):
-    BaseScenario(gamePlay),
-    m_mission(new Mission(path))
+MissionScenario::MissionScenario(World& world, const std::string& path):
+    BaseScenario(world),
+    m_path(path)
 {
-
 }
 
 void MissionScenario::populateWorld() {
-    Ship *playerShip = WorldObjectBuilder("mox").buildShip();
+    Ship *playerShip = worldObjectBuilder("mox").buildShip();
     playerShip->transform().setPosition(glm::vec3(0, 0, 10));
     playerShip->info().setName("mox");
     m_world->god().scheduleSpawn(playerShip);
 
-    World::instance()->player().setShip(playerShip);
-    World::instance()->missionSystem().addMission(m_mission);
+    if (m_world->hasPresentation()) {
+        m_world->player().setShip(playerShip);
+    }
+    m_mission = std::make_shared<Mission>(*m_world, m_path);
+    m_world->missionSystem().addMission(m_mission);
 }
-

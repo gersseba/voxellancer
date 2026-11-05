@@ -1,0 +1,166 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:a3a11c00c59cba853b68c3ac57ea97735c0fcdcaee864036061310cca7308b3f",
+  "claims": [
+    {
+      "id": "claim_1b5445dac428483f8da8f963c9100068",
+      "statement": "In local singleplayer, the graphical executable starts the sibling server with the battle scenario and connects to it before GLFW initialization; the user launches one executable, but the client and server run as separate processes.",
+      "evidence": [
+        {
+          "resource": "repo://src/client/localserverprocess.cpp#L42-L70",
+          "version": "repo-lines-v1:sha256:c669d88c92b3b98f988a121582b958504034db322b2399ca5a1c688ac7a6d993:eyJzZWxlY3RlZExpbmVDb3VudCI6MjksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImExN2RmYTdhZjQwMDc2MzViZjFmNzk3YTdiMTJhZGM3NzUwMWQwYzAzMzcwZTk1NGYxZWZkMTJlODIyM2FhNDciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjE3NzgzZTM2YjUxN2I3YTQ5ZTg0NGNlN2U4ZTE5OTFmODIyODVmNzE4NjNlNWZmOTVmMGE1ZTYzZDNlZjlkNDkiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjZjMDIwMDQ1MDE4MzQ4M2RiZDNmYTU2ZWY5YzQ0NzQxYjJiZTI1MTFlNWUzNmQ3M2I4MWM5ZjZmOTFkNTYwNjMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImQwYTY2ZDkwNjRjNGU4YjQ3MmY1ZDZjNGU3MTljZGQ4MWY1ZGU3ODUwYzAyNWMxMjg0NjEwYzU4OTZjYjdkZDcifQ"
+        },
+        {
+          "resource": "repo://src/main.cpp#L239-L254",
+          "version": "repo-lines-v1:sha256:b199bc81ea5c2456db2499da7164affb442016cc5aa523bebba75b16be5cdb57:eyJzZWxlY3RlZExpbmVDb3VudCI6MTYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImRjMDBiN2MyN2NjODM0OTY4YjMyZGYyYTI5NjU4OGFjMmUxYWE5ZTk3MDk2ZTgyMjQ5Y2E4MDMzZmM4ZDEzNjgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjE4N2JjMjcyMWNjZjM4NGYwYTQ2MzUzNWUyNWU5NDQ0ZmI5M2ViOGQ5YmVmYjRmOWU4NDYxZDZmYjdlNzViYzAiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjI1NzY5NmIzYTZjMzIzYjgxOTAyZmE0YjAwYWZkOTQ2ZWYxZmZmMTlhMzY2YTcxMDBhZWRhYWM4ZTEwZDkwNzIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImM3NTRlYmJmZDhlZmVhNGQ0OWVjNWM3YTM4Yjg3MTYwNWNlNGYzMGM5NTY3NmQ2ZTU5MTBmYzQ4ZjUwMzQ1MTAifQ"
+        },
+        {
+          "resource": "repo://src/main.cpp#L272-L273",
+          "version": "repo-lines-v1:sha256:884ee6906bfbb925a33c7e2b78df3e487f873f53398a46450bec00bc5762e0d3:eyJzZWxlY3RlZExpbmVDb3VudCI6MiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMGM3MmMzMjU5ZWFiYWM1NmQ2ZjEwZTlkYWZmZjJkNjQxZjQ0YjQwMTM5MjAyYjM3NzAyMTcwMWFiYzQyMDIyZSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiZTM4NDFhNzcxY2U0NDg0OGVhMDMzNWQ2ODc4NmQ4ODNiZWVhMjdiZWNkMDdlMjU2ODY2MDk2ZjljMDNiNGY0YSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNWZiNjJmYTg1NzEwYTZhNWQ3YThkNGZmZjQ0ZGVkNDhiMGVmOTMzZjgyOWNmZDRhYzY3MGExNTUxZTI4ZjllOSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiYTFjNTJkYWYwYzk4YTgyNTY5ZjFlNDM1MGQwMWExNjc5OTlkMjMyMDllNGFlZjkwYWY3ZDk5MDE4NGJiNzEyNyJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_3a303299d0e5432ba28ef47a9af129d9",
+      "statement": "The standalone server creates a server-mode world and advances its simulation session before polling TCP networking on the same thread.",
+      "evidence": [
+        {
+          "resource": "repo://src/server/main.cpp#L117-L178",
+          "version": "repo-lines-v1:sha256:f9e537edb17116e0656784736a671ef5713a6f5436ba19b8fbba0a9beb0ef85c:eyJzZWxlY3RlZExpbmVDb3VudCI6NjIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI1ZGI5NTRiMjZmOTY5OTk5Zjg2NGRlMWU5NWZjYjRiNWEyODgzNDU1MDhkY2FkYzAwNzY5YjNmMmI3ODU0MTYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjE5YzEwMWFmYTlmOWFhYjc5ODQ2ZGYxNTFhNjI4ZGY1MzkyN2Q2NDgwNDYwMDMxN2QxOTE5NmYzOGNiZmI3ZjMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImQyM2Y1NzdhN2MxZDY0OWYxYjZjNjQ0OWFiY2FkMTg4ZTUxNDEzMzEyNDk1NmIyZGEzYzEwOTlhYTk5OThmY2MiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImFhYWNiMTVjY2FmNmIyY2U5Y2ZmZGU3ZDk1MjJjNWU2ZmM1MTVjMmFjMzQ0ODBlYjczYjFjNjRkYjAwY2Y5YmYifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_d68acda01eaf41e4941de862b57ad1cc",
+      "statement": "SimulationTickRunner advances at 60 Hz, limits each advance to five ticks by default, and retains unprocessed elapsed time in its accumulator.",
+      "evidence": [
+        {
+          "resource": "repo://src/simulation/simulationsession.cpp#L92-L98",
+          "version": "repo-lines-v1:sha256:a429a97f26d6792751449e494f7d3f2afa09ab5a0d1278d6f6e7a04ce0b246b1:eyJzZWxlY3RlZExpbmVDb3VudCI6NywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYmZlYjBmNmY1YjlmOTNiZDZjODljZjdjOWEwMmUxOWRjNGUzZTVmN2I4MGI2Yjk4MzIzMGI5NzlhN2EyY2NhNiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMmE0ZjZmM2MzNWExMjgzOTBkY2Y0M2MxZjcxODc5ODUxYzA4YWZhYWY1OTI0NmE4OGU4ZTNmZDBjMmRhZTA5NiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMGFlZWY2YzhmZDAyZDRiMGZiZWFlZTRiMWZiZDMyZDdlMDhkMTZlMTYwODFjNjliZGUzODhmZGM0NzkzMGY2ZiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiOGY3MDIyOTZjNjQzNGNmYjVhM2IxMDQ1YzAwOGRlOWVlODVlYjY5MmQ0N2IyZjFkNGU2ZmVjZWUyNDIxZDM5OSJ9"
+        },
+        {
+          "resource": "repo://src/utils/simulationtickrunner.h#L7-L35",
+          "version": "repo-lines-v1:sha256:481b95d93ad067c70cfc378f840e6a50db6c242a6f19f556b78f7f75c69d6841:eyJzZWxlY3RlZExpbmVDb3VudCI6MjksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjRhYWEzMzNlMDQ1ZDQzZTIwOTUxYWNlOGY4OGE4ZWJiYTJhOWY1Y2Y2M2MyMDZlNDUzMTZkMzE4OGFkYTE1OGMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImViOTYyYzk3NjJlNTM5MDYyNzhkMzNiZjU1NDViYzk0NDMwYjdjZGNmYzYxMTk5MWRiZWIzNGYzNjkwODExZTciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjlmMzQxZjQyYjkwMzczZDkyYWU2MTMxY2M3NGQ1NmVlOTg1NTA1NDVhMzUxYzczNDMwOTIzNzZhNTg5MWEyZTEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjExZjNlZTA1YmM4YjVlMzliY2RjMzE3M2RkNWNhZGIzNGNhMDQyODNlMWJiNDBlNjlkYTU0YzY1NDMxOTQ1MWMifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_ad1be1135526476b801e9a575c5b897c",
+      "statement": "The TCP listener binds to the local host, supports at most 16 clients, and defaults to a 650-unit interest radius with snapshots every three ticks.",
+      "evidence": [
+        {
+          "resource": "repo://src/server/tcpserver.cpp#L126-L148",
+          "version": "repo-lines-v1:sha256:eae24c6be79fa074d82092d14fc238785b788df18350b5ccfa307122c72faffa:eyJzZWxlY3RlZExpbmVDb3VudCI6MjMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjdlYjcwMjU3NTkzZGEwNmY2ODJhM2RkZGE1NGE5ZDI2MGQ0ZmM1MTRmNjQ1MjM3ZjVjYTc0YjA4ZjhkYTYxYTYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjE0MTlhNmRjYzA0ZTIxM2EzYzdhNzdhNDU2YjAxZTc2ZDFlZjc4Y2QwMGJiZWMxZDhmODE0NThmZTkzZWRjNTYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjE0YzJmOTM5Yzk1OWVjZDA4MzIwNzhiM2IxOTQ5OTViOWFhMTZkYWEwNDcyNTgwY2E1ZmI5N2QzNDYyODRjMDYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjhjYjRlZWIzYWEwODAzYTU4OGU0NTQyNjhhZTk2ZDliMTdjZDhmMGMyMmJmMWJmZDZlNTgwMWRkMTg5MTQxMjIifQ"
+        },
+        {
+          "resource": "repo://src/server/tcpserver.h#L20-L36",
+          "version": "repo-lines-v1:sha256:4f0243861688a5e7c739d02a5f46f88eb74768db89ecae97917232744ac85bf0:eyJzZWxlY3RlZExpbmVDb3VudCI6MTcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImVjNThjNGMyZDU1YTQ1M2Y5N2ZmNjBkMGRiMmYxMzJhOTY3YjNhNGJkMWE4Y2FiOWIyNmUxMmNhNzNjMzM4MGIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjYzNmU1M2Q5YTQwNDcxOTIwMDVhYTRiM2M2M2UxODFlMjMxZTNmOGMzNmUxYzg2NzgxNWEyMGI5OGM3MDM4Y2YiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjA3NjI3ODQyMTk4NGZlZGZkZGVkMmRlYzU0N2JhN2I4M2Y4ZDg4YmM2NWYwNjZmNTVmMTRiNzBjYzhhYWM2OTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjlmOTliODhiYzBmMjgwZGIyYTZmZGU5MjY0MDhkYWFkNjljOWU2NjgwZTFkOGZjYzRkM2Q1ZDgyOGUyM2FiZjUifQ"
+        },
+        {
+          "resource": "repo://src/server/tcpserver.h#L69-L72",
+          "version": "repo-lines-v1:sha256:086616e75e8f7a8436c415525f06344251ad70b116a8d46c0f762bba0052c654:eyJzZWxlY3RlZExpbmVDb3VudCI6NCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYWE3NjQxODJjZWNlZWRkOGQ3ZmYxNzZiNDFjMDc1Y2RmNTMxOGIxYjNjMTZlZDhkYmM4ZjgwOGY2YmViMzVlYiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMDhhMGQ2ODA5MDA5YWMwYTlhYjAyMzA5YTBlOGJhZmQxMzhjMzJmM2U3ZWQxM2ZlYTc1Y2I5NGU5N2Y5MDAzNCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMTMxZjA3NWU3ODNiYWQ0YzBjNDYyNzQ3ZmQ2YzFlMWJkZTRiZjVlYmE4ZjhmMjNiMmVkODgyMWY4MDdlYTI0NiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMjIwMmIyZDg5NGMyOTNmMzE1OTJjYmFkMmNjYWE0Y2Y0ZmY2YWRlZWIyNzkwOWQ4YmUzMzI2NmEzY2YxODBlMSJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_a02589a59a3944889aad3bd237c8a5c3",
+      "statement": "TCP frames use a four-byte little-endian payload length and protocol packets carry version and message-type bytes; the client rejects an unsupported protocol version instead of negotiating it.",
+      "evidence": [
+        {
+          "resource": "repo://src/client/tcpclient.cpp#L216-L219",
+          "version": "repo-lines-v1:sha256:2f6a2822482ad219fa78adcdf56cb826a31a6a83f5b3048191daedeffa5ac357:eyJzZWxlY3RlZExpbmVDb3VudCI6NCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYjVkODQxODFjYTZiNzI3ZmJhYWE0MTJkMDgyMzYyMmNiNTc5OWRjYjA2MjA5ZTU3MjhjYWZkNDZjNjA2OThlYiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiODI1MWJmYWJjZmI2ZDg5ZmQ5ZjRlM2I3YmM0YTE3NGZkOTBjOTk4MTg2ZTRmZGUyYzhmYTM0ZTZkNWMyOTNhYSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNzRkMTM4Njk4OGJhMmY3OTllYzI1YzAwMmFjNDE1ZmEzNDIxNjgyYWE4MzkwNjgxODA3NmExODAwN2RjZTg3MSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZjc0NGQ3MjhjZmQ3NGRiZTcwN2RjZmY2NmMxMWM1ZGZjZGZiZDYxMjc2NTI4NjkyMWQzYjIyZDYyOGI2OWJlZSJ9"
+        },
+        {
+          "resource": "repo://src/protocol/serverprotocol.h#L15-L24",
+          "version": "repo-lines-v1:sha256:4ddcf1e7b59beb5e2d55082e10f148bdb2940df1024ae20c98164ef91c96e933:eyJzZWxlY3RlZExpbmVDb3VudCI6MTAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjdhNjUzNjIwNmM3ODVjYzVkYTUxOTMxY2IwNTk4OTYwOWViYzc0YzBiMTNkNTQwMzZmODg3ZjMwMDNjMTk4ZmEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjRiNjhkYjk4NTQ3OTYyZTZiYTYwZGM5ZGU4NzZiYmY2ZTc4NTE0YjE0Yzk0MTZhZjRiNWVjOTcyZWZmN2E3YzkiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjQwYmQxMjhkN2JiMDgzNWQzOGU3ODExNWNkYTMxOTlkODhlMTVjZTE3ZWU5NWRlM2VmNWRhODZjNzgzMWFlYzciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijg4N2RmMGJmMTRjNjhmNTlkZGMxZjBlZTE0YmVmOTYzNGY0MTY4YTRkYWQ2ZDAwOTlhNmYxYzRhZTU4MTIyMDYifQ"
+        },
+        {
+          "resource": "repo://src/server/tcpserver.cpp#L33-L50",
+          "version": "repo-lines-v1:sha256:6ec2d2d988025d7b2ca06e6f791e41eb95326c7c417b081c4e8f1847616b7216:eyJzZWxlY3RlZExpbmVDb3VudCI6MTgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjdlYjcwMjU3NTkzZGEwNmY2ODJhM2RkZGE1NGE5ZDI2MGQ0ZmM1MTRmNjQ1MjM3ZjVjYTc0YjA4ZjhkYTYxYTYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjdmNjk2NDM0Zjg4NGRlZWNhZDBlZGQyZTU1NTYyNDkzNWYxN2ZlMDRjNTlmODIzMGU5ZTNlYjQ0NjQ5NGJiMGQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijg0ZjljM2Y2NDQxYzdjNDliMmIyYzAzYzE4ODk4YjQ3ZGVlN2VkYmMwOTNlZThkYTc0ZjFhZjhlYmFlM2ViODkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjVjZGYxNDE2NWFhMzBlZDMxMTg2Y2E1M2ViY2QwZTg0ZTlhMGNmYzgxNjI4Yjc2NGQ5Y2M0ZDA3MjdjY2I3NzYifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_d407c72cac46418b825c302bc9689de1",
+      "statement": "The server sends per-client baseline snapshot deltas filtered by interest radius, sends full voxel/equipment content when entities first become visible, and uses separate messages for subsequent state changes and events.",
+      "evidence": [
+        {
+          "resource": "repo://src/server/tcpserver.cpp#L444-L509",
+          "version": "repo-lines-v1:sha256:773ce959fe31dbd8ff92eb7a8ba64004c04234e87cee908c8748ec5f079e03b0:eyJzZWxlY3RlZExpbmVDb3VudCI6NjYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImRkOGM3NzkwNWViODZiNGU5MDA0MjY4N2JiOTc2NzlmZGQ5N2YxYTYxYmQ4MDI2YTVkOTZmMjk2YjBiOTg5YjUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImUyMmZhYTUzNWJkMmVhM2Q1MmU3NDFlZDQ1NDQzNWI3ZmU0OWU4MzU4NmU5NDNkOThkODJiYmZiMjRkMWY1YzUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImVlNTNmMzhjYzNiODk2NWNiYTQ3MDFiODg4ZDQ5MTE4ODEwYTgyYmE4NGRmMzE0MzgyNWI0NTZiZGQ5ZGIyYzkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImFjODY1NWIyYThjNDcxMzk0ZjM1ZjJlNGYzZmIwOGU2YzBkNTJhODAxZGQwZjIxNTY4MzU0NGY2MGNjZDljZDgifQ"
+        },
+        {
+          "resource": "repo://src/server/tcpserver.cpp#L674-L760",
+          "version": "repo-lines-v1:sha256:b3dbe4cf15b44563a45314c14ae0302f64eb15780654318ef5806770eaa73e47:eyJzZWxlY3RlZExpbmVDb3VudCI6ODcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjM4MjBmNGQ3MjIwMjYzOTc2NTgwMjM1ZmZmOWNiNDY3MzFhMGYyOGJiNzllYzhjODkxZDU5NzExODgxZDMyYjIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjBjYWVjNDI0ZjFhMjFjY2UyMjBhM2E5YmIzYmMyMzBkMjM4ZjdiMjdiODY1MzQxNDZiYzYyODhhN2U3NDBhMTIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImU5YjAyMjAwNzkxODdkZmIyNmExY2UxOGVjYzBiMTIzMTM1MzJmN2E1MTc5ZjY5YmFjOGNhMzY5YjNlY2VmODMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjRlM2FmOTk1ZmQ0MDI0YTQ4ZTA0OWIxMWJkNDRjYTc5YzYwYTcxMjA5Y2ZlOGRhYTFjZThiMTIzOTliNjE5MDAifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_02bd1a6940644e8aa136ad4ab87a5015",
+      "statement": "The graphical client sends tick-stamped input commands four ticks ahead; the server validates and applies commands at simulation tick boundaries, while replicated world state remains server-owned.",
+      "evidence": [
+        {
+          "resource": "repo://src/gamestate/gameplay/running/gameplayrunning.cpp#L173-L184",
+          "version": "repo-lines-v1:sha256:ecc01dcf4801244f20c3743546cff6779f9ac6a0d6fdbbd010580624fda000cc:eyJzZWxlY3RlZExpbmVDb3VudCI6MTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQ2MzUzOWU4ZTZlNGE3N2IzZDYyZmFiZWY0ZmU4NzE3MjQzNGY1MjEzYmFmNDAxMGZlNTljMWJlMGRiYmE0ODEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjE0MTlhNmRjYzA0ZTIxM2EzYzdhNzdhNDU2YjAxZTc2ZDFlZjc4Y2QwMGJiZWMxZDhmODE0NThmZTkzZWRjNTYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjQ0ZDY5YWVkOTVmMTAwMzZkZDU2ZjZjYWQ5YzMwYWRjZTkzYzQ3ZmIwMjczMGE4NmFmMzE4OTY1ZmIwMTc5MWEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjNhOGQ1MmY3ZDI3NzkxNTgwYmNjOWNlZmRlODc3M2JhMTdlZjhmNjlhZTdkMTc2YjRlNGU4MjM0N2NiNzVhNjkifQ"
+        },
+        {
+          "resource": "repo://src/gamestate/gameplay/running/gameplayrunning.cpp#L37-L48",
+          "version": "repo-lines-v1:sha256:5e94e423f408c4347cc6982459bacfe4813e3ff10bf5d683b4197b453108bffb:eyJzZWxlY3RlZExpbmVDb3VudCI6MTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU2YmMyYWUwZDA2YTYyMDQzZWU1ZWEzZDRjMGFiMTE2NDBmN2YzZTg1MTFhMTZkZDliYmNiNGQwZWM1NGQwZTEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijk0NWQ5YmZkMmM0OGQxOWY1YmNjMmI3YmVkMzlmNTk0NjQ4NmY5N2M5ODVmNTcyMjc1YzkxMDY4Yzk5ZTYzMjgiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjkxNDFlMzg0MmQ1YzM5NThhZjUxYjI5NTVkNmNkNThjZmI3NGMzYzg3NDA4Nzc4ZjNlMzVhZDUzMWVmYjBjNGEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijc3ZWUxNjhiMzUyOTFiYWVkZWIyNDU0MzdiYzZkNWNkMmVjNDQ3YjU0OWVlNjZhNTE0ZTBhZDM4MmJjN2EzY2MifQ"
+        },
+        {
+          "resource": "repo://src/protocol/serverprotocol.h#L29-L55",
+          "version": "repo-lines-v1:sha256:b58e692119c7da5a2efe7e3d42f51ca407fb65cceb20618b2657b9f37fc81415:eyJzZWxlY3RlZExpbmVDb3VudCI6MjcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjU4MTM1YzI4OTc1YTgyOWM2ZGYyZmUwM2ExNDViYTFiMTcyNjY4MGFmMmM5YTAxMDZkZWI0YmUzOTA4NTc0OWIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImM1ZTAwMzk0Njk4MzE2ZmU3N2Y5NTc0MzBhNGIzZjg4MTJmNTMxNWMzZWJkZjQ1NTgzNDVjYzA1NDc0NGUwZDIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjNhNDRkODIyODE5ZDRmYjVjZWFlNzVhNThmMDA0MmNmYTEyODIwY2MwZTgyNDAwZTM4MDY0ZDMyNzY1MzNjZjUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjU3NWMwMDdlNjBkMmZlMmIxZWM5Yzk4ZjcyYmI0OTQ1Y2IwMGRjNGMzNjA5ZWY0MjU4ZmRmMzhkMWE1NjU1ZjAifQ"
+        },
+        {
+          "resource": "repo://src/simulation/simulationsession.cpp#L278-L313",
+          "version": "repo-lines-v1:sha256:31c7d65251d85b3d7c721c4c4daedc100fd7c794075a7d7e97cde7714e277a17:eyJzZWxlY3RlZExpbmVDb3VudCI6MzYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjBkOTYzZDYwMzBiZDQ3MzkyMTg1MjYzZDYwNmZhMzI3YzhlZTkwMzAyODkwNWJkM2JhM2FmZmU3NWUzNTI4NTkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImM5YTg1NzJiODg4YjA4Zjc5Nzk4YTE5YWNhZDFlZmRhZmVkMDI3MDQyNWEzZTFjMjJkODg4ZDEwNmQ2NTY4M2IiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjE4NDc1OWU2MzlhMmRjZmE5NmNiYTVjNmFkYWYwYzRhNzAyNzViYjk5Mjc2YmIwMDRkM2I3MWQzMjA0OGY1MmUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImFkZDlhNDVmZmI1ZWMxMzY3ZDY2MTQxOWU4ZTY2OGNmOWRkN2MxMzg2ZjJhOGQxNTFhNGQwN2Y0YTY0YWIxNjIifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_ccb2c1f09d0343b9abdd80c635e45397",
+      "statement": "The client interpolates between snapshots, extrapolates remote motion for at most three ticks, and bounds controlled-ship prediction to eight ticks using replicated state and pending input rather than collision simulation.",
+      "evidence": [
+        {
+          "resource": "repo://src/client/inputpredictor.cpp#L73-L138",
+          "version": "repo-lines-v1:sha256:d096398d07d864988d4313f468a3bb29510478c00c13fad1a10a34ea1789f542:eyJzZWxlY3RlZExpbmVDb3VudCI6NjYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjMzYWE4ZGY2Mjk2YTNlODA3MzJmMTA3OTU2YzdhODQ5NDUzMGI1YjgwMDk4OWEwMmYxZjBjNGVmNDU3NDhmODIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImE0ZWFjZTQ3M2U2MjhkOGY3ZTQyNGVmMTRkNjA4ODdkYjMwNjA5MDkyNThmYTcxZmQ5ZTlkZWM4YzhmZTFkMGUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImE4NDAwMmFlNDQzOTYzYTZmZmY5Yjg1NTk5MjVkOTc4MmM2ZGQ3ZjEwNGM1MzlkM2FhMGQ5ZGNhYzU1ODU3N2IiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijc4MjI4Mjg0NTgzMjViMTc0OGRmNGRkMDliY2FhMGY0MGM2MzIyMzkwMWMxOTA1MjdkY2EzYzcwYWQ2YjJjZDAifQ"
+        },
+        {
+          "resource": "repo://src/client/snapshotinterpolator.cpp#L75-L123",
+          "version": "repo-lines-v1:sha256:f4194fb01e9b7183e261a44ca8d31be89db1d844ffdb0a3465b9f14d3143a865:eyJzZWxlY3RlZExpbmVDb3VudCI6NDksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImZkYjlmYWY4MTk0Mzg2YTMwYWM1NGI0OTE3MGI4ZmY1ZmRkMGNhMjIwZWRhZjNmNWNhNzdjODU1MTc2MDQ4MGEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI0MWFlZWNmMzU2OTlkYzEzMmIzODQ2Y2JhZGJkZTdkMDkxNjVkMWEyOTcxZTc4N2QxNzc3OGMwMWFhMjM4NjYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImZjZjVkYzI5OGM2ODA2NDgyYWRkNzNhODk5NTJjODZiZmVkNWI5OGRmNTk0MDVhZGQ1ZDBiNGJkMTM1OWY3OGIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjIzOGZjZmE2YWE1YzIyMzZmOTI1YjRkMjVlY2Y3ZWJjOTE3NmQ1ODUwZWQ2NDY2NTg5OTFhMWI0NzQ3YWNiOTIifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_60275838b4e842caa448104cd60bde70",
+      "statement": "Resynchronization resets the client replica and server baselines; the client discards old deltas and state-dependent messages until the new baseline is applied.",
+      "evidence": [
+        {
+          "resource": "repo://src/client/tcpclient.cpp#L216-L287",
+          "version": "repo-lines-v1:sha256:b6a7cbb6fe8dc80321178d52514f95a1e2116a405dc54c703b921d5c793df613:eyJzZWxlY3RlZExpbmVDb3VudCI6NzIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImI1ZDg0MTgxY2E2YjcyN2ZiYWFhNDEyZDA4MjM2MjJjYjU3OTlkY2IwNjIwOWU1NzI4Y2FmZDQ2YzYwNjk4ZWIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImIwMzJlMjNiZTYwMzlhMzlkOTdmM2YzMDMxOWRhMTA4ZWFkOWYwY2ExZjlmOTRlMmJmOWExZTgyN2Q4OWVkZWQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijc0ZDEzODY5ODhiYTJmNzk5ZWMyNWMwMDJhYzQxNWZhMzQyMTY4MmFhODM5MDY4MTgwNzZhMTgwMDdkY2U4NzEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImEzNGM4NzMyMzZlZjMwMjJjYzNiNWRlYzI0YTMzNzMzMzQ3ZWE4ZjFhMWM3MmNjZjhmMTFhZmJmMGE2OWJkNWIifQ"
+        },
+        {
+          "resource": "repo://src/client/tcpclient.cpp#L68-L95",
+          "version": "repo-lines-v1:sha256:1367d2ff62a2d20952ce9e59293358b83a5c9cebeb5cbcca9f90f658d2155d17:eyJzZWxlY3RlZExpbmVDb3VudCI6MjgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjBjNjFiMGRiNDUxOTZjZDhhYTQ5MDA5MzIyNDBiMWQwZjQ3ZjJlOGEwNTQ4NTY4YTE1YjE4YzlmMjdhZmEwYzUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjBjYWVjNDI0ZjFhMjFjY2UyMjBhM2E5YmIzYmMyMzBkMjM4ZjdiMjdiODY1MzQxNDZiYzYyODhhN2U3NDBhMTIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImMzMGQyNTdkMjBmYjBlZDRkYWM3MDg1MTgxM2JmODFmYzUzYTczYmIwNjY3MTdiY2RiOGY4NWRiYmIxODA2NTkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjQ4ODlhMDVhZDQwZjk3OTA1MWQ1MTVmNDc5NGU4ZGVmOTRhZTdjNzYxYWE3NmEwMzg1YWQ3M2ZlZWQ3NmRhNDgifQ"
+        },
+        {
+          "resource": "repo://src/server/tcpserver.cpp#L308-L325",
+          "version": "repo-lines-v1:sha256:c7043f200c720a88a3f33ecbfbee477941f1eb7888875eacfba62b16c7d21a76:eyJzZWxlY3RlZExpbmVDb3VudCI6MTgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjM1NDQ4MzczMTQzY2YxNWZjNjI0NGI0MjY0YTE1YWE1NjlhZDU1ZWVlMDY3OGNmMTY5OTY1Y2U5NzRjYTdiYmMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijc1Zjc2NGRiNTM2MTM2ODJjYzA3Yzg4ODEzNjBkYjY1NGQyNDJmNjliMGEyMmZhNzJjZmE4MWU5M2MyN2VkZjciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjIxM2NiNTk1ZWE5NTAyOGIyZjdkMDk5ZWVlNzUzNGUxODJhMzJjOTgzZjlhMDdhZTg0MTlhN2Q5YjVmM2RmYTQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjcyZGY5OWI3NGUwZWE5YTc2MGU3YTAwM2E1NThhM2MxN2QyYzA3OGJjYmI3Zjk4NDAyMzM4MDFhZTM0OTdmM2MifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_a27c2bc5a1f64d4180a5c11ce7ab15ab",
+      "statement": "The server's listener is bound only to the local host, so this executable path is not a remote internet-hosting endpoint.",
+      "evidence": [
+        {
+          "resource": "repo://src/server/tcpserver.cpp#L126-L148",
+          "version": "repo-lines-v1:sha256:eae24c6be79fa074d82092d14fc238785b788df18350b5ccfa307122c72faffa:eyJzZWxlY3RlZExpbmVDb3VudCI6MjMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjdlYjcwMjU3NTkzZGEwNmY2ODJhM2RkZGE1NGE5ZDI2MGQ0ZmM1MTRmNjQ1MjM3ZjVjYTc0YjA4ZjhkYTYxYTYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjE0MTlhNmRjYzA0ZTIxM2EzYzdhNzdhNDU2YjAxZTc2ZDFlZjc4Y2QwMGJiZWMxZDhmODE0NThmZTkzZWRjNTYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjE0YzJmOTM5Yzk1OWVjZDA4MzIwNzhiM2IxOTQ5OTViOWFhMTZkYWEwNDcyNTgwY2E1ZmI5N2QzNDYyODRjMDYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjhjYjRlZWIzYWEwODAzYTU4OGU0NTQyNjhhZTk2ZDliMTdjZDhmMGMyMmJmMWJmZDZlNTgwMWRkMTg5MTQxMjIifQ"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.7.2",
+    "at": "2026-11-05T22:43:09.174Z"
+  }
+}

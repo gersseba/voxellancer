@@ -15,6 +15,10 @@
 
 #include "events/eventpoller.h"
 
+#include "factions/faction.h"
+#include "factions/factionmatrix.h"
+#include "factions/factionrelation.h"
+
 #include "gamestate/game.h"
 #include "gamestate/gameplay/gameplay.h"
 
@@ -24,10 +28,15 @@
 #include "property/propertymanager.h"
 
 #include "scripting/scriptengine.h"
+#include "scripting/scriptable.h"
 #include "scripting/gameplayscript.h"
 
+#include "scenarios/battlescenario.h"
+#include "voxeleffect/voxelparticleengine.h"
+#include "voxeleffect/voxelexplosiongenerator.h"
 #include "voxel/voxel.h"
 
+#include "world/god.h"
 #include "world/world.h"
 #include "worldobject/worldobject.h"
 #include "worldobject/ship.h"
@@ -78,6 +87,109 @@ go_bandit([](){
             AssertThat(World::instance()->ships().size(), Equals(1));
         });
 
+        it("routes gameplay scripts through their owning world", [&]() {
+            World serverWorld(World::Mode::Server);
+            GamePlayScript serverScript(serverWorld.scriptEngine());
+            serverScript.loadString(R"(
+                function callback() setDebugStatus("timer") end
+                ship = createShip("basicship")
+                spawn(ship)
+                createSingleShotTimer("callback", 0.1)
+            )");
+            serverWorld.eventPoller().update(0.11f);
+            serverWorld.eventPoller().update(0.01f);
+
+            AssertThat(serverWorld.ships().size(), Equals(1));
+            AssertThat(World::instance()->ships().size(), Equals(0));
+            AssertThat(serverScript.debugStatus(), Equals("timer"));
+        });
+
+        it("unregisters scriptables from their owning engine", [&]() {
+            World serverWorld(World::Mode::Server);
+            int key = Scriptable::INVALID_KEY;
+            {
+                Scriptable scriptable;
+                serverWorld.scriptEngine().registerScriptable(&scriptable);
+                key = scriptable.scriptKey();
+                AssertThat(serverWorld.scriptEngine().keyValid(key), Equals(true));
+            }
+
+            AssertThat(serverWorld.scriptEngine().keyValid(key), Equals(false));
+        });
+
+        it("resolves faction relations from the owning matrix", [&]() {
+            World serverWorld(World::Mode::Server);
+            FactionMatrix& serverFactions = serverWorld.factionMatrix();
+            serverFactions.pirateFaction().relationTo(
+                serverFactions.policeFaction()).setFriendliness(35.0f);
+
+            AssertThat(
+                serverFactions.getRelation(
+                    serverFactions.pirateFaction(),
+                    serverFactions.policeFaction()).friendliness(),
+                Equals(35.0f));
+            AssertThat(
+                World::instance()->factionMatrix().getRelation(
+                    World::instance()->factionMatrix().pirateFaction(),
+                    World::instance()->factionMatrix().policeFaction()).friendliness(),
+                Equals(-50.0f));
+        });
+
+        it("populates scenarios through their owning world", [&]() {
+            World serverWorld(World::Mode::Server);
+            BattleScenario scenario(serverWorld);
+            scenario.load();
+
+            AssertThat(serverWorld.ships().size(), Equals(8));
+            AssertThat(World::instance()->ships().size(), Equals(0));
+            serverWorld.update(1.0f / 60.0f);
+            const std::uint64_t tickBeforeReset =
+                serverWorld.simulationTickIndex();
+            const auto previousEntityId =
+                serverWorld.entityId(*serverWorld.ships().begin());
+            scenario.clear();
+            AssertThat(serverWorld.ships().size(), Equals(0));
+            AssertThat(
+                serverWorld.simulationTickIndex(),
+                Equals(tickBeforeReset));
+            AssertThat(World::instance()->ships().size(), Equals(0));
+            scenario.reset();
+            AssertThat(serverWorld.ships().size(), Equals(8));
+            bool reusedEntityId = false;
+            for (Ship* ship : serverWorld.ships()) {
+                const auto entityId = serverWorld.entityId(ship);
+                if (previousEntityId && entityId &&
+                    *previousEntityId == *entityId) {
+                    reusedEntityId = true;
+                    break;
+                }
+            }
+            AssertThat(reusedEntityId, IsFalse());
+            AssertThat(
+                serverWorld.simulationTickIndex(),
+                Equals(tickBeforeReset));
+            AssertThat(World::instance()->ships().size(), Equals(0));
+        });
+
+        it("routes voxel effects through their creator world", [&]() {
+            World serverWorld(World::Mode::Server);
+            Ship* ship = new Ship(serverWorld);
+            ship->addVoxel(new Voxel(glm::ivec3(0), 0xffffff));
+            serverWorld.god().scheduleSpawn(ship);
+            serverWorld.god().spawn();
+
+            World* clientWorld = World::instance();
+            const int initialParticleCount =
+                clientWorld->particleEngine().particleCount();
+            VoxelExplosionGenerator generator(ship);
+            generator.setCount(1);
+            generator.spawn();
+
+            AssertThat(
+                clientWorld->particleEngine().particleCount(),
+                Equals(initialParticleCount));
+        });
+
         it("can access non existing playership", [&]() {
 
             script->loadString(R"(
@@ -92,7 +204,7 @@ go_bandit([](){
             std::unique_ptr<Ship> ship;
 
             before_each([&]() {
-                ship.reset(new Ship());
+                ship.reset(new Ship(*World::instance()));
                 World::instance()->player().setShip(ship.get());
                 World::instance()->scriptEngine().registerScriptable(ship.get());
             });

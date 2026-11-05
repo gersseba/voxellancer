@@ -15,6 +15,8 @@
 #include "etc/contextprovider.h"
 
 #include "gamestate/gamestate.h"
+#include "gamestate/gameplay/gameplay.h"
+#include "gamestate/gameplay/running/gameplayrunning.h"
 
 #include "camera/camerahead.h"
 #include "camera/cameradolly.h"
@@ -178,12 +180,17 @@ void GamePlayNormalInput::applyUpdates() {
     // especially those done by the mouse
     // collect them and apply them here
 
-    if (m_fireUpdate){
+    const bool firePrimary = m_fireUpdate;
+    const bool remotePreviewActive =
+        m_gamePlay.running().remotePreviewActive();
+
+    if (firePrimary && !remotePreviewActive) {
         World::instance()->player().fire(); // fire checks for existence of ship
     }
     m_fireUpdate = false;
 
-    if (m_rocketUpdate && World::instance()->player().ship()) {
+    if (m_rocketUpdate && !remotePreviewActive &&
+        World::instance()->player().ship()) {
         World::instance()->player().ship()->components().fireAtObject(World::instance()->player().ship()->targetObject());
     }
     m_rocketUpdate = false;
@@ -191,14 +198,23 @@ void GamePlayNormalInput::applyUpdates() {
     if (glm::length(m_moveUpdate) > 1.0f) {
         m_moveUpdate = safeNormalize(m_moveUpdate, glm::vec3(0.0f));
     }
-
-    World::instance()->player().move(m_moveUpdate);
-    m_moveUpdate = glm::vec3(0);
-
     if (glm::length(m_rotateUpdate) > 1.0f) {
         m_rotateUpdate = safeNormalize(m_rotateUpdate, glm::vec3(0.0f));
     }
-    World::instance()->player().rotate(m_rotateUpdate);
+#ifndef VOXELLANCER_HEADLESS_SERVER
+    m_gamePlay.running().submitRemoteInput(
+        m_moveUpdate,
+        m_rotateUpdate,
+        firePrimary
+    );
+#endif
+
+    World::instance()->player().move(
+        remotePreviewActive ? glm::vec3(0.0f) : m_moveUpdate);
+    m_moveUpdate = glm::vec3(0);
+
+    World::instance()->player().rotate(
+        remotePreviewActive ? glm::vec3(0.0f) : m_rotateUpdate);
     m_rotateUpdate = glm::vec3(0);
 }
 

@@ -17,11 +17,15 @@
 #include "world/world.h"
 #include "worldobject/worldobject.h"
 
+#ifndef VOXELLANCER_HEADLESS_SERVER
 #include "sound/soundmanager.h"
 #include "sound/sound.h"
+#endif
 
+#ifndef VOXELLANCER_HEADLESS_SERVER
 #include "player.h"
 #include "ui/hud/hud.h"
+#endif
 
 
 CommonBindings::CommonBindings(GamePlayScript& script):
@@ -45,14 +49,25 @@ bool CommonBindings::apiValid(apikey key) {
 }
 
 int CommonBindings::apiShowMessage(const std::string& message) {
-    World::instance()->player().hud().showMissionMessage(message);
+#ifdef VOXELLANCER_HEADLESS_SERVER
+    (void)message;
+#else
+    if (m_scriptEngine.world().hasPresentation()) {
+        m_scriptEngine.world().player().hud().showMissionMessage(message);
+    }
+#endif
     return 0;
 }
 
 
 int CommonBindings::apiPlayVoice(const std::string& soundFile) {
+#ifdef VOXELLANCER_HEADLESS_SERVER
+    (void)soundFile;
+    return -1;
+#else
     std::shared_ptr<Sound> sound = SoundManager::current()->play(soundFile, glm::vec3(0, 0, -1), true);
     return sound->status() == Sound::Status::Null ? -1 : 0;
+#endif
 }
 
 int CommonBindings::apiSetEventActive(apikey eventPoll, bool active) {
@@ -69,7 +84,7 @@ int CommonBindings::apiSetEventActive(apikey eventPoll, bool active) {
 apikey CommonBindings::apiCreateSingleShotTimer(const std::string& callback, float delta) {
     auto timer = std::make_shared<SingleShotTimer>(delta, createCallback(callback));
 
-    World::instance()->eventPoller().addPoll(timer);
+    m_scriptEngine.world().eventPoller().addPoll(timer);
     m_script.addLocal(timer);
 
     return timer->scriptKey();
@@ -78,9 +93,8 @@ apikey CommonBindings::apiCreateSingleShotTimer(const std::string& callback, flo
 apikey CommonBindings::apiCreateLoopingTimer(const std::string& callback, float delta) {
     auto timer = std::make_shared<LoopingTimer>(delta, createCallback(callback));
 
-    World::instance()->eventPoller().addPoll(timer);
+    m_scriptEngine.world().eventPoller().addPoll(timer);
     m_script.addLocal(timer);
 
     return timer->scriptKey();
 }
-

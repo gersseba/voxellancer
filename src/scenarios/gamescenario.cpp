@@ -30,8 +30,8 @@
 #include "worldobject/worldobjectinfo.h"
 
 
-GameScenario::GameScenario(GamePlay* gamePlay):
-    BaseScenario(gamePlay)
+GameScenario::GameScenario(World& world):
+    BaseScenario(world)
 {
 }
 
@@ -42,12 +42,14 @@ void GameScenario::populateWorld() {
 
     spawnPirateFleet();
 
-    Ship *testCluster = WorldObjectBuilder("f302").buildShip();
+    Ship *testCluster = worldObjectBuilder("f302").buildShip();
     testCluster->transform().setPosition(glm::vec3(0, 0, 10));
     testCluster->info().setName("player");
     testCluster->info().setShowOnHud(false);
     m_world->god().scheduleSpawn(testCluster);
-    World::instance()->player().setShip(testCluster);
+    if (m_world->hasPresentation()) {
+        m_world->player().setShip(testCluster);
+    }
 
     spawnStuff();
 
@@ -64,24 +66,26 @@ void GameScenario::createArmada() {
             glm::vec3(1400, 500, 0),
         }, 500.0f));
 
-    Ship* chief = WorldObjectBuilder("normandy").buildShip();
+    Ship* chief = worldObjectBuilder("normandy").buildShip();
     chief->transform().setPosition(glm::vec3(700, 0, 0));
     chief->info().setName("Normandy");
     chief->info().setShowOnHud(true);
     chief->info().setCanLockOn(true);
     chief->squadLogic()->joinSquad(armada);
-    chief->character()->setFaction(World::instance()->factionMatrix().policeFaction());
+    chief->character()->setFaction(m_world->factionMatrix().policeFaction());
     m_world->god().scheduleSpawn(chief);
 
     int memberCount = 12;
     for (int i = 0; i < memberCount; i++) {
-        Ship *follower = i < 6 ? WorldObjectBuilder("mox").buildShip() : WorldObjectBuilder("smallpolice").buildShip();
+        Ship *follower = i < 6
+            ? worldObjectBuilder("mox").buildShip()
+            : worldObjectBuilder("smallpolice").buildShip();
         follower->transform().setPosition(glm::vec3(700, 50* (-memberCount / 2.0f + i), 0));
         follower->info().setName("member");
         follower->info().setShowOnHud(true);
         follower->info().setCanLockOn(true);
         follower->squadLogic()->joinSquad(armada);
-        follower->character()->setFaction(World::instance()->factionMatrix().policeFaction());
+        follower->character()->setFaction(m_world->factionMatrix().policeFaction());
         m_world->god().scheduleSpawn(follower);
     }
 
@@ -96,8 +100,8 @@ void GameScenario::spawnPoliceFleet() {
         glm::vec3(-600, 0, -400), glm::vec3(0, 100, -600),
         glm::vec3(-100, 150, -900) }, 500.0f));
 
-    Ship* capital = WorldObjectBuilder("c306").buildShip();
-    capital->character()->setFaction(World::instance()->factionMatrix().policeFaction());
+    Ship* capital = worldObjectBuilder("c306").buildShip();
+    capital->character()->setFaction(m_world->factionMatrix().policeFaction());
     capital->transform().setPosition(glm::vec3(0, 0, -200));
     capital->info().setName("Capital");
     capital->info().setShowOnHud(true);
@@ -105,8 +109,8 @@ void GameScenario::spawnPoliceFleet() {
     capital->squadLogic()->joinSquad(squadA);
     m_world->god().scheduleSpawn(capital);
 
-    Ship* cruiser = WorldObjectBuilder("bc304").buildShip();
-    cruiser->character()->setFaction(World::instance()->factionMatrix().policeFaction());
+    Ship* cruiser = worldObjectBuilder("bc304").buildShip();
+    cruiser->character()->setFaction(m_world->factionMatrix().policeFaction());
     cruiser->transform().setPosition(glm::vec3(-50, -50, -100));
     cruiser->info().setName("Cruiser");
     cruiser->info().setShowOnHud(true);
@@ -116,9 +120,9 @@ void GameScenario::spawnPoliceFleet() {
 
     int nmember_count = 5;
     for (int i = 0; i < nmember_count; i++) {
-        Ship *follower = WorldObjectBuilder("f302").buildShip();
+        Ship *follower = worldObjectBuilder("f302").buildShip();
         follower->transform().setPosition(glm::vec3(100 * (-nmember_count / 2.0f + i), 50, 0));
-        follower->character()->setFaction(World::instance()->factionMatrix().policeFaction());
+        follower->character()->setFaction(m_world->factionMatrix().policeFaction());
         follower->info().setName("Fighter");
         follower->info().setShowOnHud(true);
         follower->info().setCanLockOn(true);
@@ -133,8 +137,8 @@ void GameScenario::spawnPirateFleet() {
         std::list<glm::vec3>{ glm::vec3(500, 0, 500), glm::vec3(500, 0, -500),
         glm::vec3(-500, 0, -500), glm::vec3(-500, 0, 500) }, 500.0f));
 
-    Ship *leader = WorldObjectBuilder("pirateheavy").buildShip();
-    leader->character()->setFaction(World::instance()->factionMatrix().pirateFaction());
+    Ship *leader = worldObjectBuilder("pirateheavy").buildShip();
+    leader->character()->setFaction(m_world->factionMatrix().pirateFaction());
     leader->transform().setPosition(glm::vec3(0, 200, -1000));
     leader->info().setName("pirate heavy");
     leader->info().setShowOnHud(true);
@@ -144,8 +148,8 @@ void GameScenario::spawnPirateFleet() {
 
     int lmember_count = 15;
     for (int i = 0; i < lmember_count; i++) {
-        Ship *follower = WorldObjectBuilder("piratelight").buildShip();
-        follower->character()->setFaction(World::instance()->factionMatrix().pirateFaction());
+        Ship *follower = worldObjectBuilder("piratelight").buildShip();
+        follower->character()->setFaction(m_world->factionMatrix().pirateFaction());
         follower->transform().setPosition(glm::vec3(100 * (-lmember_count / 2.0f + i), 200, -1000));
         follower->info().setName("pirate light");
         follower->info().setShowOnHud(true);
@@ -159,8 +163,8 @@ void GameScenario::spawnPirateFleet() {
         std::list<glm::vec3>{ glm::vec3(500, 0, 500), glm::vec3(500, 0, -500),
         glm::vec3(-500, 0, -500), glm::vec3(-500, 0, 500) }, 500.0f));
 
-    Ship *leader2 = WorldObjectBuilder("piratefrigatte").buildShip();
-    leader2->character()->setFaction(World::instance()->factionMatrix().pirateFaction());
+    Ship *leader2 = worldObjectBuilder("piratefrigatte").buildShip();
+    leader2->character()->setFaction(m_world->factionMatrix().pirateFaction());
     leader2->transform().setPosition(glm::vec3(100, -200, -1000));
     leader2->info().setName("pirate frigate");
     leader2->info().setShowOnHud(true);
@@ -170,8 +174,8 @@ void GameScenario::spawnPirateFleet() {
 
     int lmember_count2 = 7;
     for (int i = 0; i < lmember_count2; i++) {
-        Ship *follower = WorldObjectBuilder("pirategunboat").buildShip();
-        follower->character()->setFaction(World::instance()->factionMatrix().pirateFaction());
+        Ship *follower = worldObjectBuilder("pirategunboat").buildShip();
+        follower->character()->setFaction(m_world->factionMatrix().pirateFaction());
         follower->transform().setPosition(glm::vec3(200 * (-lmember_count / 2.0f + i), -200, -1000));
         follower->info().setName("pirate gunboat");
         follower->info().setShowOnHud(true);
@@ -235,4 +239,3 @@ void GameScenario::spawnStuff() {
 
     }
 }
-

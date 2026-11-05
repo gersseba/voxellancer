@@ -21,7 +21,7 @@ class Sound;
  */
 class Rocket: public Projectile {
 public:
-    Rocket();
+    explicit Rocket(World& world);
 
     virtual WorldObjectType objectType() const override;
 
@@ -39,4 +39,3 @@ protected:
     virtual void spawnExplosion() override;
     virtual void onLifetimeOver() override;
 };
-

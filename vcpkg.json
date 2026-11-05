@@ -2,17 +2,34 @@
   "name": "voxellancer",
   "version-string": "0.3.1",
   "builtin-baseline": "afa249f12f52ed8a3b919f195495ba8b330288d1",
+  "default-features": [
+    "client"
+  ],
   "dependencies": [
-    "glew",
-    "glfw3",
     "glm",
     "lua",
     {
       "name": "sfml",
       "default-features": false,
       "features": [
-        "audio"
+        "network"
       ]
     }
-  ]
+  ],
+  "features": {
+    "client": {
+      "description": "Dependencies for the graphical game client.",
+      "dependencies": [
+        "glew",
+        "glfw3",
+        {
+          "name": "sfml",
+          "default-features": false,
+          "features": [
+            "audio"
+          ]
+        }
+      ]
+    }
+  }
 }

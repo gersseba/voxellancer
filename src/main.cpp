@@ -1,7 +1,13 @@
 #include <omp.h>
+#include <chrono>
 #include <cstdlib>
 #include <ctime>
+#include <cstdint>
+#include <filesystem>
 #include <iostream>
+#include <memory>
+#include <stdexcept>
+#include <thread>
 
 #ifdef WIN32
 #include <windows.h>
@@ -14,6 +20,7 @@
 #endif
 
 #include <GLFW/glfw3.h>
+#include <SFML/Network/TcpListener.hpp>
 
 #include <glow/Version.h>
 #include <glow/global.h>
@@ -26,8 +33,11 @@
 
 #include "etc/contextprovider.h"
 #include "etc/cli/commandlineparser.h"
+#include "client/localserverprocess.h"
+#include "client/tcpclient.h"
 #include "benchmark/benchmarkmode.h"
 #include "benchmark/benchmarkrunner.h"
+#include "scenarios/battlescenario.h"
 #include "scenarios/performancebenchmarkscenario.h"
 
 #include "display/stereorenderinfo.h"
@@ -140,6 +150,43 @@ static bool miscSettings(bool enableVsync) {
     return true;
 }
 
+static std::uint16_t availableLocalPort() {
+    sf::TcpListener listener;
+    if (listener.listen(0, sf::IpAddress::LocalHost) !=
+        sf::Socket::Status::Done) {
+        throw std::runtime_error(
+            "Could not reserve a port for the local simulation server.");
+    }
+    const std::uint16_t port = listener.getLocalPort();
+    listener.close();
+    return port;
+}
+
+static std::unique_ptr<TcpClient> connectToLocalServer(
+    LocalServerProcess& server,
+    std::uint16_t port)
+{
+    const auto deadline = std::chrono::steady_clock::now() +
+        std::chrono::seconds(10);
+    std::string lastConnectionError;
+    while (std::chrono::steady_clock::now() < deadline) {
+        auto client = std::make_unique<TcpClient>();
+        if (client->connectLocal(port)) {
+            return client;
+        }
+        lastConnectionError = client->lastError();
+        if (!server.isRunning()) {
+            throw std::runtime_error(
+                "The local simulation server exited during startup. " +
+                server.lastError());
+        }
+        std::this_thread::sleep_for(std::chrono::milliseconds(50));
+    }
+    throw std::runtime_error(
+        "Timed out waiting for the local simulation server: " +
+        lastConnectionError);
+}
+
 static void mainloop() {
     glow::debug("Entering mainloop");
     double time = glfwGetTime();
@@ -181,6 +228,33 @@ int main(int argc, char* argv[]) {
         delete initTimer;
         return 1;
     }
+    if (clParser.localSingleplayer() &&
+        (clParser.serverPreview() || benchmarkMode != BenchmarkMode::None)) {
+        std::cerr << "-local-singleplayer cannot be combined with "
+            "-server-preview or benchmark options.\n";
+        delete initTimer;
+        return 1;
+    }
+
+    LocalServerProcess localServer;
+    std::unique_ptr<TcpClient> preconnectedClient;
+    if (clParser.localSingleplayer()) {
+        try {
+            const std::uint16_t port = availableLocalPort();
+            if (!localServer.start(
+                    std::filesystem::absolute(argv[0]),
+                    port)) {
+                throw std::runtime_error(localServer.lastError());
+            }
+            preconnectedClient = connectToLocalServer(localServer, port);
+        } catch (const std::exception& exception) {
+            std::cerr << "Could not start local singleplayer: "
+                << exception.what() << '\n';
+            delete initTimer;
+            return 1;
+        }
+    }
+
     const unsigned int randomSeed = benchmarkMode == BenchmarkMode::None
         ? static_cast<unsigned int>(std::time(nullptr))
         : PerformanceBenchmarkScenario::SimulationRandomSeed;
@@ -196,8 +270,9 @@ int main(int argc, char* argv[]) {
     PropertyManager::instance()->load("data/voxels.ini", "voxels");
 
     if (!glfwInit()) {
-        glow::fatal("Could not init GLFW");
-        exit(-1);
+        std::cerr << "Could not init GLFW.\n";
+        delete initTimer;
+        return 1;
     }
 
     glfwSetErrorCallback(errorCallback);
@@ -253,6 +328,7 @@ int main(int argc, char* argv[]) {
 
         loadingScreen->display("Loading... Game");
         game = new Game(benchmarkMode == BenchmarkMode::None &&
+            !clParser.localSingleplayer() &&
             clParser.showIntro() && Property<bool>::get("general.showIntro", true));
 
         if (benchmarkMode == BenchmarkMode::Rendering) {
@@ -263,6 +339,17 @@ int main(int argc, char* argv[]) {
             game->gamePlay().setInitialScenario(PerformanceBenchmarkScenario::LargeCombatVsyncScenarioId);
         }
 
+        if (clParser.localSingleplayer()) {
+            game->gamePlay().setInitialScenario(BattleScenario::ScenarioId);
+            if (!game->gamePlay().running().connectRemotePreview(
+                    std::move(preconnectedClient))) {
+                std::cerr << "Could not initialize the local simulation client.\n";
+                exitCode = 1;
+            }
+        } else if (clParser.serverPreview()) {
+            game->gamePlay().running().connectRemotePreview(27800);
+        }
+
         if(clParser.stereoView()) {
             game->viewer().switchToStereoView(StereoRenderInfo::dummy());
         }
@@ -271,10 +358,12 @@ int main(int argc, char* argv[]) {
         delete loadingScreen;
         delete initTimer;
 
-        if (benchmarkMode == BenchmarkMode::None) {
+        if (benchmarkMode == BenchmarkMode::None && exitCode == 0) {
             mainloop();
         } else {
-            exitCode = BenchmarkRunner(benchmarkMode).run(*game);
+            if (benchmarkMode != BenchmarkMode::None) {
+                exitCode = BenchmarkRunner(benchmarkMode).run(*game);
+            }
         }
 
 #ifdef TRYCATCH
@@ -289,6 +378,7 @@ int main(int argc, char* argv[]) {
 #endif
 
     delete game;
+    localServer.stop();
     ContextProvider::instance()->shutdown();
     glfwTerminate();
     return exitCode;

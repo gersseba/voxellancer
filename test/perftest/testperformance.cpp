@@ -176,13 +176,13 @@ go_bandit([](){
             {
                 glowutils::AutoTimer t("init perftest");
 
-                normandy = new Ship();
+                normandy = new Ship(*World::instance());
                 ClusterCache::instance()->fillObject(normandy, "data/voxelcluster/normandy.csv");
                 normandy->transform().setPosition(glm::vec3(0, 0, -100));
                 normandy->info().setName("Normandy");
                 World::instance()->god().scheduleSpawn(normandy);
 
-                ship = new Ship();
+                ship = new Ship(*World::instance());
                 ClusterCache::instance()->fillObject(ship, "data/voxelcluster/basicship.csv");
                 ship->transform().setPosition(glm::vec3(0, 0, 10));
                 ship->info().setName("basicship");
@@ -225,4 +225,3 @@ go_bandit([](){
         });
     });
 });
-

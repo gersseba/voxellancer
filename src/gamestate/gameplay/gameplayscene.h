@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <vector>
 
 #include <glm/glm.hpp>
 
@@ -18,6 +19,7 @@ class Blitter;
 class RenderPipeline;
 class Player;
 class Starfield;
+class VoxelCluster;
 class WorldTreeRenderer;
 
 class GamePlayScene: public Scene {
@@ -44,6 +46,11 @@ protected:
 
     Property<glm::vec3> m_defaultLightDir;
     float m_fps;
+#ifndef VOXELLANCER_HEADLESS_SERVER
+    struct RemoteVoxelProxy;
+    std::vector<std::unique_ptr<RemoteVoxelProxy>> m_remoteVoxelProxies;
+    void updateRemoteVoxelProxies();
+#endif
 
 
     void drawImpl(const Camera& camera) const override;

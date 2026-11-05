@@ -22,6 +22,7 @@ CollisionDetector::CollisionDetector(WorldObject& worldObject) :
 }
 
 CollisionDetector::~CollisionDetector() {
+    delete m_geode;
 }
 
 void CollisionDetector::addVoxel(Voxel* voxel) {
@@ -128,4 +129,3 @@ void CollisionDetector::checkCollisions(VoxelTreeNode* nodeA, VoxelTreeNode* nod
         }
     }
 }
-

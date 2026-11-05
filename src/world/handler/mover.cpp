@@ -7,10 +7,15 @@
 #include "physics/physics.h"
 
 
+Mover::Mover(World& world):
+    m_world(world)
+{
+}
+
 void Mover::moveWorldObjects(float deltaSec) {
     m_voxelCollisions.clear();
 
-    for (WorldObject *worldObject : World::instance()->worldObjects()) {
+    for (WorldObject *worldObject : m_world.worldObjects()) {
         std::list<VoxelCollision>* collisionsPointer = nullptr;
         if (worldObject->objectType() == WorldObjectType::Bullet ||
             worldObject->objectType() == WorldObjectType::Rocket) {

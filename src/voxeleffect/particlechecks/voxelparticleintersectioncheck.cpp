@@ -32,7 +32,14 @@ bool VoxelParticleIntersectionCheck::isDead(const VoxelParticleData& particleDat
         return false;
     }
 
-    WorldObject* object = World::instance()->player().ship();
+    World& world = m_particleEngine.world();
+    if (!world.hasPresentation()) {
+        return false;
+    }
+    WorldObject* object = world.player().ship();
+    if (object == nullptr) {
+        return false;
+    }
     glm::ivec3 cell = glm::ivec3(object->transform().inverseApplyTo(position));
     if (object->voxel(cell)) {
         return true;
@@ -43,8 +50,9 @@ bool VoxelParticleIntersectionCheck::isDead(const VoxelParticleData& particleDat
 
 
 void VoxelParticleIntersectionCheck::beforeCheck() {
-    if (World::instance()->player().ship()) {
-        m_Sphere = World::instance()->player().ship()->bounds().sphere();
+    World& world = m_particleEngine.world();
+    if (world.hasPresentation() && world.player().ship()) {
+        m_Sphere = world.player().ship()->bounds().sphere();
     } else {
         m_Sphere = Sphere();
     }

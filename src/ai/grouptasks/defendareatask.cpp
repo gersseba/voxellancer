@@ -1,6 +1,7 @@
 #include "defendareatask.h"
 
 #include <memory>
+#include <stdexcept>
 
 #include "worldobject/ship.h"
 #include "ai/squadlogic.h"
@@ -70,8 +71,14 @@ void DefendAreaTask::onMemberJoin(Ship* member) {
 
 bool DefendAreaTask::isEnemyInRange() {
     m_enemies.clear();
-    Sphere sphere(m_squad.leader()->transform().position(), m_defendRange);
-    WorldTreeQuery query(&(World::instance()->worldTree()), &sphere, nullptr, m_collisionFilter.get());
+    Ship* leader = m_squad.leader();
+    World* world = leader ? leader->world() : nullptr;
+    if (world == nullptr) {
+        throw std::logic_error("Defend-area leader is not attached to a world.");
+    }
+    Sphere sphere(leader->transform().position(), m_defendRange);
+    WorldTreeQuery query(
+        &world->worldTree(), &sphere, nullptr, m_collisionFilter.get());
     for (WorldObject *worldObject : query.intersectingWorldObjects()) {
         Ship* ship = dynamic_cast<Ship*>(worldObject);
         if (ship) {

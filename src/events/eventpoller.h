@@ -5,10 +5,11 @@
 
 
 class EventPoll;
+class World;
 
 class EventPoller {
 public:
-    EventPoller();
+    explicit EventPoller(World& world);
     ~EventPoller();
 
     void addPoll(std::shared_ptr<EventPoll> eventPoll);
@@ -18,6 +19,6 @@ public:
 
 
 protected:
+    World& m_world;
     std::unordered_map<EventPoll*, std::shared_ptr<EventPoll>> m_eventPolls;
 };
-

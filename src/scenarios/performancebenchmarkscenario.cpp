@@ -3,6 +3,7 @@
 #include <cmath>
 #include <memory>
 #include <random>
+#include <stdexcept>
 #include <vector>
 
 #include <glm/glm.hpp>
@@ -12,7 +13,9 @@
 #include "ai/basictasks/fighttask.h"
 #include "ai/character.h"
 #include "benchmark/benchmarkmode.h"
+#ifndef VOXELLANCER_HEADLESS_SERVER
 #include "player.h"
+#endif
 #include "resource/worldobjectbuilder.h"
 #include "utils/handle/handle.h"
 #include "voxel/voxel.h"
@@ -23,7 +26,12 @@
 #include "worldobject/worldobjectinfo.h"
 
 namespace {
-    constexpr int LargeCombatShipsPerTeam = 400;
+    void validateShipsPerTeam(int shipsPerTeam) {
+        if (shipsPerTeam < 1 || shipsPerTeam > 400) {
+            throw std::invalid_argument("Benchmark ships per team must be between 1 and 400.");
+        }
+    }
+
     constexpr float LargeCombatClusterCenterOffset = 800.0f;
     constexpr float LargeCombatClusterRadius = 300.0f;
     constexpr float LargeCombatMinimumShipSpacing = 32.0f;
@@ -70,10 +78,16 @@ namespace {
     }
 }
 
-PerformanceBenchmarkScenario::PerformanceBenchmarkScenario(GamePlay* gamePlay, BenchmarkMode mode) :
-    BaseScenario(gamePlay),
-    m_mode(mode)
+PerformanceBenchmarkScenario::PerformanceBenchmarkScenario(
+    World& world,
+    BenchmarkMode mode,
+    int shipsPerTeam
+) :
+    BaseScenario(world),
+    m_mode(mode),
+    m_shipsPerTeam(shipsPerTeam)
 {
+    validateShipsPerTeam(m_shipsPerTeam);
 }
 
 void PerformanceBenchmarkScenario::populateWorld() {
@@ -121,7 +135,7 @@ void PerformanceBenchmarkScenario::populateCombatBenchmark() {
 
     for (int team = 0; team < 2; ++team) {
         for (int i = 0; i < shipsPerTeam; ++i) {
-            Ship* ship = WorldObjectBuilder("basicship").buildShip();
+            Ship* ship = WorldObjectBuilder("basicship", *m_world).buildShip();
             const int lane = i % columns;
             const int row = i / columns;
             const float x = team == 0 ? -teamOffset : teamOffset;
@@ -151,9 +165,9 @@ void PerformanceBenchmarkScenario::populateLargeCombatVsyncBenchmark() {
 
     for (int team = 0; team < 2; ++team) {
         std::vector<glm::vec3> positions;
-        positions.reserve(LargeCombatShipsPerTeam);
-        for (int i = 0; i < LargeCombatShipsPerTeam; ++i) {
-            Ship* ship = WorldObjectBuilder("basicship").buildShip();
+        positions.reserve(m_shipsPerTeam);
+        for (int i = 0; i < m_shipsPerTeam; ++i) {
+            Ship* ship = WorldObjectBuilder("basicship", *m_world).buildShip();
             const float yaw = team == 0 ? -glm::half_pi<float>() : glm::half_pi<float>();
             const glm::vec3 position = randomClusterPosition(
                 team, generator, directionComponent, radiusDistribution, positions);
@@ -174,7 +188,11 @@ void PerformanceBenchmarkScenario::populateLargeCombatVsyncBenchmark() {
 }
 
 void PerformanceBenchmarkScenario::assignCombatTasks(std::vector<Ship*> teams[2]) {
-    World::instance()->player().setShip(teams[0].front());
+#ifndef VOXELLANCER_HEADLESS_SERVER
+    if (m_world->hasPresentation()) {
+        m_world->player().setShip(teams[0].front());
+    }
+#endif
 
     for (int team = 0; team < 2; ++team) {
         std::vector<Handle<WorldObject>> targets;

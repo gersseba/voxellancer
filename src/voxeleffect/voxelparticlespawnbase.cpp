@@ -13,6 +13,7 @@
 #include "voxelparticledata.h"
 #include "voxelparticlesetup.h"
 #include "voxelparticleengine.h"
+#include "worldobject/worldobject.h"
 
 
 VoxelParticleSpawnBase::VoxelParticleSpawnBase(
@@ -20,8 +21,10 @@ VoxelParticleSpawnBase::VoxelParticleSpawnBase(
     char* dampeningName,
     char* angularDampeningName,
     char* baseForceName,
-    char* angularBaseForceName):
+    char* angularBaseForceName,
+    World* world):
     m_creator(creator),
+    m_world(world),
     m_position(0, 0, 0),
     m_scale(1.0f),
     m_scaleRandomization(0.0f),
@@ -90,3 +93,10 @@ float VoxelParticleSpawnBase::createLifetime() {
     return RandFloatPool::randomize(m_lifetime, m_lifetimeRandomization);
 }
 
+World* VoxelParticleSpawnBase::creatorWorld() const {
+    if (m_world != nullptr) {
+        return m_world;
+    }
+    const WorldObject* worldObject = dynamic_cast<const WorldObject*>(m_creator);
+    return worldObject == nullptr ? nullptr : worldObject->world();
+}

@@ -1,6 +1,8 @@
 #include "damager.h"
 
+#include <cmath>
 #include <set>
+#include <stdexcept>
 
 #include <glow/logging.h>
 
@@ -16,10 +18,13 @@
 #include "world/world.h"
 #include "world/helper/damageimpact.h"
 
+#ifndef VOXELLANCER_HEADLESS_SERVER
 #include "player.h"
+#endif
 
 
-Damager::Damager() :
+Damager::Damager(World& world) :
+    m_world(world),
     m_playerShipUndestroyable("general.playerShipUndestroyable")
 {
 }
@@ -30,11 +35,34 @@ void Damager::applyDamages(std::list<DamageImpact> &damageImpacts) {
     m_deadVoxels.clear();
 
     for(DamageImpact &damageImpact : damageImpacts) {
-        if (m_playerShipUndestroyable && World::instance()->player().ship() == damageImpact.worldObject()) {
+#ifndef VOXELLANCER_HEADLESS_SERVER
+        if (m_playerShipUndestroyable && m_world.hasPresentation() &&
+            m_world.player().ship() == damageImpact.worldObject()) {
             continue;
         }
+#endif
 
+        const float incomingDamage = damageImpact.damage();
         applyShields(damageImpact);
+        const float absorbedDamage = incomingDamage - damageImpact.damage();
+        if (m_shieldHitEventReplicationEnabled && absorbedDamage > 0.0f) {
+            const auto entity = m_world.entityId(damageImpact.worldObject());
+            if (!entity) {
+                throw std::logic_error(
+                    "Shield impact owner has no server entity ID.");
+            }
+            if (m_shieldHitEvents.size() >= MaxQueuedShieldHitEvents ||
+                !std::isfinite(absorbedDamage)) {
+                throw std::overflow_error(
+                    "Shield-hit event queue exceeded its valid limit.");
+            }
+            m_shieldHitEvents.push_back({
+                *entity,
+                m_world.simulationTickIndex(),
+                damageImpact.voxel()->cell(),
+                absorbedDamage
+            });
+        }
         if(damageImpact.damage() == 0) {
             continue;
         }
@@ -59,6 +87,20 @@ void Damager::applyDamages(std::list<DamageImpact> &damageImpacts) {
             }
         }
     }
+}
+
+void Damager::setShieldHitEventReplicationEnabled(bool enabled) {
+    m_shieldHitEventReplicationEnabled = enabled;
+    if (!enabled) {
+        m_shieldHitEvents.clear();
+    }
+}
+
+std::vector<voxellancer::protocol::ShieldHitEvent>
+Damager::drainShieldHitEvents() {
+    std::vector<voxellancer::protocol::ShieldHitEvent> events;
+    events.swap(m_shieldHitEvents);
+    return events;
 }
 
 std::list<DamageImpact> &Damager::dampedDeadlyDamageImpacts() {
@@ -93,4 +135,3 @@ void Damager::reset() {
 void Damager::applyShields(DamageImpact& damageImpact) {
     damageImpact.setDamage(damageImpact.worldObject()->components().compensateDamage(damageImpact.damage()));
 }
-

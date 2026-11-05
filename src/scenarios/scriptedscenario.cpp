@@ -33,24 +33,27 @@
 #include "scripting/gameplayscript.h"
 
 
-ScriptedScenario::ScriptedScenario(GamePlay* gamePlay, const std::string& path):
-    BaseScenario(gamePlay),
-    m_script(new GamePlayScript(World::instance()->scriptEngine()))
+ScriptedScenario::ScriptedScenario(World& world, const std::string& path):
+    BaseScenario(world),
+    m_path(path)
 {
-    m_script->load(path);
 }
 
 ScriptedScenario::~ScriptedScenario() = default;
 
 void ScriptedScenario::populateWorld() {
-    Ship *playerShip = WorldObjectBuilder("mox").buildShip();
+    Ship *playerShip = worldObjectBuilder("mox").buildShip();
     playerShip->transform().setPosition(glm::vec3(0, 0, 10));
     playerShip->info().setName("mox");
     playerShip->info().setShowOnHud(false);
     playerShip->info().setCanLockOn(false);
     m_world->god().scheduleSpawn(playerShip);
-    World::instance()->player().setShip(playerShip);
+    if (m_world->hasPresentation()) {
+        m_world->player().setShip(playerShip);
+    }
+
+    m_script = std::make_shared<GamePlayScript>(m_world->scriptEngine());
+    m_script->load(m_path);
 
     m_world->scriptEngine().addScript(m_script);
 }
-

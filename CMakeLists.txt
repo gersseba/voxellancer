@@ -16,6 +16,13 @@ option(OPTION_LIMIT_CONFIGS "Generate limited configs (Release; Debug)" ON)
 option(OPTION_ERRORS_AS_EXCEPTION "Throw exceptions" OFF)
 option(OPTION_CREATE_SUB_TEST "Create sub tests" OFF)
 option(OPTION_INCLUDE_VC_REDIST "Include VC redist" ON)
+option(VOXELLANCER_BUILD_CLIENT "Build the graphical game and network client" ON)
+option(VOXELLANCER_BUILD_SERVER "Build the headless authoritative server" ON)
+option(VOXELLANCER_BUILD_TESTS "Build tests" ON)
+
+if(NOT VOXELLANCER_BUILD_CLIENT AND NOT VOXELLANCER_BUILD_SERVER AND NOT VOXELLANCER_BUILD_TESTS)
+    message(FATAL_ERROR "At least one Voxellancer target must be enabled.")
+endif()
 
 
 # CMAKE CONFIGURATION
@@ -100,13 +107,28 @@ endif()
 
 # DEPENDENCIES
 # Find externals
-find_package(OpenGL REQUIRED)
 find_package(glm CONFIG REQUIRED)
-find_package(GLEW CONFIG REQUIRED)
-find_package(glfw3 CONFIG REQUIRED)
-find_package(SFML 3 CONFIG REQUIRED COMPONENTS Audio)
-find_package(Lua 5.5 REQUIRED)
-find_package(OpenMP REQUIRED)
+if(VOXELLANCER_BUILD_CLIENT)
+    find_package(OpenGL REQUIRED)
+    find_package(GLEW CONFIG REQUIRED)
+    find_package(glfw3 CONFIG REQUIRED)
+endif()
+
+set(SFML_COMPONENTS)
+if(VOXELLANCER_BUILD_CLIENT)
+    list(APPEND SFML_COMPONENTS Audio)
+endif()
+if(VOXELLANCER_BUILD_CLIENT OR VOXELLANCER_BUILD_SERVER)
+    list(APPEND SFML_COMPONENTS Network)
+endif()
+if(SFML_COMPONENTS)
+    find_package(SFML 3 CONFIG REQUIRED COMPONENTS ${SFML_COMPONENTS})
+endif()
+
+if(VOXELLANCER_BUILD_CLIENT OR VOXELLANCER_BUILD_SERVER)
+    find_package(Lua 5.5 REQUIRED)
+    find_package(OpenMP REQUIRED)
+endif()
 
 if(NOT TARGET Lua::Lua)
     add_library(Lua::Lua INTERFACE IMPORTED)
@@ -116,19 +138,23 @@ if(NOT TARGET Lua::Lua)
     )
 endif()
 
-if(NOT EXISTS "${LIB_DIR}/bandit-1.1.4/bandit/bandit.h" AND EXISTS "${LIB_DIR}/lib.zip")
-    file(ARCHIVE_EXTRACT
-        INPUT "${LIB_DIR}/lib.zip"
-        DESTINATION "${LIB_DIR}"
-        PATTERNS "bandit-1.1.4/*"
-    )
+if(VOXELLANCER_BUILD_TESTS)
+    if(NOT EXISTS "${LIB_DIR}/bandit-1.1.4/bandit/bandit.h" AND EXISTS "${LIB_DIR}/lib.zip")
+        file(ARCHIVE_EXTRACT
+            INPUT "${LIB_DIR}/lib.zip"
+            DESTINATION "${LIB_DIR}"
+            PATTERNS "bandit-1.1.4/*"
+        )
+    endif()
+    find_package(BANDIT REQUIRED)
 endif()
-find_package(BANDIT REQUIRED)
 
 set(GLOW_SOURCE_DIR ${LIB_DIR}/glow)
 include_directories(BEFORE ${CMAKE_CURRENT_SOURCE_DIR}/cmake/compat)
-include_directories(${GLOW_SOURCE_DIR}/source/glow/include)
-include_directories(${GLOW_SOURCE_DIR}/source/glowutils/include)
+if(VOXELLANCER_BUILD_CLIENT)
+    include_directories(${GLOW_SOURCE_DIR}/source/glow/include)
+    include_directories(${GLOW_SOURCE_DIR}/source/glowutils/include)
+endif()
 
 # Compile voxellancer
 set(target voxellancer)
@@ -152,6 +178,15 @@ file(GLOB_RECURSE SRC_FILES
 
 set(SRC_FILES_EXCEPT_MAIN ${SRC_FILES})
 list(REMOVE_ITEM SRC_FILES_EXCEPT_MAIN ${SRC_DIR}/main.cpp)
+list(REMOVE_ITEM SRC_FILES_EXCEPT_MAIN ${SRC_DIR}/server/main.cpp)
+list(REMOVE_ITEM SRC_FILES_EXCEPT_MAIN
+    ${SRC_DIR}/server/tcpserver.cpp
+    ${SRC_DIR}/server/headlesslogmessagebuilder.cpp
+    ${SRC_DIR}/client/main.cpp
+    ${SRC_DIR}/client/tcpclient.cpp
+    ${SRC_DIR}/client/snapshotinterpolator.cpp
+    ${SRC_DIR}/protocol/serverprotocol.cpp
+)
 
 file(GLOB_RECURSE SHADER_FILES
     "data/*.vert"
@@ -173,51 +208,195 @@ if(WIN32)
   set(SRC_FILES ${SRC_FILES} "${SOURCE_DIR}/voxellancer.rc")
 endif(WIN32)
 
-add_executable(${target}
-    ${SRC_FILES}
+set(CLIENT_SOURCE_FILES
+    ${SRC_FILES_EXCEPT_MAIN}
+    ${SRC_DIR}/client/tcpclient.cpp
+    ${SRC_DIR}/client/snapshotinterpolator.cpp
+    ${SOURCE_DIR}/main.cpp
     ${SHADER_FILES}
 )
+set(SERVER_SOURCE_FILES
+    ${SRC_FILES_EXCEPT_MAIN}
+    ${SRC_DIR}/server/tcpserver.cpp
+    ${SOURCE_DIR}/server/main.cpp
+)
+list(FILTER SERVER_SOURCE_FILES EXCLUDE REGEX
+    "/(camera|display|gamestate|input|programs|sound|ui)/|/benchmark/benchmarkrunner\\.cpp$|/benchmark/benchmarkprofiler\\.cpp$|/etc/context(dependant|provider)\\.cpp$|/geometry/viewport\\.cpp$|/player\\.cpp$|/resource/ddstexture\\.cpp$|/scenarios/[^/]+\\.cpp$|/utils/(aabbrenderer|cubemesh)\\.cpp$|/utils/statemachine/|/voxel/(voxelrenderdata|voxelrenderer)\\.cpp$|/voxeleffect/particlechecks/|/voxeleffect/(voxelmesh|voxelparticleengine|voxelparticlerenderer)\\.cpp$|/sound/(sound|soundmanager)\\.cpp$")
+list(REMOVE_ITEM SERVER_SOURCE_FILES
+    "${SRC_DIR}/client/localserverprocess.cpp"
+)
+# Property loading still materializes InputMapping values without device input.
+list(APPEND SERVER_SOURCE_FILES
+    "${SRC_DIR}/benchmark/benchmarkprofiler.cpp"
+    "${SRC_DIR}/display/rendering/visuals.cpp"
+    "${SRC_DIR}/input/inputmapping.cpp"
+    "${SRC_DIR}/scenarios/basescenario.cpp"
+    "${SRC_DIR}/scenarios/battlescenario.cpp"
+    "${SRC_DIR}/scenarios/performancebenchmarkscenario.cpp"
+    "${SRC_DIR}/sound/soundproperties.cpp"
+)
+if(WIN32)
+    list(APPEND CLIENT_SOURCE_FILES "${SOURCE_DIR}/voxellancer.rc")
+endif()
+
+add_library(voxellancer-protocol STATIC
+    ${SRC_DIR}/protocol/serverprotocol.cpp
+)
+target_include_directories(voxellancer-protocol
+    PUBLIC ${SOURCE_DIR}
+)
+target_link_libraries(voxellancer-protocol
+    PUBLIC glm::glm
+)
+
+if(VOXELLANCER_BUILD_SERVER)
+    set(GLOW_LOGGING_SOURCE_DIR ${GLOW_SOURCE_DIR}/source/glow/source)
+    add_library(voxellancer-server-support STATIC
+        ${GLOW_LOGGING_SOURCE_DIR}/Changeable.cpp
+        ${GLOW_LOGGING_SOURCE_DIR}/ChangeListener.cpp
+        ${GLOW_LOGGING_SOURCE_DIR}/ConsoleLogger.cpp
+        ${GLOW_LOGGING_SOURCE_DIR}/LogMessage.cpp
+        ${GLOW_LOGGING_SOURCE_DIR}/formatString.cpp
+        ${GLOW_LOGGING_SOURCE_DIR}/logging.cpp
+        ${SRC_DIR}/server/headlesslogmessagebuilder.cpp
+    )
+    target_include_directories(voxellancer-server-support
+        PUBLIC ${GLOW_SOURCE_DIR}/source/glow/include
+    )
+    target_compile_definitions(voxellancer-server-support
+        PUBLIC GLOW_STATIC
+    )
+    target_link_libraries(voxellancer-server-support
+        PUBLIC glm::glm
+    )
+endif()
 
 add_definitions(-DGLM_FORCE_RADIANS)
 add_definitions(-DGLM_FORCE_CTOR_INIT)
 add_definitions(-DGLM_ENABLE_EXPERIMENTAL)
 
-set(LIBS_TO_LINK
-    OpenGL::GL
-    GLEW::GLEW
-    glfw
-    glm::glm
-    SFML::Audio
-    Lua::Lua
-    OpenMP::OpenMP_CXX
-    glow
-    glowutils
-    ${LIBS_TO_LINK}
-)
+if(VOXELLANCER_BUILD_CLIENT)
+    add_executable(${target}
+        ${CLIENT_SOURCE_FILES}
+    )
 
-if(MSVC)
-    list(APPEND LIBS_TO_LINK legacy_stdio_definitions)
+    set(LIBS_TO_LINK
+        OpenGL::GL
+        GLEW::GLEW
+        glfw
+        glm::glm
+        SFML::Audio
+        Lua::Lua
+        OpenMP::OpenMP_CXX
+        glow
+        glowutils
+        ${LIBS_TO_LINK}
+    )
+
+    if(MSVC)
+        list(APPEND LIBS_TO_LINK legacy_stdio_definitions)
+    endif()
+
+    target_link_libraries(${target}
+        ${LIBS_TO_LINK}
+        voxellancer-protocol
+        SFML::Network
+    )
+
+    add_executable(voxellancer-client
+        ${SRC_DIR}/client/main.cpp
+        ${SRC_DIR}/client/tcpclient.cpp
+        ${SRC_DIR}/client/snapshotinterpolator.cpp
+    )
+    target_link_libraries(voxellancer-client
+        voxellancer-protocol
+        glm::glm
+        SFML::Network
+    )
+    set_target_properties(voxellancer-client
+        PROPERTIES
+        LINKER_LANGUAGE CXX
+        COMPILE_DEFINITIONS_DEBUG "${DEFAULT_COMPILE_DEFS_DEBUG}"
+        COMPILE_DEFINITIONS_RELEASE "${DEFAULT_COMPILE_DEFS_RELEASE}"
+        COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS}"
+        LINK_FLAGS_DEBUG "${DEFAULT_LINKER_FLAGS_DEBUG}"
+        LINK_FLAGS_RELEASE "${DEFAULT_LINKER_FLAGS_RELEASE}"
+        DEBUG_POSTFIX "d${DEBUG_POSTFIX}"
+    )
+
+    set_target_properties(${target}
+        PROPERTIES
+        LINKER_LANGUAGE CXX
+        COMPILE_DEFINITIONS_DEBUG "${DEFAULT_COMPILE_DEFS_DEBUG}"
+        COMPILE_DEFINITIONS_RELEASE "${DEFAULT_COMPILE_DEFS_RELEASE}"
+        COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS}"
+        LINK_FLAGS_DEBUG "${DEFAULT_LINKER_FLAGS_DEBUG}"
+        LINK_FLAGS_RELEASE "${DEFAULT_LINKER_FLAGS_RELEASE}"
+        DEBUG_POSTFIX "d${DEBUG_POSTFIX}"
+    )
 endif()
-
-target_link_libraries(${target}
-    ${LIBS_TO_LINK}
-)
-
-set_target_properties(${target}
-    PROPERTIES
-    LINKER_LANGUAGE CXX
-    COMPILE_DEFINITIONS_DEBUG "${DEFAULT_COMPILE_DEFS_DEBUG}"
-    COMPILE_DEFINITIONS_RELEASE "${DEFAULT_COMPILE_DEFS_RELEASE}"
-    COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS}"
-    LINK_FLAGS_DEBUG "${DEFAULT_LINKER_FLAGS_DEBUG}"
-    LINK_FLAGS_RELEASE "${DEFAULT_LINKER_FLAGS_RELEASE}"
-    DEBUG_POSTFIX "d${DEBUG_POSTFIX}"
-)
+if(VOXELLANCER_BUILD_SERVER)
+    set(SERVER_CORE_SOURCE_FILES ${SERVER_SOURCE_FILES})
+    list(REMOVE_ITEM SERVER_CORE_SOURCE_FILES ${SOURCE_DIR}/server/main.cpp)
+    list(APPEND SERVER_CORE_SOURCE_FILES
+        ${SRC_DIR}/client/tcpclient.cpp
+        ${SRC_DIR}/client/snapshotinterpolator.cpp
+    )
+    add_library(voxellancer-server-core STATIC
+        ${SERVER_CORE_SOURCE_FILES}
+    )
+    target_compile_definitions(voxellancer-server-core
+        PUBLIC VOXELLANCER_HEADLESS_SERVER=1
+    )
+    set(SERVER_LIBS_TO_LINK
+        glm::glm
+        Lua::Lua
+        OpenMP::OpenMP_CXX
+        voxellancer-server-support
+    )
+    if(MSVC)
+        list(APPEND SERVER_LIBS_TO_LINK legacy_stdio_definitions)
+    endif()
+    target_link_libraries(voxellancer-server-core
+        PUBLIC
+        ${SERVER_LIBS_TO_LINK}
+        voxellancer-protocol
+        SFML::Network
+    )
+    set_target_properties(voxellancer-server-core
+        PROPERTIES
+        COMPILE_DEFINITIONS_DEBUG "${DEFAULT_COMPILE_DEFS_DEBUG}"
+        COMPILE_DEFINITIONS_RELEASE "${DEFAULT_COMPILE_DEFS_RELEASE}"
+        COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS}"
+    )
+    add_executable(voxellancer-server
+        ${SOURCE_DIR}/server/main.cpp
+    )
+    target_link_libraries(voxellancer-server PRIVATE voxellancer-server-core)
+    set_target_properties(voxellancer-server
+        PROPERTIES
+        LINKER_LANGUAGE CXX
+        COMPILE_DEFINITIONS_DEBUG "${DEFAULT_COMPILE_DEFS_DEBUG}"
+        COMPILE_DEFINITIONS_RELEASE "${DEFAULT_COMPILE_DEFS_RELEASE}"
+        COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS}"
+        LINK_FLAGS_DEBUG "${DEFAULT_LINKER_FLAGS_DEBUG}"
+        LINK_FLAGS_RELEASE "${DEFAULT_LINKER_FLAGS_RELEASE}"
+        DEBUG_POSTFIX "d${DEBUG_POSTFIX}"
+    )
+endif()
 
 set(DOCUMENTATION doc/howto.html doc/luaapi.html)
 
-install(TARGETS ${target}
-        RUNTIME DESTINATION .)
+set(INSTALL_TARGETS)
+if(VOXELLANCER_BUILD_CLIENT)
+    list(APPEND INSTALL_TARGETS ${target} voxellancer-client)
+endif()
+if(VOXELLANCER_BUILD_SERVER)
+    list(APPEND INSTALL_TARGETS voxellancer-server)
+endif()
+if(INSTALL_TARGETS)
+    install(TARGETS ${INSTALL_TARGETS} RUNTIME DESTINATION .)
+endif()
 install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/data
         DESTINATION .
         PATTERN "*.png" EXCLUDE)
@@ -228,7 +407,9 @@ include(cmake/Package.cmake)
 
 include_directories(${SOURCE_DIR})
 
-add_subdirectory(test)
+if(VOXELLANCER_BUILD_TESTS)
+    add_subdirectory(test)
+endif()
 
 # add GLOW and GLOWUTILS
 set(INSTALL_BIN           ".")
@@ -237,11 +418,13 @@ set(INSTALL_LIB           "lib")
 set(OPTION_BUILD_STATIC   OFF)
 option(OPTION_ERRORS_AS_EXCEPTION "Throw exceptions" OFF)
 
-add_subdirectory(${GLOW_SOURCE_DIR}/source/glow)
-add_subdirectory(${GLOW_SOURCE_DIR}/source/glowutils)
+if(VOXELLANCER_BUILD_CLIENT)
+    add_subdirectory(${GLOW_SOURCE_DIR}/source/glow)
+    add_subdirectory(${GLOW_SOURCE_DIR}/source/glowutils)
 
-target_link_libraries(glow glm::glm)
-target_link_libraries(glowutils glm::glm)
-if(MSVC)
-    target_compile_options(glowutils PRIVATE /wd4834)
+    target_link_libraries(glow glm::glm)
+    target_link_libraries(glowutils glm::glm)
+    if(MSVC)
+        target_compile_options(glowutils PRIVATE /wd4834)
+    endif()
 endif()

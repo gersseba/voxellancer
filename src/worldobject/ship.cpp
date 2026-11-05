@@ -11,12 +11,15 @@
 #include "world/world.h"
 
 
-Ship::Ship():
+Ship::Ship(World& world):
     WorldObject(),
-    m_character(new Character(*this, World::instance()->factionMatrix().unknownFaction())),
-    m_boardComputer(new BoardComputer(this)),
-    m_squadLogic(new SquadLogic(*this))
+    m_character(new Character(*this, world.factionMatrix().unknownFaction())),
+    m_boardComputer(new BoardComputer(this, world)),
+    m_world(&world),
+    m_squadLogic(new SquadLogic(*this)),
+    m_aiUpdatePhase(0)
 {
+    setWorld(world);
     m_info->setShowOnHud(true);
     m_info->setCanLockOn(true);
 }
@@ -30,7 +33,10 @@ WorldObjectType Ship::objectType() const {
 void Ship::update(float deltaSec) {
     WorldObject::update(deltaSec);
 
-    m_character->update(deltaSec);
+    if (m_world->simulationTickIndex() % AiUpdateIntervalTicks ==
+        m_aiUpdatePhase) {
+        m_character->update(deltaSec * AiUpdateIntervalTicks);
+    }
     m_boardComputer->update(deltaSec);
 }
 
@@ -54,8 +60,10 @@ BoardComputer* Ship::boardComputer() {
     return m_boardComputer.get();
 }
 
+void Ship::setAiUpdatePhase(std::uint32_t phase) {
+    m_aiUpdatePhase = phase % AiUpdateIntervalTicks;
+}
+
 SquadLogic* Ship::squadLogic() {
     return m_squadLogic.get();
 }
-
-

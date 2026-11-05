@@ -14,13 +14,13 @@ class GamePlayScript;
 
 class ScriptedScenario: public BaseScenario {
 public:
-    ScriptedScenario(GamePlay* gamePlay, const std::string& path);
+    ScriptedScenario(World& world, const std::string& path);
     virtual ~ScriptedScenario();
 
 
 protected:
+    std::string m_path;
     std::shared_ptr<GamePlayScript> m_script;
 
     virtual void populateWorld() override;
 };
-

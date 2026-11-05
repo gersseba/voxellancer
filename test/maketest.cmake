@@ -18,6 +18,8 @@ function(make_test TEST_TARGET) #TEST_FILES is second argument!
 
     target_link_libraries(${TEST_TARGET}
         ${LIBS_TO_LINK}
+        voxellancer-protocol
+        SFML::Network
     )
 
     set_target_properties(${TEST_TARGET}

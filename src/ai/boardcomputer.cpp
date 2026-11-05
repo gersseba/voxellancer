@@ -5,18 +5,19 @@
 #include <algorithm>
 #include <cmath>
 #include <limits>
+#include <stdexcept>
 
 #include <glm/gtc/quaternion.hpp>
 
 #include "collision/collisionfilter.h"
 
 #include "utils/safenormalize.h"
-#include "utils/randvec3.h"
 #include "utils/geometryhelper.h"
 #include "utils/staggeredphase.h"
 
 #include "physics/physics.h"
 
+#include "world/world.h"
 #include "worldobject/ship.h"
 #include "worldobject/worldobjectcomponents.h"
 #include "worldobject/helper/componentsinfo.h"
@@ -32,14 +33,41 @@ static const float s_minActDistance = 0.5f;
 static const float s_minActAngle = glm::radians(2.0f);
 static const float s_minAutoUpAngle = glm::radians(10.0f);
 
+namespace {
+    World& requireWorld(WorldObject* worldObject) {
+        if (worldObject == nullptr || worldObject->world() == nullptr) {
+            throw std::invalid_argument(
+                "BoardComputer requires a world-owned object.");
+        }
+        return *worldObject->world();
+    }
+}
+
 BoardComputer::BoardComputer(WorldObject* worldObject) :
+    BoardComputer(worldObject, requireWorld(worldObject))
+{
+}
+
+BoardComputer::BoardComputer(WorldObject* worldObject, World& world) :
     m_worldObject(worldObject),
+    m_world(&world),
     m_overwriteEngineState(false)
 {
 }
 
 WorldObject* BoardComputer::worldObject() {
     return m_worldObject;
+}
+
+void BoardComputer::seedRandom(std::uint64_t seed) {
+    const std::uint32_t low = static_cast<std::uint32_t>(seed);
+    const std::uint32_t high = static_cast<std::uint32_t>(seed >> 32);
+    std::seed_seq sequence{low, high};
+    m_randomEngine.seed(sequence);
+}
+
+float BoardComputer::randomFloat(float from, float to) {
+    return std::uniform_real_distribution<float>(from, to)(m_randomEngine);
 }
 
 const EngineState& BoardComputer::engineState() const {
@@ -139,24 +167,23 @@ glm::vec3 BoardComputer::rotateUpAuto(const glm::quat& rotation) {
 }
 
 void BoardComputer::shootBullet(
-    std::vector<Handle<WorldObject>>& targets,
-    float deltaSec
+    std::vector<Handle<WorldObject>>& targets
 ) {
     BenchmarkCpuScope scope(BenchmarkMetric::ShootingTargetSelection);
-    shootBulletsAtTargets(&targets, nullptr, deltaSec);
+    shootBulletsAtTargets(&targets, nullptr, m_world->simulationTickIndex());
 }
 
-void BoardComputer::shootBullet(Handle<WorldObject>& target, float deltaSec) {
+void BoardComputer::shootBullet(Handle<WorldObject>& target) {
     BenchmarkCpuScope scope(BenchmarkMetric::ShootingTargetSelection);
-    shootBulletsAtTargets(nullptr, &target, deltaSec);
+    shootBulletsAtTargets(nullptr, &target, m_world->simulationTickIndex());
 }
 
 void BoardComputer::shootBulletsAtTargets(
     std::vector<Handle<WorldObject>>* targets,
     Handle<WorldObject>* focusedTarget,
-    float deltaSec
+    std::uint64_t tick
 ) {
-    constexpr float GunTargetSelectionInterval = 0.75f;
+    constexpr std::uint32_t GunTargetSelectionIntervalTicks = 45;
     std::list<std::shared_ptr<Hardpoint>>& hardpoints = m_worldObject->components().hardpoints();
     const float maxBulletRange = m_worldObject->components().componentsInfo().maxBulletRange();
 
@@ -204,12 +231,11 @@ void BoardComputer::shootBulletsAtTargets(
 
         WorldObject* currentTarget = selection.target.get();
         if (!selection.initialized) {
-            selection.refreshCountdown = StaggeredPhase::initialPhase(
-                selection.scheduleKey, GunTargetSelectionInterval);
+            selection.nextRefreshTick = tick + StaggeredPhase::initialPhaseTicks(
+                selection.scheduleKey, GunTargetSelectionIntervalTicks);
             selection.initialized = true;
         }
-        selection.refreshCountdown -= deltaSec;
-        if (selection.refreshCountdown <= 0.0f) {
+        if (tick >= selection.nextRefreshTick) {
             BenchmarkProfiler::instance().addCounter(BenchmarkCounter::GunTargetRefreshes);
             const Handle<WorldObject> selectedTarget = selectGunTarget(
                 hardpoint.get(), targets, focusedTarget, selection.target);
@@ -217,9 +243,9 @@ void BoardComputer::shootBulletsAtTargets(
                 BenchmarkProfiler::instance().addCounter(BenchmarkCounter::GunTargetsAssigned);
             }
             selection.target = selectedTarget;
-            selection.refreshCountdown = StaggeredPhase::period(
+            selection.nextRefreshTick = tick + StaggeredPhase::periodTicks(
                 selection.scheduleKey,
-                GunTargetSelectionInterval,
+                GunTargetSelectionIntervalTicks,
                 selection.refreshCycle++);
         }
 
@@ -227,8 +253,12 @@ void BoardComputer::shootBulletsAtTargets(
         if (target && WorldObjectGeometryHelper::sphereToSphereDistance(
                 m_worldObject, target) < maxBulletRange) {
             const glm::vec3 targetDirection = target->position() - m_worldObject->position();
-            const glm::vec3 inaccuracyNoise =
-                RandVec3::rand(0, 1) * glm::length(targetDirection) / 30.0f;
+            glm::vec3 inaccuracyNoise(
+                randomFloat(0.0f, 1.0f),
+                randomFloat(0.0f, 1.0f),
+                randomFloat(0.0f, 1.0f)
+            );
+            inaccuracyNoise *= glm::length(targetDirection) / 30.0f;
             Gun* gun = static_cast<Gun*>(hardpoint->weapon().get());
             gun->fireAtPoint(target->position() + inaccuracyNoise, true);
         }

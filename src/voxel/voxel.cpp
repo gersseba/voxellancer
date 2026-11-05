@@ -17,9 +17,10 @@ Property<float>* Voxel::s_defaultHp;
 Voxel::Voxel(const glm::ivec3& cell, uint32_t color, float density, float hp, float emissiveness):
     m_gridCell(cell),
     m_voxelTreeNode(nullptr),
-    m_visuals(color, 0.0f),
-    m_density(density),
-    m_hp(hp)
+    m_visuals(color, emissiveness),
+    m_hp(hp),
+    m_maxHp(hp),
+    m_density(density)
 {
     assert(m_density > 0.0f);
     assert( cell.x >= 0 && cell.x < 256 &&
@@ -28,9 +29,10 @@ Voxel::Voxel(const glm::ivec3& cell, uint32_t color, float density, float hp, fl
 }
 
 Voxel::Voxel(const Voxel& other):
-    Voxel(other.cell(), other.visuals().color(), other.density(), other.hp())
+    Voxel(other.cell(), other.visuals().color(), other.density(), other.maxHP())
 {
     m_visuals = other.visuals();
+    m_hp = other.hp();
 }
 
 Voxel::~Voxel() {
@@ -67,6 +69,10 @@ Visuals Voxel::visuals() const {
 
 float Voxel::hp() const {
     return m_hp;
+}
+
+float Voxel::maxHP() const {
+    return m_maxHp;
 }
 
 void Voxel::applyDamage(float deltaHp) {
@@ -117,5 +123,3 @@ float Voxel::defaultHp() {
     }
     return s_defaultHp->get();
 }
-
-

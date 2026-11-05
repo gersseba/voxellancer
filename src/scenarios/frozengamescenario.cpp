@@ -28,8 +28,8 @@
 #include "worldobject/worldobjectinfo.h"
 
 
-FrozenGameScenario::FrozenGameScenario(GamePlay* inGame) :
-    BaseScenario(inGame)
+FrozenGameScenario::FrozenGameScenario(World& world) :
+    BaseScenario(world)
 {
 }
 
@@ -37,7 +37,7 @@ void FrozenGameScenario::populateWorld() {
     glow::debug("Create WorldObjects");
     std::shared_ptr<Squad> squadA = std::make_shared<Squad>();
 
-    Ship* normandy = WorldObjectBuilder("normandy").buildShip();
+    Ship* normandy = worldObjectBuilder("normandy").buildShip();
     normandy->transform().setPosition(glm::vec3(0, 0, -100));
     normandy->info().setName("Normandy");
     normandy->info().setShowOnHud(true);
@@ -47,7 +47,7 @@ void FrozenGameScenario::populateWorld() {
 
     int nmember_count = 4;
     for (int i = 0; i < nmember_count; i++) {
-        Ship *follower = WorldObjectBuilder("basicship").buildShip();
+        Ship *follower = worldObjectBuilder("basicship").buildShip();
         follower->transform().setPosition(glm::vec3(100 * (-nmember_count / 2.0f + i), 50, 0));
         follower->info().setName("member");
         follower->info().setShowOnHud(true);
@@ -59,7 +59,7 @@ void FrozenGameScenario::populateWorld() {
 
     std::shared_ptr<Squad> squadB = std::make_shared<Squad>();
 
-    Ship *leader = WorldObjectBuilder("eagle").buildShip();
+    Ship *leader = worldObjectBuilder("eagle").buildShip();
     leader->transform().setPosition(glm::vec3(0, 200, -100));
     leader->info().setName("leader");
     leader->info().setShowOnHud(true);
@@ -69,7 +69,7 @@ void FrozenGameScenario::populateWorld() {
 
     int lmember_count = 2;
     for (int i = 0; i < lmember_count; i++) {
-        Ship *follower = WorldObjectBuilder("basicship").buildShip();
+        Ship *follower = worldObjectBuilder("basicship").buildShip();
         follower->transform().setPosition(glm::vec3(100 * (-lmember_count / 2.0f + i), 200, 0));
         follower->info().setName("member");
         follower->info().setShowOnHud(true);
@@ -78,13 +78,15 @@ void FrozenGameScenario::populateWorld() {
         m_world->god().scheduleSpawn(follower);
     }
 
-    Ship *testCluster = WorldObjectBuilder("mox").buildShip();
+    Ship *testCluster = worldObjectBuilder("mox").buildShip();
     testCluster->transform().setPosition(glm::vec3(0, 0, 10));
     testCluster->info().setName("basicship");
     testCluster->info().setShowOnHud(false);
     m_world->god().scheduleSpawn(testCluster);
 
-    World::instance()->player().setShip(testCluster);
+    if (m_world->hasPresentation()) {
+        m_world->player().setShip(testCluster);
+    }
 
     WorldObject *wall = new WorldObject();
     wall->transform().move(glm::vec3(-30, 0, -50));
@@ -145,4 +147,3 @@ void FrozenGameScenario::populateWorld() {
     glow::debug("Initial spawn");
     m_world->god().spawn();
 }
-

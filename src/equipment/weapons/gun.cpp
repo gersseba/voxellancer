@@ -1,5 +1,7 @@
 #include "gun.h"
 
+#include <stdexcept>
+
 #include "benchmark/benchmarkprofiler.h"
 
 #include "utils/geometryhelper.h"
@@ -13,7 +15,9 @@
 
 #include "resource/worldobjectbuilder.h"
 
+#ifndef VOXELLANCER_HEADLESS_SERVER
 #include "sound/soundmanager.h"
+#endif
 
 #include "voxel/voxelclusterbounds.h"
 #include "voxel/specialvoxels/hardpointvoxel.h"
@@ -68,6 +72,11 @@ void Gun::fireAtPoint(const glm::vec3& point, bool checkFriendlyFire) {
     if (!canFire()) {
         return;
     }
+    WorldObject* owner = m_hardpoint->components()->worldObject();
+    World* world = owner ? owner->world() : nullptr;
+    if (world == nullptr) {
+        throw std::logic_error("Gun owner is not attached to a world.");
+    }
 
     BenchmarkProfiler::instance().addCounter(BenchmarkCounter::WeaponAimChecks);
     if (!m_hardpoint->inFieldOfAim(point)) {
@@ -78,13 +87,17 @@ void Gun::fireAtPoint(const glm::vec3& point, bool checkFriendlyFire) {
         return;
     }
 
-    Bullet *bullet =  WorldObjectBuilder(projectileName()).buildBullet();
+    Bullet *bullet = WorldObjectBuilder(projectileName(), *world).buildBullet();
     setupBullet(bullet, point);
 
-    World::instance()->god().scheduleSpawn(bullet);
+    world->god().scheduleSpawn(bullet);
     BenchmarkProfiler::instance().addCounter(BenchmarkCounter::BulletsScheduled);
 
-    SoundManager::current()->play(fireSound(), hardpoint()->voxel()->position());
+#ifndef VOXELLANCER_HEADLESS_SERVER
+    if (world->hasPresentation()) {
+        SoundManager::current()->play(fireSound(), hardpoint()->voxel()->position());
+    }
+#endif
 
     onFired();
 }
@@ -93,11 +106,19 @@ bool Gun::isBulletPathClear(const glm::vec3& point, bool checkFriendlyFire) {
     BenchmarkCpuScope scope(BenchmarkMetric::BulletLineOfFireQuery);
     BenchmarkProfiler::instance().addCounter(BenchmarkCounter::BulletLineOfFireQueries);
     WorldObject* owner = m_hardpoint->components()->worldObject();
+    World* world = owner ? owner->world() : nullptr;
+    if (world == nullptr) {
+        throw std::logic_error("Gun owner is not attached to a world.");
+    }
 
     glm::vec3 direction = glm::normalize(point - m_hardpoint->voxel()->position());
     Capsule capsuleToTarget = Capsule::fromTo(m_hardpoint->voxel()->position() + direction * (m_bulletLength / 2.0f + m_spawnDistance), point, m_bulletMaxWidth / 2);
 
-    WorldTreeQuery fireDirectionQuery(&World::instance()->worldTree(), &capsuleToTarget, owner->collisionDetector().geode()->hint(), nullptr);
+    WorldTreeQuery fireDirectionQuery(
+        &world->worldTree(),
+        &capsuleToTarget,
+        owner->collisionDetector().geode()->hint(),
+        nullptr);
 
     const bool hasBlockingObject = fireDirectionQuery.anyIntersectingWorldObject(
         [owner, checkFriendlyFire](WorldObject* object) {

@@ -25,22 +25,31 @@ namespace StaggeredPhase {
         return mix(hash ^ quantize(position.z));
     }
 
-    inline float unitInterval(std::uint32_t hash) {
-        return static_cast<float>(static_cast<double>(hash) / 4294967296.0);
-    }
-
-    inline float initialPhase(std::uint32_t key, float interval) {
-        return unitInterval(mix(key)) * interval;
-    }
-
-    inline float period(
+    inline std::uint32_t initialPhaseTicks(
         std::uint32_t key,
-        float interval,
+        std::uint32_t intervalTicks
+    ) {
+        return intervalTicks == 0 ? 0 : mix(key) % intervalTicks;
+    }
+
+    inline std::uint32_t periodTicks(
+        std::uint32_t key,
+        std::uint32_t intervalTicks,
         std::uint32_t cycle,
-        float variationFraction = 0.15f) {
-        const std::uint32_t cycleHash = mix(key ^ ((cycle + 1U) * 0x9e3779b9U));
-        const float variation = (unitInterval(cycleHash) * 2.0f - 1.0f) *
-            variationFraction;
-        return interval * (1.0f + variation);
+        float variationFraction = 0.15f
+    ) {
+        if (intervalTicks == 0) {
+            return 0;
+        }
+        const std::uint32_t variationTicks = static_cast<std::uint32_t>(
+            static_cast<float>(intervalTicks) * variationFraction);
+        const std::uint32_t minimum = intervalTicks > variationTicks
+            ? intervalTicks - variationTicks
+            : 1;
+        const std::uint32_t maximum = intervalTicks + variationTicks;
+        const std::uint32_t spread = maximum - minimum + 1;
+        const std::uint32_t cycleHash =
+            mix(key ^ ((cycle + 1U) * 0x9e3779b9U));
+        return minimum + cycleHash % spread;
     }
 }

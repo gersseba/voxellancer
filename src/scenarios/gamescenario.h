@@ -2,11 +2,9 @@
 
 #include "scenarios/basescenario.h"
 
-class GamePlay;
-
 class GameScenario : public BaseScenario {
 public:
-    GameScenario(GamePlay* inGame);
+    explicit GameScenario(World& world);
 
 protected:
     virtual void populateWorld() override;
@@ -16,4 +14,3 @@ protected:
     void spawnPirateFleet();
     void spawnStuff();
 };
-

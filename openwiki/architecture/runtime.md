@@ -3,10 +3,9 @@ type: architecture
 title: Application runtime and game states
 description: Explains Voxellancer startup, frame dispatch, nested game states, rendering ownership, and current stereo-view behavior.
 tags: [runtime, game-state, rendering, startup]
-verified:
-  - by: openwiki/0.7.2
-    at: 2026-11-03T15:48:08.697Z
 sources:
+  - id: openwiki-source-18f8ead36ee6202ab5e3f24e
+    resource: repo://src/client/localserverprocess.cpp
   - id: openwiki-source-a9076e43ad02acc175f927f9
     resource: repo://src/display/stereorenderinfo.cpp
   - id: openwiki-source-c1511177dbb2a9aad890cfcb
@@ -19,7 +18,12 @@ sources:
     resource: repo://src/gamestate/gameplay/running/gameplayrunning.cpp
   - id: openwiki-source-d364d949938a433276255c32
     resource: repo://src/main.cpp
-generated: { by: "copilot", at: "2026-11-03T15:48:08.697Z" }
+  - id: openwiki-source-7b722948afd514b26fa2b16c
+    resource: repo://src/utils/simulationtickrunner.h
+generated: { by: "copilot", at: "2026-11-05T22:43:09.174Z" }
+verified:
+  - by: openwiki/0.7.2
+    at: 2026-11-05T22:43:09.174Z
 ---
 
 # Application runtime and game states
@@ -38,12 +42,13 @@ This generic stereo path does not initialize an Oculus device or SDK.
 
 ## Frame loop
 
-The GLFW loop obtains a delta from `glfwGetTime`, calls `Game::update`, draws
-the active scene through `Game::draw`, swaps buffers, and polls events. `Game`
-clamps the delta to `[0.0001, 0.05]` seconds before forwarding it into its
-active state and updating the viewer. Resize events update both the OpenGL
-viewport and the viewer viewport; input callbacks are forwarded to whichever
-game-state input handler is active.
+The GLFW loop obtains a delta from `glfwGetTime`, passes it to `Game::update`,
+draws the active scene through `Game::draw`, swaps buffers, and polls events.
+`Game` forwards that delta through the active state and updates the viewer; the
+world simulation uses its own fixed-tick runner rather than relying on a
+clamped render-frame delta. Resize events update both the OpenGL viewport and
+the viewer viewport; input callbacks are forwarded to whichever game-state
+input handler is active.
 
 `Viewer` owns the current mono or stereo `View`. Its `draw` method establishes
 back-face culling and clears depth before delegating the scene and camera to
@@ -61,9 +66,13 @@ they override them, which lets the root render the currently active leaf state.
 the gameplay scene, and sound. Entering gameplay activates sound and loads
 scenario 0, the Lua-backed demo scenario. Gameplay updates its selected input
 and sound listener, advances the current game state, then updates the scene.
-The running substate advances `World`. Free-camera mode switches the camera and
-input source, clears player movement, and controls HUD visibility through the
-`vfx.drawhud` property.
+The running substate advances the local world through `SimulationSession` when
+no remote preview is active. With a remote preview, it polls the TCP client
+instead and presents replicated server state without advancing the local world.
+Free-camera mode switches the camera and input source, clears player movement,
+and controls HUD visibility through the `vfx.drawhud` property. See
+[client-server simulation](client-server-simulation.md) for the replication
+path and local singleplayer startup.
 
 ## Shutdown and change boundaries
 

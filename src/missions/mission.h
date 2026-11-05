@@ -9,6 +9,7 @@
 
 
 class MissionScript;
+class World;
 
 enum class MissionState {
     Idle,
@@ -19,7 +20,7 @@ enum class MissionState {
 
 class Mission : public Scriptable, public HandleOwner {
 public:
-    Mission(const std::string& path);
+    Mission(World& world, const std::string& path);
     ~Mission();
 
     void start();
@@ -42,7 +43,8 @@ public:
 
 
 protected:
+    World& m_world;
     std::shared_ptr<MissionScript> m_script;
+    std::string m_missionKey;
     MissionState m_state;
 };
-

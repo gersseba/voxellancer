@@ -10,7 +10,9 @@
 
 #include "resource/clustercache.h"
 
+#ifndef VOXELLANCER_HEADLESS_SERVER
 #include "voxelrenderdata.h"
+#endif
 #include "voxel.h"
 #include "voxelclusterbounds.h"
 
@@ -18,7 +20,9 @@
 VoxelCluster::VoxelCluster(float scale):
     m_voxels(),
     m_bounds(new VoxelClusterBounds(this)),
-    m_voxelRenderData(new VoxelRenderData(m_voxels)),
+#ifndef VOXELLANCER_HEADLESS_SERVER
+    m_voxelRenderData(nullptr),
+#endif
     m_transform(glm::vec3(0), scale),
     m_emissiveness(0)
 {
@@ -69,7 +73,11 @@ void VoxelCluster::addVoxel(Voxel* voxel) {
 
     m_voxels[voxel->cell()] = voxel;
     m_bounds->addVoxel(voxel);
-    m_voxelRenderData->invalidate();
+#ifndef VOXELLANCER_HEADLESS_SERVER
+    if (m_voxelRenderData) {
+        m_voxelRenderData->invalidate();
+    }
+#endif
 }
 
 void VoxelCluster::removeVoxel(Voxel* voxel) {
@@ -77,14 +85,23 @@ void VoxelCluster::removeVoxel(Voxel* voxel) {
 
     m_bounds->removeVoxel(voxel); // Needs to be done before removal from m_voxels
     m_voxels.erase(voxel->cell());
-    m_voxelRenderData->invalidate();
+#ifndef VOXELLANCER_HEADLESS_SERVER
+    if (m_voxelRenderData) {
+        m_voxelRenderData->invalidate();
+    }
+#endif
 
     delete voxel;
 }
 
+#ifndef VOXELLANCER_HEADLESS_SERVER
 VoxelRenderData* VoxelCluster::voxelRenderData(){
+    if (!m_voxelRenderData) {
+        m_voxelRenderData.reset(new VoxelRenderData(m_voxels));
+    }
     return m_voxelRenderData.get();
 }
+#endif
 
 const std::unordered_map<glm::ivec3, Voxel*>& VoxelCluster::voxelMap() const {
     return m_voxels;
@@ -101,4 +118,3 @@ float VoxelCluster::emissiveness() const {
 void VoxelCluster::setEmissiveness(float emissiveness) {
     m_emissiveness = emissiveness;
 }
-

@@ -51,6 +51,7 @@ Faction& FactionMatrix::getFaction(const std::string& factionName) {
 
 void FactionMatrix::addFaction(std::shared_ptr<Faction> faction) {
     assert(m_factions.find(faction->key()) == m_factions.end());
+    faction->setFactionMatrix(*this);
     m_factions[faction->key()] = faction;
     getRelation(*faction, *faction).setFriendliness(100);
 }
@@ -82,4 +83,3 @@ std::pair<Faction*, Faction*> FactionMatrix::uniquePair(Faction& factionA, Facti
         return std::pair<Faction*, Faction*>(&factionB, &factionA);
     }
 }
-

@@ -2,6 +2,8 @@
 
 #include <glow/logging.h>
 
+#include <stdexcept>
+
 #include "ai/basictasks/splitrockettask.h"
 
 #include "equipment/weapons/bullet.h"
@@ -24,7 +26,8 @@
 #include "worldobject/worldobject.h"
 
 
-SplitRocket::SplitRocket():
+SplitRocket::SplitRocket(World& world):
+    Rocket(world),
     m_childrenSpeedBoost(0.0f),
     m_childrenSpeedBoostRandomization(0.0f),
     m_splitDistance(150.0f),
@@ -111,16 +114,25 @@ void SplitRocket::setMinFlytimeBeforeSplit(float minFlytimeBeforeSplit) {
 }
 
 void SplitRocket::split() {
+    World* owningWorld = world();
+    if (owningWorld == nullptr) {
+        throw std::logic_error("Split rocket is not attached to a world.");
+    }
     spawnChildren();
     spawnExplosion();
 
-    World::instance()->god().scheduleRemoval(this);
+    owningWorld->god().scheduleRemoval(this);
 }
 
 void SplitRocket::spawnChildren() {
     if (m_targetHandle.valid()) {
+        World* owningWorld = world();
+        if (owningWorld == nullptr) {
+            throw std::logic_error("Split rocket is not attached to a world.");
+        }
         for (int i = 0; i < m_childrenCount; i++) {
-            WorldObject* child = WorldObjectBuilder(m_childrenType).build();
+            WorldObject* child =
+                WorldObjectBuilder(m_childrenType, *owningWorld).build();
 
             float splitAngle = RandFloatPool::randomize(m_splitAngle, m_splitAngleRandomization);
 
@@ -146,7 +158,7 @@ void SplitRocket::spawnChildren() {
             }
 
 
-            World::instance()->god().scheduleSpawn(child);
+            owningWorld->god().scheduleSpawn(child);
         }
     }
 }
@@ -178,4 +190,3 @@ void SplitRocket::spawnExplosion() {
 
     generator.spawn();
 }
-

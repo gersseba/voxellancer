@@ -31,6 +31,7 @@ public:
     virtual Visuals visuals() const;
 
     float hp() const;
+    float maxHP() const;
     void applyDamage(float deltaHp);
 
     virtual float damageForwardingDestructionDamage();
@@ -48,6 +49,7 @@ protected:
     VoxelTreeNode *m_voxelTreeNode;
     Visuals m_visuals;
     float m_hp;
+    float m_maxHp;
     float m_density;
 
     static Property<float>* s_defaultDensity;
@@ -56,4 +58,3 @@ protected:
     static float defaultDensity();
     static float defaultHp();
 };
-

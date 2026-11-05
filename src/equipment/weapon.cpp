@@ -8,6 +8,10 @@
 
 #include "equipment/hardpoint.h"
 #include "equipment/weapons/projectile.h"
+#include "world/world.h"
+#include "world/worldlogic.h"
+#include "worldobject/worldobject.h"
+#include "worldobject/worldobjectcomponents.h"
 
 
 Weapon::Weapon(WeaponType type, const std::string& equipmentKey):
@@ -61,6 +65,16 @@ bool Weapon::canFire() {
 
 void Weapon::onFired() {
     m_cooldown = cooldownTime();
+    WorldObject* owner = m_hardpoint && m_hardpoint->components()
+        ? m_hardpoint->components()->worldObject()
+        : nullptr;
+    World* world = owner ? owner->world() : nullptr;
+    if (world != nullptr && m_hardpoint->voxel() != nullptr) {
+        world->worldLogic().recordWeaponFired(
+            owner,
+            m_hardpoint->group(),
+            m_hardpoint->voxel()->cell());
+    }
 }
 
 void Weapon::onProjectileNameChanged() {
@@ -71,4 +85,3 @@ void Weapon::setProjectileName(const std::string& name) {
     m_projectileName = name;
     onProjectileNameChanged();
 }
-

@@ -21,6 +21,7 @@ class CollisionFilter;
 class Physics;
 class WorldObjectInfo;
 class VoxelCollision;
+class World;
 class WorldObjectComponents;
 class ComponentsInfo;
 
@@ -63,6 +64,8 @@ public:
     const Physics& physics() const;
 
     WorldObjectInfo& info();
+    World* world() const;
+    void setWorld(World& world);
 
     WorldObjectComponents& components();
     const WorldObjectComponents& components() const;
@@ -105,5 +108,5 @@ protected:
     bool m_crucialVoxelDestroyed;
     float m_collisionFieldOfDamage;
     SpawnState m_spawnState;
+    World* m_world = nullptr;
 };
-

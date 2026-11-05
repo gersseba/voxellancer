@@ -8,7 +8,7 @@
  */
 class SplitRocket: public Rocket {
 public:
-    SplitRocket();
+    explicit SplitRocket(World& world);
 
     virtual void setTarget(WorldObject* targetObject) override;
 
@@ -67,4 +67,3 @@ protected:
     void setChildSpeed(WorldObject* child, const glm::quat& launchOrientation);
     virtual void spawnExplosion() override;
 };
-

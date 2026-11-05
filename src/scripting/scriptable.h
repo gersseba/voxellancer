@@ -1,5 +1,6 @@
 #pragma once
 
+class ScriptEngine;
 
 class Scriptable {
 public:
@@ -16,7 +17,11 @@ public:
 
 
 protected:
+    friend class ScriptEngine;
+
+    void setScriptEngine(ScriptEngine* scriptEngine);
+
     int m_key;
     bool m_local;
+    ScriptEngine* m_scriptEngine;
 };
-

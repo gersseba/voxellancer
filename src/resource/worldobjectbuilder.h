@@ -7,6 +7,7 @@ class Bullet;
 class Rocket;
 class Ship;
 class VoxelCluster;
+class World;
 class WorldObject;
 class WorldObjectComponents;
 
@@ -16,6 +17,7 @@ class WorldObjectComponents;
 class WorldObjectBuilder {
 public:
     WorldObjectBuilder(const std::string& name);
+    WorldObjectBuilder(const std::string& name, World& world);
 
     WorldObject* build();
 
@@ -28,9 +30,10 @@ public:
 
 protected:
     std::string m_name;
+    World* m_world = nullptr;
 
-    template<typename T>
-    T* makeWorldObject();
+    template<typename T, typename... Args>
+    T* makeWorldObject(Args&&... args);
 
     void setupVoxelCluster(WorldObject* worldObject);
     void setupComponents(WorldObjectComponents& components);
@@ -45,4 +48,3 @@ protected:
      */
     void equipSomehow(WorldObject* worldObject);
 };
-

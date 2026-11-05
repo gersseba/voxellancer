@@ -21,7 +21,7 @@
             }
         },
         {
-            "label": "Build and Run Rendering Benchmark",
+            "label": "Build and Run Client Rendering Benchmark",
             "type": "process",
             "command": "powershell.exe",
             "args": [
@@ -42,7 +42,7 @@
             }
         },
         {
-            "label": "Build and Run Combat Benchmark",
+            "label": "Build and Run Client Combat Benchmark",
             "type": "process",
             "command": "powershell.exe",
             "args": [
@@ -63,7 +63,7 @@
             }
         },
         {
-            "label": "Build and Run Large Fleet VSync Benchmark",
+            "label": "Build and Run Client Large Fleet VSync Benchmark",
             "type": "process",
             "command": "powershell.exe",
             "args": [
@@ -76,6 +76,27 @@
                 "Run",
                 "-Benchmark",
                 "LargeCombatVsync"
+            ],
+            "problemMatcher": [],
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
+            }
+        },
+        {
+            "label": "Build and Run Server Large Combat Benchmark",
+            "type": "process",
+            "command": "powershell.exe",
+            "args": [
+                "-NoProfile",
+                "-ExecutionPolicy",
+                "Bypass",
+                "-File",
+                "${workspaceFolder}\\tools\\agent-check.ps1",
+                "-Mode",
+                "Run",
+                "-Benchmark",
+                "ServerLargeCombat"
             ],
             "problemMatcher": [],
             "presentation": {

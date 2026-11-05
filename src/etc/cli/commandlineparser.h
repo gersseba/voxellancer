@@ -16,6 +16,8 @@ public:
     bool stereoView() const;
     bool fullScreen() const;
     bool showIntro() const;
+    bool serverPreview() const;
+    bool localSingleplayer() const;
     BenchmarkMode benchmarkMode() const;
 
 private:

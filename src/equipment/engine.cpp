@@ -4,8 +4,10 @@
 
 #include "physics/physics.h"
 
+#ifndef VOXELLANCER_HEADLESS_SERVER
 #include "sound/sound.h"
 #include "sound/soundmanager.h"
+#endif
 
 #include "voxel/voxel.h"
 #include "voxeleffect/enginetrailgenerator.h"
@@ -14,6 +16,7 @@
 #include "equipment/engineslot.h"
 #include "worldobject/worldobjectcomponents.h"
 #include "worldobject/worldobject.h"
+#include "world/world.h"
 
 
 Engine::Engine(const std::string& key):
@@ -23,9 +26,11 @@ Engine::Engine(const std::string& key):
 }
 
 Engine::~Engine() {
+#ifndef VOXELLANCER_HEADLESS_SERVER
     if (m_sound) {
         m_sound->stop();
     }
+#endif
 }
 
 const Visuals& Engine::visuals() const {
@@ -63,17 +68,40 @@ const EngineSlot* Engine::engineSlot() const {
 void Engine::setEngineSlot(EngineSlot* engineSlot) {
     m_engineSlot = engineSlot;
 
+#ifndef VOXELLANCER_HEADLESS_SERVER
+    if (m_engineSlot == nullptr) {
+        m_trailGenerator.reset();
+        if (m_sound) {
+            m_sound->stop();
+            m_sound.reset();
+        }
+        return;
+    }
+
     m_trailGenerator.reset(new EngineTrailGenerator(*this, *m_engineSlot->components()->worldObject()));
     setupTrail();
+#endif
 }
 
 void Engine::update(float deltaSec) {
+#ifdef VOXELLANCER_HEADLESS_SERVER
+    (void)deltaSec;
+#else
+    WorldObject* owner = m_engineSlot && m_engineSlot->components()
+        ? m_engineSlot->components()->worldObject()
+        : nullptr;
+    World* world = owner ? owner->world() : nullptr;
+    if (world == nullptr || !world->hasPresentation()) {
+        return;
+    }
+
     if (!m_sound) {
         m_sound = SoundManager::current()->play(sound(), engineSlot()->voxel()->position());
     }
     m_sound->setPosition(engineSlot()->voxel()->position());
 
     m_trailGenerator->update(deltaSec);
+#endif
 }
 
 const EngineState& Engine::state() const {
@@ -98,4 +126,3 @@ void Engine::setupTrail() {
     m_trailGenerator->setColor(Property<uint32_t>::get(equipmentKey() + ".trail.color", 0x6666FF));
     m_trailGenerator->setEmissiveness(Property<float>::get(equipmentKey() + ".trail.emissiveness", 0.4f));
 }
-

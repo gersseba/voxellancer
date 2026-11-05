@@ -41,7 +41,7 @@ GamePlay::GamePlay(Game* game) :
     m_game(game),
     m_scene(new GamePlayScene(*this)),
     m_soundManager(new SoundManager()),
-    m_runningState(new GamePlayRunning(this)),
+    m_runningState(new GamePlayRunning(this, *World::instance())),
     m_pausedState(new GamePlayPaused(this)),
     m_normalInput(new GamePlayNormalInput(*this)),
     m_freecamInput(new GamePlayFreecamInput(*this)),
@@ -124,37 +124,40 @@ void GamePlay::loadScenario(int i) {
         m_scenario->clear();
     }
     updateView();
+    World& world = *World::instance();
 
     switch (i) {
     case 0:
-        m_scenario.reset(new ScriptedScenario(this, "data/scripts/scenarios/demo.lua"));
+        m_scenario.reset(new ScriptedScenario(world, "data/scripts/scenarios/demo.lua"));
         break;
     case 1:
-        m_scenario.reset(new GameScenario(this));
+        m_scenario.reset(new GameScenario(world));
         break;
-    case 2:
-        m_scenario.reset(new BattleScenario(this));
+    case BattleScenario::ScenarioId:
+        m_scenario.reset(new BattleScenario(world));
         break;
     case 3:
-        m_scenario.reset(new FrozenGameScenario(this));
+        m_scenario.reset(new FrozenGameScenario(world));
         break;
     case 4:
-        m_scenario.reset(new PirateScenario(this));
+        m_scenario.reset(new PirateScenario(world));
         break;
     case 5:
-        m_scenario.reset(new FriendlyFireScenario(this));
+        m_scenario.reset(new FriendlyFireScenario(world));
         break;
     case PerformanceBenchmarkScenario::RenderingScenarioId:
-        m_scenario.reset(new PerformanceBenchmarkScenario(this, BenchmarkMode::Rendering));
+        m_scenario.reset(new PerformanceBenchmarkScenario(world, BenchmarkMode::Rendering));
         break;
     case PerformanceBenchmarkScenario::CombatScenarioId:
-        m_scenario.reset(new PerformanceBenchmarkScenario(this, BenchmarkMode::Combat));
+        m_scenario.reset(new PerformanceBenchmarkScenario(world, BenchmarkMode::Combat));
         break;
     case PerformanceBenchmarkScenario::LargeCombatVsyncScenarioId:
-        m_scenario.reset(new PerformanceBenchmarkScenario(this, BenchmarkMode::LargeCombatVsync));
+        m_scenario.reset(new PerformanceBenchmarkScenario(
+            world,
+            BenchmarkMode::LargeCombatVsync));
         break;
     default:
-        m_scenario.reset(new BaseScenario(this));
+        m_scenario.reset(new BaseScenario(world));
     }
 
     m_scenario->load();

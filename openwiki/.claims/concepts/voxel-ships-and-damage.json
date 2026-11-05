@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:81c47e13076dfa633888f5dfe9299b7b765c8b8ffcdb3119e41f3679fc588b37",
+  "pageVersion": "sha256:dcf6093de720fccdebc0727433b3ab7b310fbfd2f35b673b7d9019e91b9a9b93",
   "claims": [
     {
       "id": "claim_bb4a65120cd24ba2a35b80b1d4d39203",
@@ -8,17 +8,21 @@
       "evidence": [
         {
           "resource": "repo://src/voxel/voxelcluster.cpp",
-          "version": "repo-file-v1:sha256:7ba153906e5dbb3877104da404a8275f50a267752668ec8a0d4c1bcba8fa954f"
+          "version": "repo-file-v1:sha256:925b9585a09944c648fe0d0f0f3fdf315fa42c36b35c44ab6e8c41198a339f0c"
         }
       ]
     },
     {
       "id": "claim_ff1f36848cb244e2bc2ce77f31eb2792",
-      "statement": "Damager applies component damage compensation, records dead voxels and their WorldObject modifications, and can skip impacts on the player ship through the playerShipUndestroyable property.",
+      "statement": "Damager applies component damage compensation, records dead voxels and their WorldObject modifications, and bypasses damage for the current player ship only when the world has presentation; headless and server-mode worlds do not use that client-player guard.",
       "evidence": [
         {
-          "resource": "repo://src/world/handler/damager.cpp",
-          "version": "repo-file-v1:sha256:6aaceaaed8b84ffc2fd015bc9c1ddd2ad0002da9081692e42f0961800b32fa98"
+          "resource": "repo://src/world/handler/damager.cpp#L26-L67",
+          "version": "repo-lines-v1:sha256:bfb63cb19a9ab1d30f3093f72254b98d0913f04ea5ff1fc71b4ff7954faf69a9:eyJzZWxlY3RlZExpbmVDb3VudCI6NDIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImZmYWE4MmI1MTZjMTA5NWY1NzQzZWZlNGYwNGI5NmM4MTQxZGE0MTMyM2RlZWM4ZjgwMTQ4ZGJkZjlmY2JhNWMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImE0ZDA2Nzg0NWU2MzdkYWU5ZDVjM2MyOWFkNzUyYjgzMWJlOTBkODQ1NjliYmUyYjE4NzE4OWEzMTZlZjY0NjEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjY4Y2VmYzgzYzExZjFmYTA1ZWM2N2NkNGQ3MTM0NGU2MzUwNWM5N2M0MTM1ODEyY2IwNTI3NWM2ODQwOWY5NTkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjNjZjBkNzM0NzU1MzI2YjA5MjlmYTZjMTdmY2ExMDg0ZjY2MjRkYjUwNTlmMDY3NzA3ZTQxZmM2ODI1ODlmMTYifQ"
+        },
+        {
+          "resource": "repo://src/world/world.cpp#L86-L105",
+          "version": "repo-lines-v1:sha256:9c161ba29663c738f13572a04cd1c0c3a68a652fc3ecb6509b32e9507a278bbb:eyJzZWxlY3RlZExpbmVDb3VudCI6MjAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImMwYmY2NTQxZDQ4NDkxNmYyNzg4ZjgxMjhlYzg2MjY2YWFjYTQ2ODVlZjdlNDNhZDNjMmE5MzczMGI5Mjk4MDYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjgzYzFiYjlhNTc5NTU0OGQzOGQ4MGM1MTAxMmM3OTRkMzhmZjdkZTE2OTZiNzYwYmFjMmQxYWRhNDMyMTIzZDQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImU3NWI4NjFlNGU4NDkxYTAzMjNlM2IwZGY5YWRjMzg0ZDQzOGU1MTNhYzZhNjIyN2NiYjdmMTFkNWM2MGFmMjEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjRlZjQzMzU0MmEyNDE4ZmRkMWE3NzZhMjVjMjlkZjYwYjk0ZmVjODhkMjMzZDE4YWRhODIxZjBhM2IzM2ZjMGYifQ"
         }
       ]
     },
@@ -38,13 +42,31 @@
       "evidence": [
         {
           "resource": "repo://src/world/handler/splitter.cpp",
-          "version": "repo-file-v1:sha256:fbe258c40738473af113a94928ebabfc66cb9d2fe32c80a902856ca0e42d96bf"
+          "version": "repo-file-v1:sha256:100cfbd8efd78a62962feb37599b7a4ce200bd11d077073f8c862653fd47fc69"
+        }
+      ]
+    },
+    {
+      "id": "claim_696aafe3b43b497fa5e5342879c93c27",
+      "statement": "SimulationSession collects voxel damage and removal events after authoritative world updates, and TcpServer sends those typed events to connected clients.",
+      "evidence": [
+        {
+          "resource": "repo://src/server/tcpserver.cpp#L204-L210",
+          "version": "repo-lines-v1:sha256:62398d1e7c83d2bbd13e1eca5ee8b731e1c925d0b78c05461653eb3899824587:eyJzZWxlY3RlZExpbmVDb3VudCI6NywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZmQyMDZkODk4NjVhOTQyYzE3NDBmYjlmMDNhZWRiMzFjNjczYjg0Y2FlZWY5NjYxNTNjMmJhYzVmYzcxMjViNyIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNjZlOTUyZDNhYmMxNGRjMmUwNDE5MzEyZDRhODY0NzEwZDM1MDQ2Nzc3MjdhNGUzMjQwZDVhMmI4OWQ1NzNhNiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNjIzZTIxN2E0ZTVlZWYwOWM5NGMxZWE0MmEzNDZmYWZhZmYxZWM4ZTY5MGM4MDIxYTlmNGExYjBiNGFlNTc5ZiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiOGMyMGJkNWNhMTlkMjBkYTRmNjEyNTYyY2YxOTM3Y2QwYWVjMzJiZTVkYmE5NGZiZTExZDlhNGMyMjI5NjNlYSJ9"
+        },
+        {
+          "resource": "repo://src/server/tcpserver.cpp#L511-L570",
+          "version": "repo-lines-v1:sha256:911b82ea89dd57f7c5e10c8cc6771f35ec42c7c53b071d60b63a4c372d3bfe05:eyJzZWxlY3RlZExpbmVDb3VudCI6NjAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjU2YTJhYTRkNzhhNDM0MGE5MmEyNjRjZmRiZTJhY2Q3NDQ2YzVlMmRjM2NjYmM2Y2YyNTJjNDYzYWU1Yzc3OWUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjgyNTFiZmFiY2ZiNmQ4OWZkOWY0ZTNiN2JjNGExNzRmZDkwYzk5ODE4NmU0ZmRlMmM4ZmEzNGU2ZDVjMjkzYWEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjQ3ODNjODdjMmNjNTczODdlMjdkYmI4YjhlMWM4ZGI3NzRjN2M5YWFjM2JiYWRiNDllZGE4NDdlYmIyZDRkZGEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjAyNGYzODk2ZGY1NGQ4OTZiNWNlMjg1YmJjNzE2NDZjOTUzZjJiOTM1YTdjOGFiODJhMTg4OTE3ZjUyYmVjNTcifQ"
+        },
+        {
+          "resource": "repo://src/simulation/simulationsession.cpp#L92-L114",
+          "version": "repo-lines-v1:sha256:3c91cf9464ecdf35de94d20b8b0f3ef84648a0d022b38e0a97e87ab2788c7608:eyJzZWxlY3RlZExpbmVDb3VudCI6MjMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImJmZWIwZjZmNWI5ZjkzYmQ2Yzg5Y2Y3YzlhMDJlMTlkYzRlM2U1ZjdiODBiNmI5ODMyMzBiOTc5YTdhMmNjYTYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjZjNGQyYWYwYjE3NzIxNDQzNWRlNGI4YWU2NTU1MmI0ZTRhYzMzNWMwYzliYzRkMWYwMDQwM2ZkOTg2NGI2YzAiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjBhZWVmNmM4ZmQwMmQ0YjBmYmVhZWU0YjFmYmQzMmQ3ZTA4ZDE2ZTE2MDgxYzY5YmRlMzg4ZmRjNDc5MzBmNmYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjI0MWU0MGFkMDExNTlkOTg2MDY1YjU0ZDY0YmJlODAwMGMyNDE5NmRhOWU0ZjE0MmZjNjJmYWMxZjYwNDI3NmUifQ"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.2",
-    "at": "2026-11-03T15:48:08.697Z"
+    "at": "2026-11-05T22:43:09.174Z"
   }
 }

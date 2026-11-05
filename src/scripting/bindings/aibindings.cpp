@@ -65,20 +65,20 @@ int AiBindings::apiSetFaction(apikey key, const std::string& faction) {
         return -1;
     }
 
-    Faction& f = World::instance()->factionMatrix().getFaction(faction);
+    Faction& f = m_scriptEngine.world().factionMatrix().getFaction(faction);
     ship->character()->setFaction(f);
     return 0;
 }
 
 float AiBindings::apiGetFactionRelation(const std::string& factionA, const std::string& factionB) {
-    FactionMatrix& factions = World::instance()->factionMatrix();
+    FactionMatrix& factions = m_scriptEngine.world().factionMatrix();
     Faction& fA = factions.getFaction(factionA);
     Faction& fB = factions.getFaction(factionB);
     return factions.getRelation(fA, fB).friendliness();
 }
 
 int AiBindings::apiSetFactionRelation(const std::string& factionA, const std::string& factionB, float friendliness) {
-    FactionMatrix& factions = World::instance()->factionMatrix();
+    FactionMatrix& factions = m_scriptEngine.world().factionMatrix();
     Faction& fA = factions.getFaction(factionA);
     Faction& fB = factions.getFaction(factionB);
     factions.getRelation(fA, fB).setFriendliness(friendliness);
@@ -95,7 +95,7 @@ apikey AiBindings::apiOnAiTaskFinished(apikey key, const std::string& callback) 
 
     auto finishedPoll = std::make_shared<AiTaskFinishedPoll>(aiTask, createCallback(callback, key));
 
-    World::instance()->eventPoller().addPoll(finishedPoll);
+    m_scriptEngine.world().eventPoller().addPoll(finishedPoll);
     m_script.addLocal(finishedPoll);
 
     return finishedPoll->scriptKey();
@@ -184,4 +184,3 @@ apikey AiBindings::apiTaskExecutor(apikey aiTask) {
 
     return ship->scriptKey();
 }
-

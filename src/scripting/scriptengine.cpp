@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cassert>
+#include <stdexcept>
 
 #include <glow/logging.h>
 
@@ -9,15 +10,21 @@
 #include "script.h"
 
 
-ScriptEngine::ScriptEngine():
+ScriptEngine::ScriptEngine(World& world):
+    m_world(world),
     m_nextKey(1),
     m_running(false)
 {
 }
 
+World& ScriptEngine::world() const {
+    return m_world;
+}
+
 ScriptEngine::~ScriptEngine() {
     for (auto pair : m_scriptables) {
         pair.second->setScriptKey(Scriptable::INVALID_KEY);
+        pair.second->setScriptEngine(nullptr);
     }
     m_scripts.clear(); // delete scripts before scriptengine
 }
@@ -43,23 +50,35 @@ void ScriptEngine::stop() {
 }
 
 void ScriptEngine::registerScriptable(Scriptable* scriptable) {
-    if (scriptable->scriptKey() > 0) {
+    if (scriptable->m_scriptEngine == this && scriptable->scriptKey() > 0) {
         // This is legit and happens e.g. when an object is created by a script
         return;
     }
+    if (scriptable->m_scriptEngine != nullptr ||
+        scriptable->scriptKey() != Scriptable::INVALID_KEY) {
+        throw std::logic_error("A scriptable cannot be registered with multiple script engines.");
+    }
 
     m_scriptables[m_nextKey] = scriptable;
+    scriptable->setScriptEngine(this);
     scriptable->setScriptKey(m_nextKey);
 
     m_nextKey++;
 }
 
 void ScriptEngine::unregisterScriptable(Scriptable* scriptable) {
+    if (scriptable->m_scriptEngine != this) {
+        if (scriptable->scriptKey() == Scriptable::INVALID_KEY) {
+            return;
+        }
+        throw std::logic_error("A scriptable cannot be unregistered by a different script engine.");
+    }
     if (scriptable->scriptKey() > 0) {
         assert(keyValid(scriptable->scriptKey()));
 
         m_scriptables.erase(scriptable->scriptKey());
         scriptable->setScriptKey(Scriptable::INVALID_KEY);
+        scriptable->setScriptEngine(nullptr);
     }
 }
 
@@ -99,4 +118,3 @@ Scriptable* ScriptEngine::getScriptable(int key) {
         }
     }
 }
-

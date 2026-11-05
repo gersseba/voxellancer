@@ -31,52 +31,55 @@
 #include "worldobject/worldobjectinfo.h"
 
 
-FriendlyFireScenario::FriendlyFireScenario(GamePlay* gamePlay) :
-    BaseScenario(gamePlay)
+FriendlyFireScenario::FriendlyFireScenario(World& world) :
+    BaseScenario(world)
 {
 }
 
 void FriendlyFireScenario::populateWorld() {
     glow::debug("Create WorldObjects");
 
-    Ship *victim = WorldObjectBuilder("mox").buildShip();
+    Ship *victim = worldObjectBuilder("mox").buildShip();
     victim->transform().setPosition(glm::vec3(0, 0, 200));
     victim->info().setName("member");
     victim->info().setShowOnHud(true);
     victim->info().setCanLockOn(true);
-    victim->character()->setFaction(World::instance()->factionMatrix().policeFaction());
+    victim->character()->setFaction(m_world->factionMatrix().policeFaction());
     m_world->god().scheduleSpawn(victim);
 
     std::shared_ptr<Squad> attacker = std::make_shared<Squad>();
     attacker->setTask(std::make_shared<DefendAreaTask>(*attacker,
         std::list<glm::vec3>{glm::vec3(0, 0, 0)}, 500.0f));
-    Ship* pirate = WorldObjectBuilder("piratelight").buildShip();
+    Ship* pirate = worldObjectBuilder("piratelight").buildShip();
     pirate->transform().setPosition(glm::vec3(0, -10, -200));
     pirate->transform().setOrientation(glm::quat(glm::vec3(0, 0, 1)));
     pirate->info().setName("pirate");
     pirate->info().setShowOnHud(true);
     pirate->info().setCanLockOn(true);
-    pirate->character()->setFaction(World::instance()->factionMatrix().pirateFaction());
+    pirate->character()->setFaction(m_world->factionMatrix().pirateFaction());
     pirate->squadLogic()->joinSquad(attacker);
     m_world->god().scheduleSpawn(pirate);
 
-    Ship *bigship = WorldObjectBuilder("bc304").buildShip();
+    Ship *bigship = worldObjectBuilder("bc304").buildShip();
     bigship->transform().setPosition(glm::vec3(0, 0, 10));
     bigship->transform().setOrientation(glm::quat(glm::vec3(0, 0, 1)));
     bigship->info().setName("big");
     bigship->info().setShowOnHud(true);
     bigship->info().setShowOnHud(true);
-    bigship->character()->setFaction(World::instance()->factionMatrix().pirateFaction());
+    bigship->character()->setFaction(m_world->factionMatrix().pirateFaction());
     m_world->god().scheduleSpawn(bigship);
 
-    Ship *playerShip = WorldObjectBuilder("basicship").buildShip();
+    Ship *playerShip = worldObjectBuilder("basicship").buildShip();
     playerShip->transform().setPosition(glm::vec3(100, 0, 0));
     playerShip->transform().setOrientation(glm::quat(glm::vec3(0, glm::radians(70.0f), 0)));
     playerShip->info().setName("player");
-    World::instance()->player().setShip(playerShip);
+    if (m_world->hasPresentation()) {
+        m_world->player().setShip(playerShip);
+    }
     m_world->god().scheduleSpawn(playerShip);
 
-    World::instance()->factionMatrix().getRelationToPlayer(World::instance()->factionMatrix().pirateFaction()).setFriendliness(100);
+    m_world->factionMatrix().getRelationToPlayer(
+        m_world->factionMatrix().pirateFaction()).setFriendliness(100);
 
     glow::debug("Initial spawn");
     m_world->god().spawn();

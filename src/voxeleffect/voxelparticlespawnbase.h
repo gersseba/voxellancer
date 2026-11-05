@@ -10,6 +10,7 @@
 class RandVec3Pool;
 class Transform;
 class VoxelCluster;
+class World;
 
 class VoxelParticleSpawnBase {
 public:
@@ -30,9 +31,11 @@ protected:
                            char* dampeningName,
                            char* angularDampeningName,
                            char* baseForceName,
-                           char* angularBaseForceName);
+                           char* angularBaseForceName,
+                           World* world = nullptr);
 
     const VoxelCluster* m_creator;
+    World* m_world;
 
     glm::vec3 m_position;
 
@@ -59,5 +62,5 @@ protected:
     glm::vec3 createDirectionalSpeed();
     glm::vec3 createAngularSpeed();
     float createLifetime();
+    World* creatorWorld() const;
 };
-

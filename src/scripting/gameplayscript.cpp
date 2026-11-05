@@ -30,7 +30,7 @@ GamePlayScript::GamePlayScript(ScriptEngine& scriptEngine):
 GamePlayScript::~GamePlayScript() {
     for (std::weak_ptr<EventPoll>& eventPoll : m_eventPolls) {
         if (auto poll = eventPoll.lock()) {
-            World::instance()->eventPoller().removePoll(poll.get());
+            m_scriptEngine->world().eventPoller().removePoll(poll.get());
         }
     }
 

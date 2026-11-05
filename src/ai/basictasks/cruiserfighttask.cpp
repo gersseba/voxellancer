@@ -21,7 +21,7 @@ CruiserFightTask::CruiserFightTask(BoardComputer* boardComputer, const std::vect
 }
 
 void CruiserFightTask::update(float deltaSec) {
-    if (updateTargets(deltaSec, 1.0f)) {
+    if (updateTargets(60)) {
         selectPrimaryTarget();
     }
     updateState();
@@ -45,7 +45,7 @@ void CruiserFightTask::update(float deltaSec) {
             boardComputer()->shootRockets(primaryTarget);
         }
 
-        boardComputer()->shootBullet(m_targets, deltaSec);
+        boardComputer()->shootBullet(m_targets);
         break;
     }
 }

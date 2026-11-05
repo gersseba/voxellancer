@@ -13,7 +13,7 @@ class VoxelCluster;
 
 class VoxelExplosionGenerator : public VoxelParticleSpawnBase {
 public:
-    VoxelExplosionGenerator(const VoxelCluster* creator);
+    VoxelExplosionGenerator(const VoxelCluster* creator, World* world = nullptr);
     virtual ~VoxelExplosionGenerator();
 
     void setRadius(float radius);
@@ -28,4 +28,3 @@ protected:
 
     float createScale();
 };
-

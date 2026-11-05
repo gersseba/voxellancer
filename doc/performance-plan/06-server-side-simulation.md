@@ -1,53 +1,189 @@
 # Plan 6: Move authoritative simulation to a headless server
 
-## Goal
+## Current status
 
-Separate authoritative game state and simulation from the local client so the
-same simulation can run headless on a server and be presented by one or more
-clients. Preserve single-player and existing scenarios during the migration;
-do not replace the game loop, entity model, and networking in one change.
+The core client/server migration is implemented. `voxellancer-server` runs the
+authoritative simulation without graphics or audio, `voxellancer` provides the
+graphical client and retains the standalone local mode, and protocol v16
+replicates input, state, voxel/equipment content, and gameplay events over
+loopback TCP. `voxellancer.exe -local-singleplayer` starts the sibling server
+and connects before initializing the graphical client.
 
-This is an architecture plan, not a claim that the current benchmark predicts
-server capacity. The recent 800-ship run measured about 5.25 ms average game
-update time on the development machine, but it does not include server
-networking and is not a headless server measurement:
-[seeded benchmark](../../benchmark-results/large-combat-vsync-1793874188116.json).
+The complete process, message, ownership, prediction, and presentation flow is
+documented in the [engine architecture guide](../5_engine_architecture.md).
+The migration phases later in this file are retained as a design record; only
+the validation and refactoring work listed under
+[remaining work](#remaining-work) is outstanding.
 
-## Current architecture and migration constraints
+Development benchmarks establish observations, not capacity guarantees. The
+latest 800-ship client run measured 47.23 average FPS over 1,800 measured frames
+with VSync enabled. The corresponding 1,800-tick headless server run measured
+p50/p95/p99 tick times of 1.572/8.271/10.017 ms, a 48.242 ms maximum, and two
+ticks over the 16.67 ms budget. Client frame time includes rendering and cannot
+be compared directly with server tick time. Neither run establishes target
+hardware or networked multiplayer capacity.
 
-- [`main.cpp`](../../src/main.cpp) owns startup for configuration, GLFW/OpenGL,
-  resource loading, `Game`, the interactive loop, and benchmark execution.
-  The executable is therefore not currently headless.
-- [`Game`](../../src/gamestate/game.cpp) owns a `Viewer` and a `GamePlay`.
-  `GamePlay` constructs its scene, sound manager, input handlers, scenario, and
-  running/paused states in
-  [`gameplay.cpp`](../../src/gamestate/gameplay/gameplay.cpp).
-- [`GamePlayRunning`](../../src/gamestate/gameplay/running/gameplayrunning.cpp)
-  advances the global `World`. [`World`](../../src/world/world.cpp) owns
-  simulation systems such as `WorldLogic`, `God`, factions, missions, scripts,
-  and events, but also owns the local `Player`, `Skybox`, and voxel-particle
-  engine. The client scene reads and draws these same global objects in
-  [`gameplayscene.cpp`](../../src/gamestate/gameplay/gameplayscene.cpp).
-- [`Player`](../../src/player.cpp) mixes ship commands with the camera, HUD,
-  aimer, and target selector. Replace the server-facing part with timestamped
-  input commands; keep camera and HUD state client-side.
-- [`WorldObject`](../../src/worldobject/worldobject.h) combines physics,
-  collision, equipment, scripting, handles, and voxel state. Its `VoxelCluster`
-  base also owns `VoxelRenderData`
-  ([`voxelcluster.h`](../../src/voxel/voxelcluster.h)). A server/client split
-  must separate authoritative voxel/entity data from GPU-facing render data.
-- [`BaseScenario`](../../src/scenarios/basescenario.h) is constructed with
-  `GamePlay` and gets its world through the global singleton. Scenario setup
-  needs an explicit simulation context so servers can load missions and combat
-  without constructing a client scene.
-- [`CMakeLists.txt`](../../CMakeLists.txt) currently glob-compiles `src/` into
-  one `voxellancer` executable and links OpenGL, GLEW, GLFW, SFML Audio, Lua,
-  OpenMP, and shared libraries together. [`vcpkg.json`](../../vcpkg.json) has
-  no networking dependency, and current source has no network protocol or
-  state serialization boundary.
+## Architecture and remaining boundaries
 
-These are real seams to address, not reasons to immediately rewrite all
-systems. Keep the existing game playable at each phase.
+- The graphical executable owns GLFW/OpenGL, audio, input, HUD, scenes, client
+  prediction, and remote presentation. In local singleplayer it starts a
+  separate headless server process and loads the battle scenario locally as a
+  camera/presentation anchor; local simulation is paused while remote preview
+  is active.
+- The server owns `World` simulation systems, scenario/mission/script state,
+  entity identity, command validation, fixed-tick execution, and authoritative
+  combat outcomes. Its listener currently binds only to loopback.
+- `SimulationSession` advances at 60 Hz with bounded catch-up work and retains
+  excess time as backlog. The TCP server polls on the same thread, accepts up
+  to 16 clients, sends a per-client snapshot every three simulation ticks, and
+  filters entities to a 650-unit interest radius.
+- The client and server share `WorldObject`/voxel model code, but the server
+  build omits GPU voxel-render data and presentation systems. Some client
+  gameplay/input code still relies on `World::instance()` and on a local
+  `Player`; completing that client-side ownership cleanup is a larger refactor.
+- The current protocol is reliable, ordered TCP with versioned length-prefixed
+  messages. There is no authentication, encryption, internet-facing listener,
+  transport negotiation, or production hosting policy.
+
+## Implementation status and concise remaining plan
+
+The migration has been implemented in incremental testable slices:
+
+1. **Fixed-step authority:** `SimulationSession` advances at 60 Hz, bounds
+   catch-up work, queues sequenced input for tick boundaries, and supports a
+   headless benchmark. Ship AI steering is staggered at 10 Hz, while fighter
+   and per-hardpoint target refreshes use deterministic integer-tick schedules.
+   Target-fire and fighter-evasion randomness uses a reproducible stream
+   seeded from each ship's stable entity ID.
+2. **Identity and replication foundation:** entities receive generation-safe
+   IDs; versioned input acknowledgements, snapshot deltas, full-baseline
+   resynchronization, voxel content with current/maximum HP, initial equipment
+   slot/key content, stable ship-definition keys, equipment-only updates,
+   weapon-fired, shield-absorption, and mission-state events, coalesced
+   per-voxel HP updates, and voxel-removal event transport are tested. Damage,
+   initial/dynamic equipment transfer, weapon firing, shield absorption,
+   mission notifications, and voxel splitting are covered through the TCP
+   client; split
+   fragments receive full content and their removed source cells are replicated.
+3. **Local transport:** a loopback TCP server and headless client exercise
+   actor assignment, snapshot updates, future-tick input scheduling, late-input
+   rejection, reconnect, and disconnect cleanup. A two-client integration test
+   verifies distinct actor assignment, per-client input acknowledgements,
+   control isolation, and that one client's disconnect does not remove the
+   other client's actor.
+4. **Interest and presentation preview:** snapshots use a per-client 650-unit
+   proximity radius, and `-server-preview` interpolates render-only voxel
+   proxies, then extrapolates velocity for at most three ticks while waiting
+   for the next authoritative snapshot. New snapshots reconcile that
+   presentation state. The controlled actor additionally predicts movement by
+   replaying tick-stamped input against replicated engine power and maximum
+   mass; each authoritative snapshot resets that state before unresolved
+   commands are replayed. The preview forwards movement, rotation, and primary
+   fire. HP-only updates preserve existing proxy geometry instead of rebuilding
+   the cluster. The preview HUD displays the controlled actor's equipment keys
+   for up to six slots and reports any additional slots. Render proxies restore
+   mounted engine/weapon voxel color and emissiveness from local asset
+   properties, including after equipment-only updates.
+   Reliable weapon-fired events drive render-only muzzle flashes capped at 32
+   per frame; voxel-damage events drive render-only hit sparks capped at 64,
+   and shield-hit events drive distinct shield sparks capped at 32 per frame.
+   The local simulation pauses while the remote preview is
+   connected. TCP coverage verifies primary fire reaches the server and its
+   projectile and weapon-fired event are replicated, and that damage events
+   include the authoritative voxel health update. `voxellancer.exe
+   -local-singleplayer` starts a sibling server with the battle scenario on an
+   available loopback port before client initialization, then owns its process
+   lifetime and follows the assigned actor with the presentation camera.
+5. **Compact protocol and shared build:** snapshot entities use 65-byte records
+   with smallest-three quaternion encoding, 8-bit shield and hull fractions,
+   transform scale, maximum mass for local movement prediction, and quantized
+   three-axis engine state for remote presentation. The client
+   interpolates scale for voxel proxies and accounts for it when positioning
+   weapon-fire flashes.
+   The protocol is a separate static library linked by the game, server,
+   client, and test targets. Protocol-only tests need no graphics, audio, or
+   networking library.
+6. **Headless build boundary:** server sources omit game-state, device input,
+   GPU rendering, and audio implementations. `World` omits client presentation
+   ownership and updates; `VoxelCluster` omits GPU render data. The server core
+   is a reusable static library and has a dedicated TCP integration-test
+   target. It links a small GL-free logging/change-observer support library
+   instead of Glow/GlowUtils and does not link OpenGL, GLEW, GLFW, or SFML
+   Audio. Client dependencies are optional in CMake and the vcpkg manifest.
+7. **Scenario boundary:** benchmark and gameplay scenarios accept an explicit
+   `World&`; scenario population uses world-bound builders, factions, scripts,
+   missions, and player presentation guards. A test loads `BattleScenario`
+   into a standalone server `World` without mutating the client singleton, and
+   a TCP integration test exercises a standalone server world.
+   World objects retain their owner; `God` routes rejected spawns through it,
+   `WorldLogic` injects it into movement and damage handlers, AI target
+   schedules and weapon/projectile lifecycle use it, and engines gate
+   presentation through the owning world. AI query paths, faction relations,
+   rocket board computers, and fired-projectile builders also use that owner.
+   `ScriptEngine`, `EventPoller`, and
+   `MissionSystem` now retain their owning world; scriptables unregister from
+   their owning engine, and gameplay Lua bindings route object creation,
+   spawning/removal, faction access, timers, event polls, and mission creation
+   through that world. Mission construction also requires an explicit world.
+   Rocket and split-rocket construction, including builder-backed range
+   queries, also require the owning world instead of falling back to the
+   singleton. Explicit-world builders bind created objects before
+   setup, and standalone server-world tests verify spawning, timer callbacks,
+   scenario population, and scriptable cleanup do not mutate the client singleton.
+   Scenario clear/reset rebuilds scripts, missions, factions, handlers, and
+   entities in the owned world without deleting the client singleton; simulation
+   ticks and entity-ID generations remain monotonic across the reset. Voxel
+   debris, explosion, and engine-trail particles use their creator's world for
+   presentation. Presentation APIs remain guarded. Scenario loading now passes
+   an explicit world from `GamePlay`; `GamePlayRunning` also receives that
+   world explicitly when constructing its `SimulationSession`. Remaining
+   singleton access is limited to application entry points and client input or
+   presentation paths; the server simulation and shared simulation directories
+   do not resolve the global world.
+
+On the development machine, a 600-tick headless run with 200 ships per team
+(400 initially) reported p50/p95/p99 tick times of 0.803/3.186/3.511 ms,
+with no missed deadlines and 284 ships remaining. A 600-tick stress run with
+400 ships per team (800 initially) reported 1.495/8.954/13.814 ms, one missed
+deadline, and 454 ships remaining. These are development measurements, not
+capacity commitments. A 5-second loopback sample with 100 ships per team
+had 280-338 visible entities and averaged 235,828 application bytes/s over
+four post-initial one-second intervals (239,992, 211,222, 220,852, and 271,246
+bytes). Two-client actor/input isolation is now covered by integration tests,
+and a 6-second, two-client loopback smoke sample at 100 ships per team measured
+about 114 KB/s and 97 KB/s per client across five successive one-second
+reports, with visible entity counts varying from 49 to 107. These are
+development-machine observations, not capacity evidence; target-hardware
+performance remains unmeasured.
+
+## Remaining work
+
+The fixed-tick session, protocol, server/client executables, local singleplayer
+path, replicated presentation, headless builds, and focused integration tests
+are implemented. The following work is still required before making
+multiplayer or capacity claims:
+
+1. **Network-load validation:** exercise delayed and out-of-order input,
+   reconnects, multi-client combat, snapshot resynchronization, queue
+   saturation, and disconnect cleanup under controlled latency and sustained
+   load. Record per-client bandwidth and visible-entity counts.
+2. **Target-hardware capacity evidence:** repeat 400-ship runs on intended
+   server hardware and require p95 tick time below 12 ms without sustained
+   deadline misses. Keep 800 ships as a stress test, not a capacity promise.
+   The latest development-machine run met the p95 target but had a 48.242 ms
+   maximum and two missed deadlines.
+3. **Production hosting and transport:** before accepting non-local clients,
+   choose and implement authentication, encryption, address binding,
+   reconnect/session policy, and a transport/overload policy. The present
+   listener is loopback-only TCP and is not suitable for internet exposure.
+4. **Client ownership cleanup:** decouple the camera/controller from the
+   local `World`/`Player` and reduce remaining global-world and voxel
+   render/simulation coupling. This is a separate, incremental refactor; it
+   must preserve the standalone game and headless server boundary.
+
+Keep the server-only build and headless tests as acceptance checks throughout
+these follow-up changes. Do not treat development-machine measurements as
+deployment limits.
 
 ## Recommended runtime model
 
@@ -76,7 +212,13 @@ behind rather than becoming free. Record tick duration and backlog, cap
 catch-up work to avoid an unbounded burst, and shed non-authoritative work such
 as distant AI scans before considering dropping authoritative simulation time.
 
-## Migration phases
+## Original migration phases
+
+Phases 0-5 below are an implementation record, not a list of remaining work.
+Their behavior and current boundaries are summarized above and in the
+[engine architecture guide](../5_engine_architecture.md). Phase 6's build and
+integration-test criteria are in place; its target-hardware capacity gate
+remains part of the validation work listed above.
 
 ### 0. Define contracts and preserve a comparable workload
 
@@ -221,36 +363,28 @@ mission events.
   hardware before enabling that capacity in production. Keep the 800-ship run
   as a stress test, not a capacity promise.
 
-**Exit criteria:** client and server build independently, headless CI needs no
-graphics/audio stack, integration tests pass, and the 400-ship server workload
-meets the measured tick and bandwidth budgets.
+**Implemented:** client and server build independently, headless CI does not
+require graphics/audio packages, and protocol/server integration tests pass.
+**Still required:** demonstrate the 400-ship tick and bandwidth budgets on
+intended server hardware.
 
-## Main risks and decisions to resolve during the migration
+## Remaining risks
 
-- **World/global coupling:** `World::instance()` appears across simulation,
-  input, gameplay, rendering, and scenario code. Replace it gradually; a
-  wholesale removal would make changes hard to verify.
-- **Voxel model/render coupling:** `WorldObject` and `VoxelCluster` combine
-  authoritative physics/collision/voxel data with render data. Keep voxel
-  damage authoritative while making GPU resource creation client-only.
-- **Scripts and scenarios:** Lua bindings currently tunnel actions to the
-  global world. Split authoritative mission/gameplay functions from
-  presentation APIs and ensure scripts run in the correct process.
-- **Player ownership:** camera, HUD, aiming, and direct weapon input currently
-  live with the `World` player. Introduce explicit commands so clients cannot
-  declare hits or overwrite authoritative transforms.
-- **Replication volume:** voxel-level destruction can generate large updates.
-  Prefer compact removal/damage events and support full-state resync rather
-  than repeatedly sending full voxel maps.
-- **Simulation overload:** choose how to report and handle missed server ticks.
-  Never let a catch-up loop grow without bound or silently discard authoritative
-  damage/movement time.
-- **Transport and hosting:** select a transport after measuring expected
-  player count, latency, platforms, and deployment. Keep the simulation
-  independent of that choice. Start with a separate server executable; add an
-  in-process host only if it can use the same authority and protocol seams.
+- **Client ownership:** application and presentation code still contains local
+  `World`/`Player` dependencies, and local singleplayer creates a local
+  presentation scenario alongside the authoritative server scenario.
+- **Shared voxel model:** the server build avoids GPU rendering state, but
+  `WorldObject`/voxel data are not yet separate simulation and presentation
+  models.
+- **Replication load:** initial entity content includes voxel/equipment data;
+  limits and delta/resync behavior need stress testing with multiple clients.
+- **Overload behavior:** catch-up work is bounded and backlog is retained, but
+  there is no production policy for sustained overload or service recovery.
+- **Remote hosting:** TCP is currently bound to loopback and has no
+  authentication or encryption. Do not expose it beyond a trusted local
+  machine until hosting and security are designed.
 
-This migration is not itself a performance optimization. Its first success
-measure is a clean authority boundary and a headless 60 Hz server for the
-intended 400-ship workload; throughput improvements should be claimed only
-after profiling that server build.
+The migration establishes an authority boundary and a headless fixed-tick
+runtime; it is not itself a performance optimization. Make performance or
+capacity claims only after repeatable profiling on the intended hardware and
+network conditions.

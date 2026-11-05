@@ -59,9 +59,6 @@ Viewer& Game::viewer() {
 }
 
 void Game::update(float deltaSec) {
-    deltaSec = glm::min(0.05f, deltaSec); // slow down to 20 frames
-    deltaSec = glm::max(0.0001f, deltaSec); // avoid div by 0
-
     GameState::update(deltaSec);
 
     m_viewer->update(deltaSec);

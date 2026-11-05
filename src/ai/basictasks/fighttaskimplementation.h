@@ -32,13 +32,13 @@ protected:
     std::vector<Handle<WorldObject>> m_targets;
     Handle<WorldObject> m_primaryTarget;
 
-    bool updateTargets(float deltaSec, float selectionInterval);
+    bool updateTargets(std::uint32_t selectionIntervalTicks);
     float targetDistance();
 
     const ComponentsInfo& componentsInfo();
 
 private:
-    float m_targetSelectionCountdown;
+    std::uint64_t m_nextTargetSelectionTick;
     bool m_targetSelectionInitialized;
     std::uint32_t m_targetSelectionKey;
     std::uint32_t m_targetSelectionCycle;

@@ -3,7 +3,7 @@ param(
     [ValidateSet('Test', 'Run')]
     [string]$Mode = 'Test',
 
-    [ValidateSet('None', 'Rendering', 'Combat', 'LargeCombatVsync')]
+    [ValidateSet('None', 'Rendering', 'Combat', 'LargeCombatVsync', 'ServerLargeCombat')]
     [string]$Benchmark = 'None',
 
     [ValidateSet('Debug', 'Release')]
@@ -120,12 +120,24 @@ if ($Mode -eq 'Test') {
     }
 }
 
-& $cmakePath --build $BuildDirectory --target voxellancer --config $Configuration
+$buildTarget = if ($Benchmark -eq 'ServerLargeCombat') {
+    'voxellancer-server'
+} else {
+    'voxellancer'
+}
+
+& $cmakePath --build $BuildDirectory --target $buildTarget --config $Configuration
 if ($LASTEXITCODE -ne 0) {
     exit $LASTEXITCODE
 }
 
-$executableBaseName = if ($Mode -eq 'Test') { 'all_tests' } else { 'voxellancer' }
+$executableBaseName = if ($Mode -eq 'Test') {
+    'all_tests'
+} elseif ($Benchmark -eq 'ServerLargeCombat') {
+    'voxellancer-server'
+} else {
+    'voxellancer'
+}
 if ($Configuration -eq 'Debug') {
     $executableBaseName += 'd'
 }
@@ -154,6 +166,8 @@ if ($Benchmark -eq 'Rendering') {
     $runArguments += '-benchmark-combat'
 } elseif ($Benchmark -eq 'LargeCombatVsync') {
     $runArguments += '-benchmark-large-combat'
+} elseif ($Benchmark -eq 'ServerLargeCombat') {
+    $runArguments += @('--ticks', '1800', '--ships-per-team', '400')
 }
 
 & $testExecutable.FullName @runArguments

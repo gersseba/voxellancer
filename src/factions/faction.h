@@ -6,6 +6,7 @@
 
 
 class FactionRelation;
+class FactionMatrix;
 
 class Faction {
 public:
@@ -18,7 +19,11 @@ public:
     FactionRelation& relationTo(Faction& other);
 
 protected:
+    friend class FactionMatrix;
+
+    void setFactionMatrix(FactionMatrix& factionMatrix);
+
     std::string m_key;
     std::string m_printName;
+    FactionMatrix* m_factionMatrix;
 };
-

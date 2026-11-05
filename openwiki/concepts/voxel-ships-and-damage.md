@@ -4,6 +4,10 @@ title: Voxel ships, collision, and damage
 description: Explains voxel-cluster composition, damage propagation, structural splitting, and the mechanics tests that protect them.
 tags: [voxel, ships, collision, damage, splitting]
 sources:
+  - id: openwiki-source-bd9ee3e5f4c4b40eba3d2469
+    resource: repo://src/server/tcpserver.cpp
+  - id: openwiki-source-5755e4066d8d2af940b39780
+    resource: repo://src/simulation/simulationsession.cpp
   - id: openwiki-source-f24660fa12f0640c1e45b927
     resource: repo://src/voxel/voxelcluster.cpp
   - id: openwiki-source-f7e5fede52610a1d712e4564
@@ -12,10 +16,12 @@ sources:
     resource: repo://src/world/handler/splitdetector.cpp
   - id: openwiki-source-e87ba6349c61cb4b332a392c
     resource: repo://src/world/handler/splitter.cpp
-generated: { by: "copilot", at: "2026-11-01T22:49:09.563Z" }
+  - id: openwiki-source-d822b999e031aa3b7a0868ab
+    resource: repo://src/world/world.cpp
+generated: { by: "copilot", at: "2026-11-05T22:43:09.174Z" }
 verified:
   - by: openwiki/0.7.2
-    at: 2026-11-03T15:48:08.697Z
+    at: 2026-11-05T22:43:09.174Z
 ---
 
 # Voxel ships, collision, and damage
@@ -27,6 +33,12 @@ explicit—removing a voxel updates bounds and render data, then deletes that vo
 and collision detection, so a damaged ship's rendered, physical, and collision
 shapes remain aligned.
 
+In server play, these mechanics execute in the authoritative world. The server
+replicates voxel damage and removal events to clients; clients do not decide
+collision or structural outcomes. See
+[client-server simulation](../architecture/client-server-simulation.md) for the
+replication path.
+
 ## From impact to removed voxels
 
 World collision processing turns impacts into `DamageImpact` values. `Damager`
@@ -36,9 +48,12 @@ dead voxel, is recorded as a modification of its owner, and yields both normal a
 damped deadly impacts. The world logic forwards damage and destruction hooks until
 the current forwarded-impact list is empty, then removes the destroyed voxels.
 
-The `general.playerShipUndestroyable` property can bypass damage directed at the
-current player ship. Component behavior therefore affects both the amount of damage
-and whether structural processing sees a removed voxel.
+The `general.playerShipUndestroyable` property bypasses damage only when a
+presentation-enabled world has a current player ship and the impact targets that
+ship. Headless and server-mode worlds have no client player for this guard, so
+server-side protection must be modeled explicitly rather than relying on this
+client-player property. Component behavior otherwise affects both the amount of
+damage and whether structural processing sees a removed voxel.
 
 ## Structural splitting
 

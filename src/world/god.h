@@ -28,6 +28,7 @@ public:
 
     void spawn();
     void remove();
+    void clearPending();
 
 
 protected:

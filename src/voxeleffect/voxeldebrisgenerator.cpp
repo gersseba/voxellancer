@@ -9,12 +9,13 @@
 #include "utils/randfloat.h"
 #include "utils/randbool.h"
 
+#ifndef VOXELLANCER_HEADLESS_SERVER
 #include "display/rendering/visuals.h"
-
 #include "voxelparticleengine.h"
 #include "voxelparticlesetup.h"
 
 #include "world/world.h"
+#endif
 
 
 
@@ -47,6 +48,14 @@ void VoxelDebrisGenerator::setSpawnProbability(float spawnProbability) {
 }
 
 void VoxelDebrisGenerator::spawn() {
+#ifdef VOXELLANCER_HEADLESS_SERVER
+    return;
+#else
+    World* world = creatorWorld();
+    if (world == nullptr || !world->hasPresentation()) {
+        return;
+    }
+
     Transform gridTransform;
     Transform particleTransform;
 
@@ -77,13 +86,13 @@ void VoxelDebrisGenerator::spawn() {
                     createLifetime()
                 );
 
-                World::instance()->particleEngine().addParticle(particleSetup, m_creator);
+                world->particleEngine().addParticle(particleSetup, m_creator);
             }
         }
     }
+#endif
 }
 
 float VoxelDebrisGenerator::createScale() {
     return RandFloat::randomize(m_scale / m_density, m_scaleRandomization);
 }
-

@@ -1,7 +1,9 @@
 #pragma once
 
+#include <cstddef>
 #include <cstdint>
 #include <list>
+#include <vector>
 
 #include "handler/mover.h"
 #include "handler/damageforwarder.h"
@@ -15,9 +17,11 @@
 #include "handler/impulsor.h"
 #include "handler/voxelhangman.h"
 #include "handler/splitdetector.h"
+#include "protocol/serverprotocol.h"
 
 
 class World;
+class WorldObject;
 
 struct WorldLogicTimings {
     double movementMs = 0.0;
@@ -27,9 +31,28 @@ struct WorldLogicTimings {
 
 class WorldLogic {
 public:
+    static constexpr std::size_t MaxQueuedWeaponFiredEvents = 4096;
+
     WorldLogic(World &world);
 
     void update(float deltaSecs);
+    void setVoxelReplicationEnabled(bool enabled);
+    void setShieldHitEventReplicationEnabled(bool enabled);
+    void setWeaponEventReplicationEnabled(bool enabled);
+    void recordWeaponFired(
+        const WorldObject* owner,
+        int group,
+        const glm::ivec3& cell
+    );
+    void processDamageImpacts(std::list<DamageImpact> damageImpacts);
+    std::vector<voxellancer::protocol::VoxelRemovalEvent>
+    drainVoxelRemovalEvents();
+    std::vector<voxellancer::protocol::VoxelDamageEvent>
+    drainVoxelDamageEvents();
+    std::vector<voxellancer::protocol::ShieldHitEvent>
+    drainShieldHitEvents();
+    std::vector<voxellancer::protocol::WeaponFiredEvent>
+    drainWeaponFiredEvents();
     std::uint64_t voxelCollisionPairCount() const;
     const WorldLogicTimings& lastUpdateTimings() const;
 
@@ -39,6 +62,11 @@ public:
 protected:
     World &m_world;
     std::list<DamageImpact> m_damageImpacts;
+    std::vector<voxellancer::protocol::VoxelRemovalEvent> m_voxelRemovalEvents;
+    std::vector<voxellancer::protocol::VoxelDamageEvent> m_voxelDamageEvents;
+    std::vector<voxellancer::protocol::WeaponFiredEvent> m_weaponFiredEvents;
+    bool m_voxelRemovalReplicationEnabled = false;
+    bool m_weaponEventReplicationEnabled = false;
     std::uint64_t m_voxelCollisionPairCount;
     WorldLogicTimings m_lastUpdateTimings;
 
@@ -55,5 +83,5 @@ protected:
     GarbageCollector m_garbageCollector;
     VoxelHangman m_voxelHangman;
 
-    void damageForwardLoop(std::list<DamageImpact> damageImpulses);
+    void damageForwardLoop(std::list<DamageImpact> damageImpacts);
 };

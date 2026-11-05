@@ -34,6 +34,8 @@ WorldObject* Splitter::createWorldObjectFromSplitOff(std::shared_ptr<SplitData> 
     worldObject = new WorldObject(transform);
 
     worldObject->info().setName(split->exWorldObject()->info().name() + " - splitoff");
+    worldObject->info().setDefinitionKey(
+        split->exWorldObject()->info().definitionKey());
     worldObject->physics().setSpeed(worldObject->physics().speed());
 
     for(Voxel *voxel : split->splitOffVoxels()) {
@@ -49,4 +51,3 @@ void Splitter::removeExtractedVoxelsFromEx(std::shared_ptr<SplitData> split) {
         split->exWorldObject()->removeVoxel(voxel);
     }
 }
-
