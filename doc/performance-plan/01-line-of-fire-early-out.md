@@ -39,3 +39,45 @@ tests, and set construction. This estimate overlaps the enclosing AI metric.
 - Run at least three comparable large-combat benchmarks before and after.
 - Compare the median of per-run average timings and worst-window line-of-fire
   timing; also verify firing rate and damage outcomes.
+
+## Implementation and benchmark result
+
+Implemented `WorldTreeQuery::anyIntersectingWorldObject`, which evaluates the
+existing voxel intersection test and stops traversal when the predicate accepts
+a blocker. The query no longer constructs a result `unordered_set`, and its
+recursive callback is passed by reference rather than copied at each tree
+level. `Gun::isBulletPathClear` now uses the predicate while preserving the
+owner and friendly-ship rejection rules. A world-tree test verifies both
+short-circuiting and a full no-match traversal.
+
+The Release build and test harness passed: **98 tests passed, 3 skipped**.
+Two 1,800-frame runs were captured after 120 warm-up frames. Compared with the
+persisted baseline, their line-of-fire worst-window CPU timings were 6.651 and
+6.255 ms/frame, versus 7.275 ms/frame in the baseline: a mean reduction of
+**11.3%** (0.822 ms/frame). The enclosing target-scan-and-firing timing averaged
+16.561 ms/frame across the two runs, versus 17.250 ms/frame in the baseline
+(4.0% lower). These are single-run baseline and two post-change samples, so
+combat divergence and benchmark variability prevent a strong causal claim.
+
+| Run | Average FPS | p95 frame ms | Below 55 FPS | Final ships | Worst 3s line-of-fire CPU ms/frame |
+|---|---:|---:|---:|---:|---:|
+| Baseline | 45.44 | 35.95 | 66.89% | 91 | 7.275 |
+| Early-out 1 | 45.47 | 32.35 | 82.67% | 174 | 6.651 |
+| Early-out 2 | 45.90 | 33.35 | 71.17% | 101 | 6.255 |
+
+Overall average FPS was effectively unchanged relative to the baseline. The
+task-level result is promising but modest; keep the optimization because it
+preserves query semantics and avoids materializing a set, while treating its
+end-to-end frame-rate effect as unproven. More samples with matched combat
+activity would improve confidence.
+
+Benchmark artifacts:
+
+- [Baseline](../../benchmark-results/large-combat-vsync-baseline.json)
+- [Early-out run 1](../../benchmark-results/large-combat-vsync-line-query-1.json)
+- [Early-out run 2](../../benchmark-results/large-combat-vsync-line-query-2.json)
+
+Alternatives for later discussion: order candidates toward likely blockers or
+use a cheaper conservative visibility test before voxel checks. Both can change
+query ordering or introduce false positives, so they need separate correctness
+and combat-outcome validation.

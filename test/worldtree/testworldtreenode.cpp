@@ -203,6 +203,40 @@ go_bandit([]() {
             AssertThat(WorldTreeQuery(worldTree, &r3).intersectingWorldObjects().size(), Equals(2));
         });
 
+        it("can stop querying intersecting world objects when a predicate matches", [&]() {
+            WorldObject a;
+            WorldObject b;
+
+            a.addVoxel(new Voxel(glm::ivec3(0, 0, 0)));
+            a.transform().setPosition(glm::vec3(1.5, 1.5, 0));
+            worldTree->insert(&a);
+
+            b.addVoxel(new Voxel(glm::ivec3(0, 0, 0)));
+            b.transform().setPosition(glm::vec3(3.0, 3.0, 0));
+            worldTree->insert(&b);
+
+            Ray ray(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(1.0f, 1.0f, 0.0f));
+            int matchedObjects = 0;
+            bool found = WorldTreeQuery(worldTree, &ray).anyIntersectingWorldObject(
+                [&matchedObjects](WorldObject*) {
+                    ++matchedObjects;
+                    return true;
+                });
+
+            AssertThat(found, Equals(true));
+            AssertThat(matchedObjects, Equals(1));
+
+            int checkedObjects = 0;
+            bool foundWithoutMatch = WorldTreeQuery(worldTree, &ray).anyIntersectingWorldObject(
+                [&checkedObjects](WorldObject*) {
+                    ++checkedObjects;
+                    return false;
+                });
+
+            AssertThat(foundWithoutMatch, Equals(false));
+            AssertThat(checkedObjects, Equals(2));
+        });
+
         it("can be queried for voxels on line", [&]() {
             WorldObject a;
 
@@ -232,6 +266,5 @@ go_bandit([]() {
         });
     });
 });
-
 
 
