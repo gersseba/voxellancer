@@ -69,6 +69,7 @@ void Gun::fireAtPoint(const glm::vec3& point, bool checkFriendlyFire) {
         return;
     }
 
+    BenchmarkProfiler::instance().addCounter(BenchmarkCounter::WeaponAimChecks);
     if (!m_hardpoint->inFieldOfAim(point)) {
         return;
     }
@@ -81,6 +82,7 @@ void Gun::fireAtPoint(const glm::vec3& point, bool checkFriendlyFire) {
     setupBullet(bullet, point);
 
     World::instance()->god().scheduleSpawn(bullet);
+    BenchmarkProfiler::instance().addCounter(BenchmarkCounter::BulletsScheduled);
 
     SoundManager::current()->play(fireSound(), hardpoint()->voxel()->position());
 
@@ -89,6 +91,7 @@ void Gun::fireAtPoint(const glm::vec3& point, bool checkFriendlyFire) {
 
 bool Gun::isBulletPathClear(const glm::vec3& point, bool checkFriendlyFire) {
     BenchmarkCpuScope scope(BenchmarkMetric::BulletLineOfFireQuery);
+    BenchmarkProfiler::instance().addCounter(BenchmarkCounter::BulletLineOfFireQueries);
     WorldObject* owner = m_hardpoint->components()->worldObject();
 
     glm::vec3 direction = glm::normalize(point - m_hardpoint->voxel()->position());

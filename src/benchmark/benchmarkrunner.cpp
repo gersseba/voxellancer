@@ -702,6 +702,7 @@ int BenchmarkRunner::run(Game& game) const {
     std::vector<std::size_t> frameRocketCounts;
     std::vector<std::size_t> frameVoxelParticleCounts;
     std::vector<std::size_t> frameVoxelParticleBufferCapacities;
+    std::array<std::vector<std::uint64_t>, BenchmarkCounterCount> counterSamples;
     std::vector<ProfileBucket> profileBuckets =
         buildProfileBuckets(frameTimesMs, frameProfiles);
     const double measuredElapsedMs =
@@ -734,6 +735,9 @@ int BenchmarkRunner::run(Game& game) const {
         frameRocketCounts.push_back(profile.rocketCount);
         frameVoxelParticleCounts.push_back(profile.voxelParticleCount);
         frameVoxelParticleBufferCapacities.push_back(profile.voxelParticleBufferCapacity);
+        for (std::size_t counter = 0; counter < BenchmarkCounterCount; ++counter) {
+            counterSamples[counter].push_back(profile.taskTimings.counters[counter]);
+        }
     }
     for (double frameTimeMs : frameTimesMs) {
         frameFpsSamples.push_back(1000.0 / frameTimeMs);
@@ -776,6 +780,7 @@ int BenchmarkRunner::run(Game& game) const {
     result << std::fixed << std::setprecision(4)
         << "{\n"
         << "  \"mode\": \"" << modeName(m_mode) << "\",\n"
+        << "  \"random_seed\": " << PerformanceBenchmarkScenario::SimulationRandomSeed << ",\n"
         << "  \"warmup_frames\": " << WarmupFrames << ",\n"
         << "  \"measured_frames\": " << measuredFrames << ",\n"
         << "  \"resolution\": \"" << resolution.width() << "x" << resolution.height() << "\",\n"
@@ -877,6 +882,30 @@ int BenchmarkRunner::run(Game& game) const {
     writeTimeSeries(result, "spawn_split_cleanup_ms",
         worldLogicLifecycleSamples, false);
     writeTimeSeries(result, "world_objects_and_ai_ms", worldObjectsSamples, false);
+    writeTimeSeries(result, "primary_target_candidates_considered",
+        counterSamples[static_cast<std::size_t>(
+            BenchmarkCounter::PrimaryTargetCandidatesConsidered)], false);
+    writeTimeSeries(result, "primary_target_switches",
+        counterSamples[static_cast<std::size_t>(
+            BenchmarkCounter::PrimaryTargetSwitches)], false);
+    writeTimeSeries(result, "gun_target_candidates_considered",
+        counterSamples[static_cast<std::size_t>(
+            BenchmarkCounter::GunTargetCandidatesConsidered)], false);
+    writeTimeSeries(result, "gun_target_refreshes",
+        counterSamples[static_cast<std::size_t>(
+            BenchmarkCounter::GunTargetRefreshes)], false);
+    writeTimeSeries(result, "gun_targets_assigned",
+        counterSamples[static_cast<std::size_t>(
+            BenchmarkCounter::GunTargetsAssigned)], false);
+    writeTimeSeries(result, "weapon_aim_checks",
+        counterSamples[static_cast<std::size_t>(
+            BenchmarkCounter::WeaponAimChecks)], false);
+    writeTimeSeries(result, "bullet_line_of_fire_queries",
+        counterSamples[static_cast<std::size_t>(
+            BenchmarkCounter::BulletLineOfFireQueries)], false);
+    writeTimeSeries(result, "bullets_scheduled",
+        counterSamples[static_cast<std::size_t>(
+            BenchmarkCounter::BulletsScheduled)], false);
     writeGpuDrawTimeSeries(result, frameProfiles);
     result << "  }\n}\n";
     result.close();

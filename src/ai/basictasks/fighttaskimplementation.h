@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include <vector>
 
 #include <glm/glm.hpp>
@@ -29,11 +30,16 @@ public:
 
 protected:
     std::vector<Handle<WorldObject>> m_targets;
-    WorldObject* m_primaryTarget;
+    Handle<WorldObject> m_primaryTarget;
 
-    void updateTargets();
+    bool updateTargets(float deltaSec, float selectionInterval);
     float targetDistance();
 
     const ComponentsInfo& componentsInfo();
-};
 
+private:
+    float m_targetSelectionCountdown;
+    bool m_targetSelectionInitialized;
+    std::uint32_t m_targetSelectionKey;
+    std::uint32_t m_targetSelectionCycle;
+};

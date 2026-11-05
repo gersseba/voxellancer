@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include <vector>
 #include <list>
 
@@ -11,6 +12,8 @@
 #include "utils/handle/handle.h"
 
 class WorldObject;
+class Hardpoint;
+class Weapon;
 
 /**
  *  The BoardComputer abstracts the Ship's systems to a level usable to AiTask, Character and Player
@@ -26,20 +29,43 @@ public:
     void moveTo(const glm::vec3& position, bool decelerate = true);
     void rotateTo(const glm::vec3& position, const glm::vec3& up = glm::vec3(0, 0, 0));
 
-    void shootBullet(const std::vector<Handle<WorldObject>>& targets);
+    void shootBullet(std::vector<Handle<WorldObject>>& targets, float deltaSec);
+    void shootBullet(Handle<WorldObject>& target, float deltaSec);
     void shootRockets(WorldObject* target);
 
     void update(float deltaSec);
 
 
 protected:
+    struct GunTargetSelection {
+        Hardpoint* hardpoint = nullptr;
+        Weapon* weapon = nullptr;
+        Handle<WorldObject> target;
+        float refreshCountdown = 0.0f;
+        std::uint32_t scheduleKey = 0;
+        std::uint32_t refreshCycle = 0;
+        bool initialized = false;
+    };
+
     WorldObject* m_worldObject;
     EngineState m_engineState;
     bool m_overwriteEngineState;
+    std::vector<GunTargetSelection> m_gunTargetSelections;
 
     /* Return the euler angles needed to adjust 'up' */
     glm::vec3 rotateUpTo(const glm::vec3& up);
     glm::vec3 rotateUpAuto(const glm::quat& rotation);
+
+private:
+    void shootBulletsAtTargets(
+        std::vector<Handle<WorldObject>>* targets,
+        Handle<WorldObject>* focusedTarget,
+        float deltaSec
+    );
+    Handle<WorldObject> selectGunTarget(
+        Hardpoint* hardpoint,
+        std::vector<Handle<WorldObject>>* targets,
+        Handle<WorldObject>* focusedTarget,
+        Handle<WorldObject>& currentTarget
+    );
 };
-
-

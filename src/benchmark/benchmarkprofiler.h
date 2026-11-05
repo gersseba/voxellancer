@@ -3,6 +3,7 @@
 #include <array>
 #include <chrono>
 #include <cstddef>
+#include <cstdint>
 #include <vector>
 
 enum class BenchmarkMetric : std::size_t {
@@ -41,10 +42,26 @@ enum class BenchmarkMetric : std::size_t {
 constexpr std::size_t BenchmarkMetricCount =
     static_cast<std::size_t>(BenchmarkMetric::Count);
 
+enum class BenchmarkCounter : std::size_t {
+    PrimaryTargetCandidatesConsidered,
+    PrimaryTargetSwitches,
+    GunTargetCandidatesConsidered,
+    GunTargetRefreshes,
+    GunTargetsAssigned,
+    WeaponAimChecks,
+    BulletLineOfFireQueries,
+    BulletsScheduled,
+    Count
+};
+
+constexpr std::size_t BenchmarkCounterCount =
+    static_cast<std::size_t>(BenchmarkCounter::Count);
+
 struct BenchmarkMetricSample {
     std::array<double, BenchmarkMetricCount> cpuMs{};
     std::array<double, BenchmarkMetricCount> gpuMs{};
     std::array<bool, BenchmarkMetricCount> gpuValid{};
+    std::array<std::uint64_t, BenchmarkCounterCount> counters{};
     bool gpuTimingAvailable = false;
 };
 
@@ -59,6 +76,7 @@ public:
 
     bool recording() const;
     void addCpuTime(BenchmarkMetric metric, double elapsedMs);
+    void addCounter(BenchmarkCounter counter, std::uint64_t count = 1);
     void beginGpuTime(BenchmarkMetric metric);
     void endGpuTime(BenchmarkMetric metric);
 
