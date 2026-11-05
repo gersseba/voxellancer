@@ -27,6 +27,7 @@ public:
     std::unordered_set<Voxel*> intersectingVoxels();
 
     std::unordered_set<WorldObject*> intersectingWorldObjects();
+    bool anyIntersectingWorldObject(const std::function<bool(WorldObject*)>& predicate);
 
 
 protected:
@@ -37,6 +38,5 @@ protected:
     bool m_queryInterrupted;
 
     WorldTreeNode* getQueryRoot(WorldTreeNode* node = nullptr) const;
-    void query(WorldTreeNode* node, std::function<void(WorldTreeGeode*)> onGeodeInteraction);
+    void query(WorldTreeNode* node, const std::function<void(WorldTreeGeode*)>& onGeodeInteraction);
 };
-
