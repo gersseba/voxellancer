@@ -46,5 +46,6 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\tools\agent-check.ps1 
   essentially unchanged at 17.042/17.045 ms. Thus the check adds work without
   reducing submissions in this camera setup.
 - Following the stop criterion, the experimental culling implementation,
-  counters, and unit test were removed. The benchmark reports remain available
-  for the measured outcome; no render-culling change is retained.
+  counters, and unit test were removed. The measurements remain summarized
+  here; intermediate report files were removed when retaining only the final
+  merged benchmark. No render-culling change is retained.

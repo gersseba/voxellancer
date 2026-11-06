@@ -45,6 +45,10 @@ then examines voxel state even when the network content has not changed.
    unchanged 1,800-interval benchmark completion and no integration-test
    regression.
 
+The merged result was rechecked in run `1793974750041`: replica update averaged
+0.365 ms on client-1 and 0.354 ms on client-2. Client-2 reported 1,797 of the
+1,800 intervals; both clients completed successfully.
+
 ## Validation command
 
 ```powershell

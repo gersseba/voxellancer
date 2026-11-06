@@ -67,3 +67,7 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\tools\agent-check.ps1 
   differed between runs, so that end-to-end change is not isolated to the
   radius. The experiment was reverted; both large-combat startup paths retain
   the 1,500-unit radius and ordinary servers retain 650 units.
+- The final merged benchmark `1793974750041` confirmed the shared-build result:
+  `server_snapshot_build` averaged 1.184 ms, `server_snapshot_delta` 0.870 ms,
+  and `server_poll` 2.783 ms. Each client received about 40.0 MB, consistent
+  with preserving the original 1,500-unit visibility range.
