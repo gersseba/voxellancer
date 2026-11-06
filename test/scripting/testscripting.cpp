@@ -342,6 +342,16 @@ go_bandit([](){
 
             });
 
+            it("can override a ship's default fight-task archetype", [&]() {
+                script->loadString(R"(
+                    task = createFightTaskWithArchetype(playerShip(), "cruiser")
+                )");
+
+                FightTask* fightTask =
+                    dynamic_cast<FightTask*>(ship->character()->task().get());
+                AssertThat(fightTask->archetype(), Equals(AiArchetype::Cruiser));
+            });
+
             it("can create squads", [&]() {
                 script->loadString(R"(
                     createSquad(playerShip())

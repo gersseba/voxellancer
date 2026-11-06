@@ -39,6 +39,8 @@ namespace {
     struct ServerOptions {
         int shipsPerTeam = BenchmarkShipsPerTeam;
         bool shipsPerTeamSpecified = false;
+        int squadSize = 0;
+        bool squadSizeSpecified = false;
         bool listen = false;
         std::size_t targetPlayers = 0;
         std::size_t benchmarkTicks = 0;
@@ -66,6 +68,7 @@ namespace {
                 std::cout << "Usage: voxellancer-server [--scenario battle|benchmark] "
                     << "[--listen] [--listen-port port] [--target-players count] "
                     << "[--ships-per-team count] [--benchmark-ticks count] "
+                    << "[--squad-size count] "
                     << "[--benchmark-run-id id]\n";
                 std::exit(0);
             }
@@ -94,6 +97,14 @@ namespace {
                 }
                 options.shipsPerTeam = static_cast<int>(parsed);
                 options.shipsPerTeamSpecified = true;
+            } else if (argument == "--squad-size") {
+                const std::uint64_t parsed = parseUnsigned(value, "--squad-size");
+                if (parsed == 0 || parsed > BenchmarkShipsPerTeam) {
+                    throw std::invalid_argument(
+                        "--squad-size must be between 1 and 400.");
+                }
+                options.squadSize = static_cast<int>(parsed);
+                options.squadSizeSpecified = true;
             } else if (argument == "--scenario") {
                 if (value != "benchmark" && value != "battle") {
                     throw std::invalid_argument(
@@ -139,6 +150,14 @@ namespace {
             (options.scenario != "benchmark" || options.targetPlayers == 0)) {
             throw std::invalid_argument(
                 "--benchmark-ticks requires --scenario benchmark and --target-players.");
+        }
+        if (options.squadSizeSpecified && options.scenario != "benchmark") {
+            throw std::invalid_argument(
+                "--squad-size requires --scenario benchmark.");
+        }
+        if (options.squadSize > options.shipsPerTeam) {
+            throw std::invalid_argument(
+                "--squad-size cannot exceed --ships-per-team.");
         }
         if (!options.listen) {
             throw std::invalid_argument(
@@ -242,6 +261,7 @@ namespace {
         World& world,
         std::size_t tickCount,
         const std::string& runId,
+        int squadSize,
         const std::string& firstClientId)
     {
         server.poll();
@@ -343,6 +363,7 @@ namespace {
             << "  \"measured_simulation_intervals\": " << session.tickIndex() << ",\n"
             << "  \"world_entities\": " << world.worldObjects().size() << ",\n"
             << "  \"ships\": " << world.ships().size() << ",\n"
+            << "  \"squad_size\": " << squadSize << ",\n"
             << "  \"missed_simulation_deadlines\": " << missedDeadlines << ",\n"
             << "  \"simulation_tick_ms\": ";
         writeSummary(result, simulationMs);
@@ -481,7 +502,7 @@ int main(int argc, char* argv[]) {
             }
         } else {
             scenario = std::make_unique<LargeCombatScenario>(
-                *world, options.shipsPerTeam);
+                *world, options.shipsPerTeam, options.squadSize);
             scenario->load();
             if (options.targetPlayers != 0) {
                 Ship* firstPlayer = WorldObjectBuilder("mox", *world).buildShip();
@@ -513,6 +534,7 @@ int main(int argc, char* argv[]) {
                 *world,
                 options.benchmarkTicks,
                 runId,
+                options.squadSize,
                 options.clientId);
             return 0;
         }

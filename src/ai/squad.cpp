@@ -22,6 +22,7 @@ Ship* Squad::leader() {
 
 void Squad::setLeader(Ship* leader) {
     assert(leader);
+    m_sharedPrimaryTarget = Handle<WorldObject>();
     if (m_leader) { // old leader becomes normal member
         onMemberJoin(m_leader);
     }
@@ -44,6 +45,14 @@ std::shared_ptr<AiGroupTask> Squad::task() {
 
 void Squad::setTask(std::shared_ptr<AiGroupTask> task) {
     m_task = task;
+}
+
+WorldObject* Squad::sharedPrimaryTarget() {
+    return m_sharedPrimaryTarget.get();
+}
+
+void Squad::setSharedPrimaryTarget(const Handle<WorldObject>& target) {
+    m_sharedPrimaryTarget = target;
 }
 
 const std::vector<Ship*>& Squad::members() {
@@ -69,6 +78,7 @@ void Squad::onMemberLeave(Ship* member) {
     if (member == m_leader) {
         // the leader does not want to automatically become a member since he is about to leave
         m_leader = nullptr;
+        m_sharedPrimaryTarget = Handle<WorldObject>();
         chooseNewLeader();
     } else {
         std::vector<Ship*>::iterator it = std::find(m_members.begin(), m_members.end(), member);
@@ -124,4 +134,3 @@ glm::vec3 Squad::calculateFormationPosition(Ship* member, int position) {
 
     return m_leader->transform().position() + m_leader->physics().speed().directional() + m_leader->transform().orientation() * (distance * glm::normalize(direction));
 }
-

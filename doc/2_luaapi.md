@@ -75,8 +75,20 @@ generated from a47d65f
     apikey createFlyToTask(apikey ship);
     int setTargetPoint(apikey flyToTask, const glm::vec3& point);
     apikey createFightTask(apikey ship);
+    apikey createFightTaskWithArchetype(apikey ship, const std::string& archetype);
     int addFightTaskTarget(apikey flyToTask, apikey worldObject);
     apikey taskExecutor(apikey aiTask);
+
+`createFightTask(ship)` chooses `fighter` or `cruiser` from the ship's
+`[general] ship_type`. Scenario and mission scripts can override that choice
+with `createFightTaskWithArchetype(ship, "fighter")` or
+`createFightTaskWithArchetype(ship, "cruiser")`.
+Ship definitions require `ship_type=fighter` or `ship_type=cruiser` in the
+`[general]` section. Existing assets use their CSV dimension product as an
+upper-bound size estimate, with the legacy 10,000-cell cutoff; this is not a
+count of occupied voxels. Ships assigned to the same squad share the squad
+leader's primary target when their `ship_type` matches; mixed-type members
+retain individual targeting. Ships outside squads also select independently.
 
 
 Ini Objects
@@ -158,5 +170,3 @@ Ini Objects
  * cockpit: 0x000C
  * fuel: 0x000F
  * crucial: 0xC00C
-
-

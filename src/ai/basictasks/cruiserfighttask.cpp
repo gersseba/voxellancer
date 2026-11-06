@@ -55,52 +55,27 @@ bool CruiserFightTask::isFinished() {
 }
 
 void CruiserFightTask::selectPrimaryTarget() {
+    if (useSharedSquadTarget()) {
+        return;
+    }
+
     WorldObject* currentTarget = m_primaryTarget.get();
-    WorldObject* worldObject = boardComputer()->worldObject();
     const float currentDistance = currentTarget
         ? targetDistance()
         : std::numeric_limits<float>::infinity();
     const bool currentCanFireRockets = currentTarget && currentDistance < m_maxRocketDistance;
+    Handle<WorldObject> selectedTarget = currentTarget
+        ? nearestTarget(std::nullopt, currentDistance * 0.75f)
+        : nearestTarget(std::nullopt, std::numeric_limits<float>::max());
 
-    Handle<WorldObject> nearestTarget;
-    float nearestDistance = std::numeric_limits<float>::infinity();
-    Handle<WorldObject> betterTarget;
-    float betterDistance = std::numeric_limits<float>::infinity();
-
-    for (Handle<WorldObject>& targetHandle : m_targets) {
-        WorldObject* target = targetHandle.get();
-        if (!target) {
-            continue;
-        }
-        BenchmarkProfiler::instance().addCounter(
-            BenchmarkCounter::PrimaryTargetCandidatesConsidered);
-
-        const float distance =
-            WorldObjectGeometryHelper::sphereToSphereDistance(worldObject, target);
-        if (!currentTarget && distance < nearestDistance) {
-            nearestDistance = distance;
-            nearestTarget = targetHandle;
-        }
-
-        if (target == currentTarget || !currentTarget) {
-            continue;
-        }
-
-        const bool candidateCanFireRockets = distance < m_maxRocketDistance;
-        const bool materiallyCloser = distance < currentDistance * 0.75f;
-        const bool betterCandidate = currentCanFireRockets
-            ? candidateCanFireRockets && materiallyCloser
-            : candidateCanFireRockets || materiallyCloser;
-        if (betterCandidate &&
-            distance < betterDistance) {
-            betterDistance = distance;
-            betterTarget = targetHandle;
-        }
+    if (selectedTarget.get() && currentCanFireRockets &&
+        WorldObjectGeometryHelper::sphereToSphereDistance(
+            boardComputer()->worldObject(), selectedTarget.get()) >= m_maxRocketDistance) {
+        selectedTarget = Handle<WorldObject>();
     }
 
-    const Handle<WorldObject>& selectedTarget = currentTarget ? betterTarget : nearestTarget;
     if (selectedTarget.get() && selectedTarget.get() != currentTarget) {
-        m_primaryTarget = selectedTarget;
+        setPrimaryTarget(selectedTarget);
         BenchmarkProfiler::instance().addCounter(BenchmarkCounter::PrimaryTargetSwitches);
     }
 }

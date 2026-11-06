@@ -76,6 +76,10 @@ bool FighterFightTask::isFinished() {
 }
 
 void FighterFightTask::selectPrimaryTarget() {
+    if (useSharedSquadTarget()) {
+        return;
+    }
+
     WorldObject* currentTarget = m_primaryTarget.get();
     WorldObject* worldObject = boardComputer()->worldObject();
     const float maxBulletRange = componentsInfo().maxBulletRange();
@@ -84,46 +88,45 @@ void FighterFightTask::selectPrimaryTarget() {
         : std::numeric_limits<float>::infinity();
     const bool currentInRange = currentTarget && currentDistance < maxBulletRange;
 
-    Handle<WorldObject> nearestTarget;
-    float nearestDistance = std::numeric_limits<float>::infinity();
     Handle<WorldObject> betterTarget;
     float betterDistance = std::numeric_limits<float>::infinity();
 
-    for (Handle<WorldObject>& targetHandle : m_targets) {
-        WorldObject* target = targetHandle.get();
-        if (!target) {
-            continue;
+    if (!currentTarget) {
+        Handle<WorldObject> preferredTarget =
+            nearestTarget(ShipType::Fighter, std::numeric_limits<float>::max());
+        if (!preferredTarget.get()) {
+            preferredTarget =
+                nearestTarget(std::nullopt, std::numeric_limits<float>::max());
         }
-        BenchmarkProfiler::instance().addCounter(
-            BenchmarkCounter::PrimaryTargetCandidatesConsidered);
-
-        const float distance =
-            WorldObjectGeometryHelper::sphereToSphereDistance(worldObject, target);
-        if (!currentTarget && distance < nearestDistance) {
-            nearestDistance = distance;
-            nearestTarget = targetHandle;
+        if (preferredTarget.get()) {
+            setPrimaryTarget(preferredTarget);
         }
+        return;
+    }
 
-        if (target == currentTarget || !currentTarget) {
-            continue;
+    Ship* currentShip = dynamic_cast<Ship*>(currentTarget);
+    if (currentShip && currentShip->shipType() != ShipType::Fighter) {
+        Handle<WorldObject> preferredTarget =
+            nearestTarget(ShipType::Fighter, std::numeric_limits<float>::max());
+        if (preferredTarget.get()) {
+            betterTarget = preferredTarget;
         }
-
-        const bool candidateCanEngage = distance < maxBulletRange &&
-            angleToTarget(target) <= 45.0f;
-        const bool materiallyCloser = distance < currentDistance * 0.75f;
-        const bool betterCandidate = currentInRange
-            ? candidateCanEngage && materiallyCloser
-            : candidateCanEngage || materiallyCloser;
-        if (betterCandidate &&
-            distance < betterDistance) {
-            betterDistance = distance;
-            betterTarget = targetHandle;
+    } else {
+        betterTarget = nearestTarget(ShipType::Fighter, currentDistance * 0.75f);
+        WorldObject* target = betterTarget.get();
+        if (target) {
+            betterDistance =
+                WorldObjectGeometryHelper::sphereToSphereDistance(worldObject, target);
+            const bool candidateCanEngage = betterDistance < maxBulletRange &&
+                angleToTarget(target) <= 45.0f;
+            if (currentInRange && !candidateCanEngage) {
+                betterTarget = Handle<WorldObject>();
+            }
         }
     }
 
-    const Handle<WorldObject>& selectedTarget = currentTarget ? betterTarget : nearestTarget;
-    if (selectedTarget.get() && selectedTarget.get() != currentTarget) {
-        m_primaryTarget = selectedTarget;
+    if (betterTarget.get() && betterTarget.get() != currentTarget) {
+        setPrimaryTarget(betterTarget);
         BenchmarkProfiler::instance().addCounter(BenchmarkCounter::PrimaryTargetSwitches);
     }
 }

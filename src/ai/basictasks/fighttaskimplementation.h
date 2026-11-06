@@ -1,12 +1,14 @@
 #pragma once
 
 #include <cstdint>
+#include <optional>
 #include <vector>
 
 #include <glm/glm.hpp>
 
 #include "ai/aitask.h"
 #include "utils/handle/handle.h"
+#include "worldobject/ship.h"
 
 
 class Ship;
@@ -27,12 +29,18 @@ public:
     virtual void setTargets(const std::vector<Handle<WorldObject>>& targets);
 
     virtual bool isFinished() override = 0;
+    WorldObject* primaryTarget();
 
 protected:
     std::vector<Handle<WorldObject>> m_targets;
     Handle<WorldObject> m_primaryTarget;
 
     bool updateTargets(std::uint32_t selectionIntervalTicks);
+    Handle<WorldObject> nearestTarget(
+        std::optional<ShipType> preferredType,
+        float maxDistance);
+    bool useSharedSquadTarget();
+    void setPrimaryTarget(const Handle<WorldObject>& target);
     float targetDistance();
 
     const ComponentsInfo& componentsInfo();

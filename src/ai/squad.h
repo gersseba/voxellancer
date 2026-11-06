@@ -5,8 +5,10 @@
 
 #include "glm/glm.hpp"
 #include "scripting/scriptable.h"
+#include "utils/handle/handle.h"
 
 class Ship;
+class WorldObject;
 class AiGroupTask;
 
 /**
@@ -22,6 +24,9 @@ public:
 
     std::shared_ptr<AiGroupTask> task();
     void setTask(std::shared_ptr<AiGroupTask> task);
+
+    WorldObject* sharedPrimaryTarget();
+    void setSharedPrimaryTarget(const Handle<WorldObject>& target);
 
     const std::vector<Ship*>& members();
 
@@ -42,5 +47,5 @@ protected:
     Ship* m_leader;
     std::vector<Ship*> m_members;
     std::shared_ptr<AiGroupTask> m_task;
+    Handle<WorldObject> m_sharedPrimaryTarget;
 };
-

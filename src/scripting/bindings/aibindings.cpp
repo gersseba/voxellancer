@@ -40,6 +40,10 @@ void AiBindings::bind() {
     m_lua.Register("createFlyToTask", this, &AiBindings::apiCreateFlyToTask);
     m_lua.Register("setTargetPoint", this, &AiBindings::apiSetTargetPoint);
     m_lua.Register("createFightTask", this, &AiBindings::apiCreateFightTask);
+    m_lua.Register(
+        "createFightTaskWithArchetype",
+        this,
+        &AiBindings::apiCreateFightTaskWithArchetype);
     m_lua.Register("addFightTaskTarget", this, &AiBindings::apiAddFightTaskTarget);
 
     m_lua.Register("taskExecutor", this, &AiBindings::apiTaskExecutor);
@@ -149,6 +153,40 @@ apikey AiBindings::apiCreateFightTask(apikey key) {
     Character* character = ship->character();
     character->setTask(std::shared_ptr<AiTask>(fightTask));
 
+    return fightTask->scriptKey();
+}
+
+apikey AiBindings::apiCreateFightTaskWithArchetype(
+    apikey key,
+    const std::string& archetype)
+{
+    Ship* ship = m_scriptEngine.get<Ship>(key);
+    if (!ship) {
+        glow::warning("AiBindings: Ship '%;' doesn't exist", key);
+        return -1;
+    }
+
+    AiArchetype aiArchetype;
+    if (archetype == "fighter") {
+        aiArchetype = AiArchetype::Fighter;
+    } else if (archetype == "cruiser") {
+        aiArchetype = AiArchetype::Cruiser;
+    } else {
+        glow::warning(
+            "AiBindings: Unknown fight-task archetype '%;'", archetype);
+        return -1;
+    }
+
+    Character* character = ship->character();
+    if (!character) {
+        glow::warning("AiBindings: Ship '%;' has no Character", key);
+        return -1;
+    }
+
+    FightTask* fightTask = new FightTask(
+        ship->boardComputer(), {}, aiArchetype);
+    m_scriptEngine.registerScriptable(fightTask);
+    character->setTask(std::shared_ptr<AiTask>(fightTask));
     return fightTask->scriptKey();
 }
 

@@ -104,7 +104,19 @@ Ship* WorldObjectBuilder::buildShip() {
     if (m_world == nullptr) {
         throw std::logic_error("Building a ship requires an explicit world.");
     }
+    const std::string shipType = Property<std::string>(
+        m_name + ".general.ship_type");
+    ShipType parsedShipType;
+    if (shipType == "fighter") {
+        parsedShipType = ShipType::Fighter;
+    } else if (shipType == "cruiser") {
+        parsedShipType = ShipType::Cruiser;
+    } else {
+        throw std::invalid_argument(
+            "Unknown ship_type '" + shipType + "' for ship '" + m_name + "'.");
+    }
     Ship* ship = makeWorldObject<Ship>(*m_world);
+    ship->setShipType(parsedShipType);
     if (ship->crucialVoxel() == nullptr) {
         glow::warning("WorldObjectBuilder: ship %; has no crucial voxel", m_name);
     }

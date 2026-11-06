@@ -6,6 +6,9 @@ param(
     [ValidateSet('None', 'StartServer', 'StartClient', 'LocalLargeCombat', 'MultiplayerLargeCombat')]
     [string]$Benchmark = 'None',
 
+    [ValidateRange(0, 400)]
+    [int]$SquadSize = 0,
+
     [ValidateSet('Debug', 'Release')]
     [string]$Configuration = 'Release',
 
@@ -21,6 +24,10 @@ if ($Benchmark -ne 'None' -and $Mode -ne 'Run') {
 }
 if ($Mode -eq 'Run' -and $Benchmark -eq 'None') {
     $Benchmark = 'StartClient'
+}
+if ($SquadSize -gt 0 -and $Benchmark -ne 'MultiplayerLargeCombat') {
+    Write-Error '-SquadSize is supported only by MultiplayerLargeCombat.'
+    exit 1
 }
 
 $repositoryRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
@@ -172,6 +179,9 @@ if ($Benchmark -eq 'StartClient') {
 $clientExecutable = Get-ExecutablePath 'voxellancer'
 $serverExecutable = Get-ExecutablePath 'voxellancer-server'
 $runId = [DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds().ToString()
+if ($SquadSize -gt 0) {
+    $runId += "-squad-$SquadSize"
+}
 $reportDirectory = Join-Path $repositoryRoot 'benchmark-results'
 
 if ($Benchmark -eq 'LocalLargeCombat') {
@@ -197,6 +207,9 @@ $serverArguments = @(
     '--benchmark-ticks', '1800',
     '--benchmark-run-id', $runId
 )
+if ($SquadSize -gt 0) {
+    $serverArguments += @('--squad-size', "$SquadSize")
+}
 
 function Test-CompleteServerReport {
     if (-not (Test-Path $serverReport)) {
@@ -209,6 +222,7 @@ function Test-CompleteServerReport {
         $complete = $complete -and $report.target_players -eq 2
         $complete = $complete -and $report.target_simulation_intervals -eq 1800
         $complete = $complete -and $report.measured_simulation_intervals -eq 1800
+        $complete = $complete -and $report.squad_size -eq $SquadSize
         return $complete
     } catch {
         return $false

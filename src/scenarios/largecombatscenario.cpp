@@ -1,5 +1,6 @@
 #include "largecombatscenario.h"
 
+#include <algorithm>
 #include <cmath>
 #include <memory>
 #include <random>
@@ -12,6 +13,8 @@
 
 #include "ai/basictasks/fighttask.h"
 #include "ai/character.h"
+#include "ai/squad.h"
+#include "ai/squadlogic.h"
 #ifndef VOXELLANCER_HEADLESS_SERVER
 #include "player.h"
 #endif
@@ -79,12 +82,18 @@ namespace {
 
 LargeCombatScenario::LargeCombatScenario(
     World& world,
-    int shipsPerTeam
+    int shipsPerTeam,
+    int squadSize
 ) :
     BaseScenario(world),
-    m_shipsPerTeam(shipsPerTeam)
+    m_shipsPerTeam(shipsPerTeam),
+    m_squadSize(squadSize)
 {
     validateShipsPerTeam(m_shipsPerTeam);
+    if (m_squadSize < 0 || m_squadSize > m_shipsPerTeam) {
+        throw std::invalid_argument(
+            "Benchmark squad size must be between 0 and the team size.");
+    }
 }
 
 void LargeCombatScenario::populateWorld() {
@@ -126,6 +135,15 @@ void LargeCombatScenario::populateLargeCombat() {
         for (Ship* ship : teams[team]) {
             ship->character()->setTask(std::make_shared<FightTask>(
                 ship->boardComputer(), targets));
+        }
+        if (m_squadSize > 0) {
+            for (int first = 0; first < m_shipsPerTeam; first += m_squadSize) {
+                const std::shared_ptr<Squad> squad = std::make_shared<Squad>();
+                const int end = std::min(first + m_squadSize, m_shipsPerTeam);
+                for (int member = first; member < end; ++member) {
+                    teams[team][member]->squadLogic()->joinSquad(squad);
+                }
+            }
         }
     }
 

@@ -24,8 +24,10 @@ protected:
     apikey apiCreateFlyToTask(apikey ship);
     int apiSetTargetPoint(apikey flyToTask, const glm::vec3& point);
     apikey apiCreateFightTask(apikey ship);
+    apikey apiCreateFightTaskWithArchetype(
+        apikey ship,
+        const std::string& archetype);
     int apiAddFightTaskTarget(apikey flyToTask, apikey worldObject);
 
     apikey apiTaskExecutor(apikey aiTask);
 };
-

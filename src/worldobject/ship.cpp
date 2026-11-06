@@ -17,7 +17,8 @@ Ship::Ship(World& world):
     m_boardComputer(new BoardComputer(this, world)),
     m_world(&world),
     m_squadLogic(new SquadLogic(*this)),
-    m_aiUpdatePhase(0)
+    m_aiUpdatePhase(0),
+    m_shipType(ShipType::Fighter)
 {
     setWorld(world);
     m_info->setShowOnHud(true);
@@ -66,4 +67,12 @@ void Ship::setAiUpdatePhase(std::uint32_t phase) {
 
 SquadLogic* Ship::squadLogic() {
     return m_squadLogic.get();
+}
+
+ShipType Ship::shipType() const {
+    return m_shipType;
+}
+
+void Ship::setShipType(ShipType shipType) {
+    m_shipType = shipType;
 }

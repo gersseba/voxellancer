@@ -17,6 +17,11 @@ class Sound;
 class SquadLogic;
 class BoardComputer;
 
+enum class ShipType {
+    Fighter,
+    Cruiser
+};
+
 /**
  * A Ship is a WorldObject with a Pilot (Character), thus can have an AiTask and a Squad membership
  */
@@ -38,6 +43,9 @@ public:
     void setAiUpdatePhase(std::uint32_t phase);
     SquadLogic* squadLogic();
 
+    ShipType shipType() const;
+    void setShipType(ShipType shipType);
+
     void setCharacter(Character* character);
     Character* character();
 
@@ -47,6 +55,7 @@ protected:
     std::unique_ptr<BoardComputer> m_boardComputer;
     World* m_world;
     std::uint32_t m_aiUpdatePhase;
+    ShipType m_shipType;
 
     std::unique_ptr<SquadLogic> m_squadLogic;
 
