@@ -3,6 +3,9 @@
 #include <sstream>
 #include <iomanip>
 #include <algorithm>
+#include <cstdint>
+#include <unordered_map>
+#include <unordered_set>
 
 #include <GL/glew.h>
 #include <glow/logging.h>
@@ -44,6 +47,13 @@
 #include "player.h"
 
 #ifndef VOXELLANCER_HEADLESS_SERVER
+namespace {
+    std::uint64_t remoteEntityKey(voxellancer::protocol::EntityId entity) {
+        return (static_cast<std::uint64_t>(entity.index) << 32) |
+            static_cast<std::uint64_t>(entity.generation);
+    }
+}
+
 struct GamePlayScene::RemoteVoxelProxy {
     voxellancer::protocol::EntityId id;
     std::unique_ptr<VoxelCluster> cluster;
@@ -75,41 +85,54 @@ void GamePlayScene::update(float deltaSec) {
 
 #ifndef VOXELLANCER_HEADLESS_SERVER
 void GamePlayScene::updateRemoteVoxelProxies() {
-    const auto& snapshots = m_gamePlay.running().remoteReplicaSnapshots();
-    const auto& contents = m_gamePlay.running().remoteEntityContents();
+    BenchmarkCpuScope updateScope(BenchmarkMetric::ClientReplicaUpdate);
+    GamePlayRunning& running = m_gamePlay.running();
+    const auto& snapshots = running.remoteReplicaSnapshots();
+    const auto& contents = running.remoteEntityContents();
+    const bool remotePreviewActive = running.remotePreviewActive();
+    const bool syncAllContents = m_remoteContentSyncNeeded ||
+        (remotePreviewActive && !m_remotePreviewWasActive);
+    if (remotePreviewActive && !m_remotePreviewWasActive) {
+        m_remoteVoxelProxies.clear();
+        m_remoteVoxelProxyIndex.clear();
+        m_pendingRemoteContentKeys.clear();
+    }
+    m_remotePreviewWasActive = remotePreviewActive;
+    m_remoteContentSyncNeeded = !remotePreviewActive;
 
-    for (const auto& content : contents) {
-        const auto snapshot = std::find_if(
-            snapshots.begin(),
-            snapshots.end(),
-            [&content](const auto& candidate) {
-                return candidate.id == content.id;
-            });
-        if (snapshot == snapshots.end()) {
-            continue;
+    std::unordered_map<std::uint64_t, const voxellancer::protocol::EntitySnapshot*>
+        snapshotsById;
+    snapshotsById.reserve(snapshots.size());
+    for (const auto& snapshot : snapshots) {
+        snapshotsById.emplace(remoteEntityKey(snapshot.id), &snapshot);
+    }
+
+    const auto updateProxyContent = [this, &snapshotsById](
+        const voxellancer::protocol::EntityContentSnapshot& content)
+    {
+        const std::uint64_t key = remoteEntityKey(content.id);
+        if (snapshotsById.find(key) == snapshotsById.end()) {
+            return;
         }
 
-        auto proxy = std::find_if(
-            m_remoteVoxelProxies.begin(),
-            m_remoteVoxelProxies.end(),
-            [&content](const auto& candidate) {
-                return candidate->id == content.id;
-            });
-        if (proxy == m_remoteVoxelProxies.end()) {
+        auto proxyEntry = m_remoteVoxelProxyIndex.find(key);
+        if (proxyEntry == m_remoteVoxelProxyIndex.end()) {
             auto created = std::make_unique<RemoteVoxelProxy>();
             created->id = content.id;
+            RemoteVoxelProxy* proxy = created.get();
             m_remoteVoxelProxies.push_back(std::move(created));
-            proxy = m_remoteVoxelProxies.end() - 1;
+            proxyEntry = m_remoteVoxelProxyIndex.emplace(key, proxy).first;
         }
+        RemoteVoxelProxy& proxy = *proxyEntry->second;
 
-        bool rebuildCluster = !(*proxy)->cluster ||
-            (*proxy)->voxelStates.size() != content.voxels.size() ||
-            (*proxy)->equipmentStates != content.equipment;
+        bool rebuildCluster = !proxy.cluster ||
+            proxy.voxelStates.size() != content.voxels.size() ||
+            proxy.equipmentStates != content.equipment;
         if (!rebuildCluster) {
             for (std::size_t index = 0; index < content.voxels.size(); ++index) {
-                const auto& previous = (*proxy)->voxelStates[index];
+                const auto& previous = proxy.voxelStates[index];
                 const auto& current = content.voxels[index];
-                Voxel* proxyVoxel = (*proxy)->cluster->voxel(current.cell);
+                Voxel* proxyVoxel = proxy.cluster->voxel(current.cell);
                 if (previous.cell != current.cell ||
                     previous.color != current.color ||
                     previous.density != current.density ||
@@ -136,24 +159,100 @@ void GamePlayScene::updateRemoteVoxelProxies() {
                 proxyVoxel->applyDamage(voxel.maxHP - voxel.hp);
                 cluster->addVoxel(proxyVoxel);
             }
-            (*proxy)->cluster = std::move(cluster);
+            proxy.cluster = std::move(cluster);
         } else {
             for (const auto& voxel : content.voxels) {
-                Voxel* proxyVoxel = (*proxy)->cluster->voxel(voxel.cell);
+                Voxel* proxyVoxel = proxy.cluster->voxel(voxel.cell);
                 if (voxel.hp < proxyVoxel->hp()) {
                     proxyVoxel->applyDamage(proxyVoxel->hp() - voxel.hp);
                 }
             }
         }
-        (*proxy)->voxelStates = content.voxels;
-        (*proxy)->equipmentStates = content.equipment;
-        (*proxy)->cluster->transform().setPosition(snapshot->position);
-        (*proxy)->cluster->transform().setOrientation(snapshot->orientation);
-        (*proxy)->cluster->transform().setScale(snapshot->scale);
+        proxy.voxelStates = content.voxels;
+        proxy.equipmentStates = content.equipment;
+    };
+
+    const auto changedContents = running.drainRemoteEntityContentChanges();
+    std::unordered_set<std::uint64_t> removedContentIds;
+    if (!remotePreviewActive) {
+        m_pendingRemoteContentKeys.clear();
+    } else {
+        if (syncAllContents) {
+            m_pendingRemoteContentKeys.clear();
+            for (const auto& content : contents) {
+                m_pendingRemoteContentKeys.insert(remoteEntityKey(content.id));
+            }
+        } else {
+            for (const auto id : changedContents) {
+                m_pendingRemoteContentKeys.insert(remoteEntityKey(id));
+            }
+        }
+    }
+    if (!m_pendingRemoteContentKeys.empty()) {
+        std::unordered_map<std::uint64_t,
+            const voxellancer::protocol::EntityContentSnapshot*> contentsById;
+        contentsById.reserve(contents.size());
+        for (const auto& content : contents) {
+            contentsById.emplace(remoteEntityKey(content.id), &content);
+        }
+        for (auto pending = m_pendingRemoteContentKeys.begin();
+             pending != m_pendingRemoteContentKeys.end();) {
+            const std::uint64_t key = *pending;
+            const auto content = contentsById.find(key);
+            if (content == contentsById.end()) {
+                removedContentIds.insert(key);
+                pending = m_pendingRemoteContentKeys.erase(pending);
+                continue;
+            }
+            if (snapshotsById.find(key) == snapshotsById.end()) {
+                ++pending;
+                continue;
+            }
+            updateProxyContent(*content->second);
+            pending = m_pendingRemoteContentKeys.erase(pending);
+        }
     }
 
+    for (const std::uint64_t key : removedContentIds) {
+        m_remoteVoxelProxyIndex.erase(key);
+    }
+    m_remoteVoxelProxies.erase(
+        std::remove_if(
+            m_remoteVoxelProxies.begin(),
+            m_remoteVoxelProxies.end(),
+            [&removedContentIds](const auto& proxy) {
+                return removedContentIds.find(remoteEntityKey(proxy->id)) !=
+                    removedContentIds.end();
+            }),
+        m_remoteVoxelProxies.end());
+
+    m_remoteVoxelProxies.erase(
+        std::remove_if(
+            m_remoteVoxelProxies.begin(),
+            m_remoteVoxelProxies.end(),
+            [this, &snapshotsById](const auto& proxy) {
+                const std::uint64_t key = remoteEntityKey(proxy->id);
+                const auto snapshot = snapshotsById.find(key);
+                if (snapshot == snapshotsById.end()) {
+                    m_remoteVoxelProxyIndex.erase(key);
+                    return true;
+                }
+                BenchmarkProfiler::instance().addCounter(
+                    BenchmarkCounter::RemoteVoxelProxiesUpdated);
+                if (proxy->cluster) {
+                    proxy->cluster->transform().setPosition(
+                        snapshot->second->position);
+                    proxy->cluster->transform().setOrientation(
+                        snapshot->second->orientation);
+                    proxy->cluster->transform().setScale(
+                        snapshot->second->scale);
+                }
+                return false;
+            }),
+        m_remoteVoxelProxies.end());
+
     const auto damageEvents =
-        m_gamePlay.running().drainRemoteVoxelDamageEvents();
+        running.drainRemoteVoxelDamageEvents();
     constexpr std::size_t MaxVoxelDamageFlashesPerFrame = 64;
     const std::size_t firstDamageEvent = damageEvents.size() >
         MaxVoxelDamageFlashesPerFrame
@@ -162,23 +261,18 @@ void GamePlayScene::updateRemoteVoxelProxies() {
     for (std::size_t index = firstDamageEvent;
          index < damageEvents.size(); ++index) {
         const auto& event = damageEvents[index];
-        const auto snapshot = std::find_if(
-            snapshots.begin(),
-            snapshots.end(),
-            [&event](const auto& candidate) {
-                return candidate.id == event.entity;
-            });
-        if (snapshot == snapshots.end()) {
+        const auto snapshot = snapshotsById.find(remoteEntityKey(event.entity));
+        if (snapshot == snapshotsById.end()) {
             continue;
         }
 
-        const glm::vec3 impactPosition = snapshot->position +
-            snapshot->orientation *
-                (glm::vec3(event.cell) * snapshot->scale);
+        const auto& state = *snapshot->second;
+        const glm::vec3 impactPosition = state.position +
+            state.orientation * (glm::vec3(event.cell) * state.scale);
         VoxelExplosionGenerator flash(nullptr, World::instance());
         flash.setPosition(impactPosition);
-        flash.setRadius(snapshot->scale * 0.02f);
-        flash.setScale(snapshot->scale * 0.04f);
+        flash.setRadius(state.scale * 0.02f);
+        flash.setScale(state.scale * 0.04f);
         flash.setForce(0.01f);
         flash.setLifetime(0.12f);
         flash.setCount(2);
@@ -188,7 +282,7 @@ void GamePlayScene::updateRemoteVoxelProxies() {
     }
 
     const auto shieldHitEvents =
-        m_gamePlay.running().drainRemoteShieldHitEvents();
+        running.drainRemoteShieldHitEvents();
     constexpr std::size_t MaxShieldHitFlashesPerFrame = 32;
     const std::size_t firstShieldHitEvent = shieldHitEvents.size() >
         MaxShieldHitFlashesPerFrame
@@ -197,23 +291,18 @@ void GamePlayScene::updateRemoteVoxelProxies() {
     for (std::size_t index = firstShieldHitEvent;
          index < shieldHitEvents.size(); ++index) {
         const auto& event = shieldHitEvents[index];
-        const auto snapshot = std::find_if(
-            snapshots.begin(),
-            snapshots.end(),
-            [&event](const auto& candidate) {
-                return candidate.id == event.entity;
-            });
-        if (snapshot == snapshots.end()) {
+        const auto snapshot = snapshotsById.find(remoteEntityKey(event.entity));
+        if (snapshot == snapshotsById.end()) {
             continue;
         }
 
-        const glm::vec3 impactPosition = snapshot->position +
-            snapshot->orientation *
-                (glm::vec3(event.cell) * snapshot->scale);
+        const auto& state = *snapshot->second;
+        const glm::vec3 impactPosition = state.position +
+            state.orientation * (glm::vec3(event.cell) * state.scale);
         VoxelExplosionGenerator flash(nullptr, World::instance());
         flash.setPosition(impactPosition);
-        flash.setRadius(snapshot->scale * 0.04f);
-        flash.setScale(snapshot->scale * 0.06f);
+        flash.setRadius(state.scale * 0.04f);
+        flash.setScale(state.scale * 0.06f);
         flash.setForce(0.02f);
         flash.setLifetime(0.14f);
         flash.setCount(3);
@@ -223,7 +312,7 @@ void GamePlayScene::updateRemoteVoxelProxies() {
     }
 
     const auto missionEvents =
-        m_gamePlay.running().drainRemoteMissionStateEvents();
+        running.drainRemoteMissionStateEvents();
     if (!missionEvents.empty()) {
         const auto& event = missionEvents.back();
         const char* state = "STARTED";
@@ -242,27 +331,22 @@ void GamePlayScene::updateRemoteVoxelProxies() {
     }
 
     const auto weaponEvents =
-        m_gamePlay.running().drainRemoteWeaponFiredEvents();
+        running.drainRemoteWeaponFiredEvents();
     constexpr std::size_t MaxWeaponMuzzleFlashesPerFrame = 32;
     const std::size_t firstEvent = weaponEvents.size() >
         MaxWeaponMuzzleFlashesPerFrame
         ? weaponEvents.size() - MaxWeaponMuzzleFlashesPerFrame
         : 0;
-    for (std::size_t index = firstEvent; index < weaponEvents.size(); ++index) {
+    for (std::size_t index = firstEvent;     index < weaponEvents.size(); ++index) {
         const auto& event = weaponEvents[index];
-        const auto snapshot = std::find_if(
-            snapshots.begin(),
-            snapshots.end(),
-            [&event](const auto& candidate) {
-                return candidate.id == event.entity;
-            });
-        if (snapshot == snapshots.end()) {
-            continue;
+        const auto snapshot = snapshotsById.find(remoteEntityKey(event.entity));
+        if (snapshot == snapshotsById.end()) {
+       continue;
         }
 
-        const glm::vec3 firingPosition = snapshot->position +
-            snapshot->orientation *
-                (glm::vec3(event.cell) * snapshot->scale);
+        const auto& state = *snapshot->second;
+        const glm::vec3 firingPosition = state.position +
+       state.orientation * (glm::vec3(event.cell) * state.scale);
         VoxelExplosionGenerator flash(nullptr, World::instance());
         flash.setPosition(firingPosition);
         flash.setRadius(0.03f);
@@ -274,25 +358,6 @@ void GamePlayScene::updateRemoteVoxelProxies() {
         flash.setEmissiveness(0.8f);
         flash.spawn();
     }
-
-    m_remoteVoxelProxies.erase(
-        std::remove_if(
-            m_remoteVoxelProxies.begin(),
-            m_remoteVoxelProxies.end(),
-            [&snapshots, &contents](const auto& proxy) {
-                const bool hasSnapshot = std::any_of(
-                    snapshots.begin(), snapshots.end(),
-                    [&proxy](const auto& snapshot) {
-                        return snapshot.id == proxy->id;
-                    });
-                const bool hasContent = std::any_of(
-                    contents.begin(), contents.end(),
-                    [&proxy](const auto& content) {
-                        return content.id == proxy->id;
-                    });
-                return !hasSnapshot || !hasContent;
-            }),
-        m_remoteVoxelProxies.end());
 }
 #endif
 
@@ -339,23 +404,30 @@ void GamePlayScene::drawImpl(const Camera& camera) const {
     {
         BenchmarkCpuScope cpuScope(BenchmarkMetric::HudDraw);
         BenchmarkGpuScope gpuScope(BenchmarkMetric::HudDraw);
-        World::instance()->player().hud().draw();
-
-        std::ostringstream fpsText;
-        fpsText << "FPS: " << std::fixed << std::setprecision(1) << m_fps;
-
+#ifndef VOXELLANCER_HEADLESS_SERVER
+        const bool waitingForRemoteWorld = m_gamePlay.waitingForRemoteWorld();
+#else
+        const bool waitingForRemoteWorld = false;
+#endif
         constexpr float overlayDistance = 8.0f;
         const glm::mat4 projection = camera.projection();
         const float halfWidth = overlayDistance / projection[0][0];
         const float halfHeight = overlayDistance / projection[1][1];
         const glm::vec3 overlayPosition = camera.eye() + camera.orientation() *
             glm::vec3(-halfWidth + 0.3f, halfHeight - 0.9f, -overlayDistance);
+        std::ostringstream fpsText;
+        if (!waitingForRemoteWorld) {
+            World::instance()->player().hud().draw();
+            fpsText << "FPS: " << std::fixed << std::setprecision(1) << m_fps;
+        }
 
         const GLboolean depthTestEnabled = glIsEnabled(GL_DEPTH_TEST);
         glDisable(GL_DEPTH_TEST);
-        VoxelFont::instance()->drawString(
-            fpsText.str(), overlayPosition, camera.orientation(),
-            FontSize::SIZE5x7, 0.12f, FontAlign::LEFT);
+        if (!waitingForRemoteWorld) {
+            VoxelFont::instance()->drawString(
+                fpsText.str(), overlayPosition, camera.orientation(),
+                FontSize::SIZE5x7, 0.12f, FontAlign::LEFT);
+        }
 #ifndef VOXELLANCER_HEADLESS_SERVER
         const auto& remoteSnapshot = m_gamePlay.running().remotePreviewSnapshot();
         if (remoteSnapshot) {
@@ -457,6 +529,17 @@ void GamePlayScene::drawImpl(const Camera& camera) const {
                     );
                 }
             }
+        } else if (waitingForRemoteWorld) {
+            const glm::vec3 waitingPosition = camera.eye() +
+                camera.orientation() * glm::vec3(0.0f, 0.0f, -overlayDistance);
+            VoxelFont::instance()->drawString(
+                "WAITING",
+                waitingPosition,
+                camera.orientation(),
+                FontSize::SIZE5x7,
+                0.06f,
+                FontAlign::CENTER
+            );
         }
 #endif
         if (depthTestEnabled) {

@@ -61,6 +61,39 @@ go_bandit([]() {
             AssertThat(decodedCommand, Equals(originalCommand));
         });
 
+        it("round trips and validates multiplayer lobby status", []() {
+            const LobbyStatus original{2, 4, false};
+            LobbyStatusPacket packet{};
+            AssertThat(encodeLobbyStatus(original, packet), Equals(true));
+            AssertThat(packet[0], Equals(ProtocolVersion));
+            AssertThat(packet[1], Equals(static_cast<std::uint8_t>(13)));
+
+            LobbyStatus decoded;
+            AssertThat(
+                decodeLobbyStatus(packet.data(), packet.size(), decoded),
+                Equals(DecodeError::None)
+            );
+            AssertThat(decoded, Equals(original));
+            packet[6] = 2;
+            AssertThat(
+                decodeLobbyStatus(packet.data(), packet.size(), decoded),
+                Equals(DecodeError::InvalidValue)
+            );
+            AssertThat(
+                encodeLobbyStatus({3, 2, false}, packet),
+                Equals(false)
+            );
+            AssertThat(
+                encodeLobbyStatus({1, 2, true}, packet),
+                Equals(true)
+            );
+            AssertThat(
+                decodeLobbyStatus(packet.data(), packet.size(), decoded),
+                Equals(DecodeError::None)
+            );
+            AssertThat(decoded, Equals(LobbyStatus{1, 2, true}));
+        });
+
         it("round trips sequenced input acknowledgements", []() {
             const InputCommandAcknowledgement original{
                 42, InputCommandResult::TooLate

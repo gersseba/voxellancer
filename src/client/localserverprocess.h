@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <chrono>
 #include <filesystem>
 #include <string>
 
@@ -14,8 +15,11 @@ public:
 
     bool start(
         const std::filesystem::path& clientExecutable,
-        std::uint16_t port);
+        std::uint16_t port,
+        bool largeCombatBenchmark = false,
+        const std::string& runId = {});
     bool isRunning();
+    bool waitForExit(std::chrono::milliseconds timeout);
     void stop();
     const std::string& lastError() const;
 

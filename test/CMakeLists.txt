@@ -25,13 +25,9 @@ if(VOXELLANCER_BUILD_CLIENT)
         add_subdirectory(threading)
     endif()
 
-    add_subdirectory(perftest)
-
-
     file(GLOB_RECURSE ALL_TEST_FILES
         "*/*.cpp"
     )
-    list(REMOVE_ITEM ALL_TEST_FILES ${CMAKE_CURRENT_SOURCE_DIR}/perftest//testperformance.cpp)
     list(APPEND ALL_TEST_FILES
         ${SRC_DIR}/server/tcpserver.cpp
         ${SRC_DIR}/client/tcpclient.cpp

@@ -41,29 +41,32 @@ bool CommandLineParser::serverPreview() const {
     return isSet("server-preview");
 }
 
+bool CommandLineParser::multiplayerClient() const {
+    return isSet("multiplayer-client");
+}
+
 bool CommandLineParser::localSingleplayer() const {
     return isSet("local-singleplayer");
 }
 
 BenchmarkMode CommandLineParser::benchmarkMode() const {
-    const bool rendering = isSet("benchmark-rendering");
-    const bool combat = isSet("benchmark-combat");
-    const bool largeCombatVsync = isSet("benchmark-large-combat");
-
-    if (static_cast<int>(rendering) + static_cast<int>(combat) +
-        static_cast<int>(largeCombatVsync) > 1) {
+    if (isSet("benchmark-rendering") || isSet("benchmark-combat") ||
+        isSet("benchmark-multiplayer")) {
         return BenchmarkMode::Invalid;
     }
-    if (rendering) {
-        return BenchmarkMode::Rendering;
-    }
-    if (combat) {
-        return BenchmarkMode::Combat;
-    }
-    if (largeCombatVsync) {
-        return BenchmarkMode::LargeCombatVsync;
-    }
-    return BenchmarkMode::None;
+    return isSet("benchmark-large-combat")
+        ? BenchmarkMode::LargeCombat
+        : BenchmarkMode::None;
+}
+
+std::string CommandLineParser::benchmarkRunId() const {
+    const auto option = m_options.find("benchmark-run-id");
+    return option == m_options.end() ? std::string() : option->second;
+}
+
+std::string CommandLineParser::benchmarkClientId() const {
+    const auto option = m_options.find("benchmark-client-id");
+    return option == m_options.end() ? std::string() : option->second;
 }
 
 bool CommandLineParser::isSet(const std::string& arg) const {
@@ -72,15 +75,16 @@ bool CommandLineParser::isSet(const std::string& arg) const {
 
 void CommandLineParser::checkHelp() {
     if (isSet("help") || isSet("-help") || isSet("h")) {
-        glow::debug("Usage: voxellancer [-fullscreen] [-stereo] [-server-preview] [-local-singleplayer] [-benchmark-rendering | -benchmark-combat | -benchmark-large-combat]\n");
+        glow::debug("Usage: voxellancer [-fullscreen] [-stereo] [-server-preview] [-multiplayer-client] [-local-singleplayer -benchmark-large-combat | -multiplayer-client -benchmark-large-combat]\n");
         glow::debug("  -fullscreen  fullscreen mode");
         glow::debug("  -stereo      stereo rendering");
         glow::debug("  -nointro     [dev] don't show the intro");
         glow::debug("  -server-preview  show interpolated snapshots from 127.0.0.1:27800");
+        glow::debug("  -multiplayer-client  connect a visible client to 127.0.0.1:27801");
         glow::debug("  -local-singleplayer  start a local authoritative battle server");
-        glow::debug("  -benchmark-rendering  render a fixed high-voxel scene and write benchmark results");
-        glow::debug("  -benchmark-combat     simulate AI ships fighting and write benchmark results");
-        glow::debug("  -benchmark-large-combat  run 800 ships with VSync and count frames below 55 FPS");
+        glow::debug("  -benchmark-large-combat  benchmark client rendering and replication during a server-side 800-ship battle");
+        glow::debug("  -benchmark-run-id <id>   group server and client benchmark reports");
+        glow::debug("  -benchmark-client-id <id> identify this client in its benchmark report");
         exit(0);
     }
 }

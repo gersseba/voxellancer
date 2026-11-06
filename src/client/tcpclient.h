@@ -5,6 +5,7 @@
 #include <deque>
 #include <optional>
 #include <string>
+#include <unordered_set>
 #include <vector>
 
 #include <SFML/Network/TcpSocket.hpp>
@@ -21,11 +22,13 @@ public:
     bool requestSnapshotResync();
 
     std::optional<voxellancer::protocol::EntityId> actor() const;
+    std::optional<voxellancer::protocol::LobbyStatus> lobbyStatus() const;
     std::uint64_t snapshotSequence() const;
     std::uint64_t snapshotTick() const;
     const std::vector<voxellancer::protocol::EntitySnapshot>& replicaState() const;
     const std::vector<voxellancer::protocol::EntityContentSnapshot>&
     entityContents() const;
+    std::vector<voxellancer::protocol::EntityId> drainEntityContentChanges();
     std::optional<voxellancer::protocol::EntitySnapshot> sample(
         voxellancer::protocol::EntityId entity,
         double renderTick
@@ -60,10 +63,13 @@ private:
     bool m_connected = false;
     bool m_resyncPending = false;
     std::optional<voxellancer::protocol::EntityId> m_actor;
+    std::optional<voxellancer::protocol::LobbyStatus> m_lobbyStatus;
     std::uint64_t m_snapshotSequence = 0;
     std::uint64_t m_snapshotTick = 0;
     std::vector<voxellancer::protocol::EntitySnapshot> m_replicaState;
     std::vector<voxellancer::protocol::EntityContentSnapshot> m_entityContents;
+    std::vector<voxellancer::protocol::EntityId> m_changedEntityContents;
+    std::unordered_set<std::uint64_t> m_changedEntityContentKeys;
     std::size_t m_replicaVoxelStateCount = 0;
     std::size_t m_replicaEquipmentStateCount = 0;
     SnapshotInterpolator m_snapshotInterpolator;
@@ -79,6 +85,7 @@ private:
     std::size_t m_outgoingBytes = 0;
     std::string m_lastError;
 
+    void markEntityContentChanged(voxellancer::protocol::EntityId entity);
     bool receiveFrames();
     bool processFrames();
     bool flushOutput();

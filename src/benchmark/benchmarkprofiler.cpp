@@ -1,10 +1,85 @@
 #include "benchmarkprofiler.h"
 
 #include <algorithm>
+#include <array>
+#include <cmath>
 #include <cstdint>
+#include <numeric>
 #ifndef VOXELLANCER_HEADLESS_SERVER
 #include <GL/glew.h>
 #endif
+
+namespace {
+    constexpr std::array<const char*, BenchmarkMetricCount> MetricNames{{
+        "game_update",
+        "world_update",
+        "player_update",
+        "world_logic",
+        "movement_collision_detection",
+        "collision_processing_damage",
+        "spawn_split_cleanup",
+        "bullet_spawn_collision",
+        "script_update",
+        "event_poller_update",
+        "particle_engine_update",
+        "mission_system_update",
+        "world_object_update",
+        "shooting_target_selection",
+        "bullet_line_of_fire_query",
+        "projectile_movement",
+        "game_draw",
+        "scene_content_draw",
+        "skybox_draw",
+        "world_object_draw",
+        "hud_draw",
+        "particle_draw",
+        "world_tree_draw",
+        "starfield_draw",
+        "render_pipeline",
+        "output_blit",
+        "buffer_swap_wait",
+        "event_polling",
+        "other_frame_work",
+        "client_network_poll",
+        "client_snapshot_sampling",
+        "client_input_prediction",
+        "client_replica_update",
+        "server_simulation",
+        "server_poll",
+        "server_snapshot_build",
+        "server_interest_filter",
+        "server_snapshot_delta",
+        "server_snapshot_encoding",
+        "server_packet_queue"
+    }};
+
+    constexpr std::array<const char*, BenchmarkCounterCount> CounterNames{{
+        "primary_target_candidates_considered",
+        "primary_target_switches",
+        "gun_target_candidates_considered",
+        "gun_target_refreshes",
+        "gun_targets_assigned",
+        "weapon_aim_checks",
+        "bullet_line_of_fire_queries",
+        "bullets_scheduled",
+        "snapshot_entities_considered",
+        "snapshot_entities_visible",
+        "packets_queued",
+        "packet_bytes_queued",
+        "remote_snapshots_received",
+        "remote_voxel_proxies_updated"
+    }};
+
+    double percentile(std::vector<double> values, double fraction) {
+        if (values.empty()) {
+            return 0.0;
+        }
+        std::sort(values.begin(), values.end());
+        const std::size_t index = static_cast<std::size_t>(
+            std::ceil(fraction * static_cast<double>(values.size()))) - 1;
+        return values[std::min(index, values.size() - 1)];
+    }
+}
 
 BenchmarkProfiler::BenchmarkProfiler() :
     m_currentFrameIndex(0),
@@ -59,6 +134,9 @@ void BenchmarkProfiler::beginRun(std::size_t frameCount) {
 }
 
 void BenchmarkProfiler::beginFrame(std::size_t frameIndex) {
+    if (frameIndex >= m_samples.size()) {
+        m_samples.resize(frameIndex + 1);
+    }
     m_currentFrameIndex = frameIndex;
     m_currentSlot = frameIndex % QueryFramesInFlight;
     m_frameOpen = true;
@@ -197,6 +275,80 @@ void BenchmarkProfiler::endGpuTime(BenchmarkMetric metric) {
 
 const std::vector<BenchmarkMetricSample>& BenchmarkProfiler::samples() const {
     return m_samples;
+}
+
+void writeBenchmarkProfile(
+    std::ostream& output,
+    const std::vector<BenchmarkMetricSample>& samples)
+{
+    output << "{\n"
+        << "\"notes\":\"CPU scopes may be nested and overlap; do not sum parent and child timings. GPU timings are asynchronous.\",\n"
+        << "\"cpu_ms\":{";
+    bool first = true;
+    for (std::size_t metric = 0; metric < BenchmarkMetricCount; ++metric) {
+        std::vector<double> values;
+        values.reserve(samples.size());
+        for (const BenchmarkMetricSample& sample : samples) {
+            if (sample.cpuMs[metric] > 0.0) {
+                values.push_back(sample.cpuMs[metric]);
+            }
+        }
+        if (values.empty()) {
+            continue;
+        }
+        const double total = std::accumulate(values.begin(), values.end(), 0.0);
+        output << (first ? "" : ",") << '"' << MetricNames[metric] << "\":{"
+            << "\"samples\":" << values.size()
+            << ",\"avg_ms\":" << total / static_cast<double>(values.size())
+            << ",\"p95_ms\":" << percentile(values, 0.95)
+            << ",\"p99_ms\":" << percentile(values, 0.99)
+            << ",\"max_ms\":" << *std::max_element(values.begin(), values.end())
+            << '}';
+        first = false;
+    }
+    output << "},\n\"gpu_ms\":{";
+    first = true;
+    for (std::size_t metric = 0; metric < BenchmarkMetricCount; ++metric) {
+        std::vector<double> values;
+        values.reserve(samples.size());
+        for (const BenchmarkMetricSample& sample : samples) {
+            if (sample.gpuValid[metric]) {
+                values.push_back(sample.gpuMs[metric]);
+            }
+        }
+        if (values.empty()) {
+            continue;
+        }
+        const double total = std::accumulate(values.begin(), values.end(), 0.0);
+        output << (first ? "" : ",") << '"' << MetricNames[metric] << "\":{"
+            << "\"samples\":" << values.size()
+            << ",\"avg_ms\":" << total / static_cast<double>(values.size())
+            << ",\"p95_ms\":" << percentile(values, 0.95)
+            << ",\"p99_ms\":" << percentile(values, 0.99)
+            << ",\"max_ms\":" << *std::max_element(values.begin(), values.end())
+            << '}';
+        first = false;
+    }
+    output << "},\n\"counters\":{";
+    first = true;
+    for (std::size_t counter = 0; counter < BenchmarkCounterCount; ++counter) {
+        std::uint64_t total = 0;
+        std::uint64_t maximum = 0;
+        for (const BenchmarkMetricSample& sample : samples) {
+            total += sample.counters[counter];
+            maximum = std::max(maximum, sample.counters[counter]);
+        }
+        if (total == 0) {
+            continue;
+        }
+        output << (first ? "" : ",") << '"' << CounterNames[counter] << "\":{"
+            << "\"total\":" << total
+            << ",\"avg_per_frame\":"
+            << static_cast<double>(total) / static_cast<double>(samples.size())
+            << ",\"max_per_frame\":" << maximum << '}';
+        first = false;
+    }
+    output << "}}";
 }
 
 std::size_t BenchmarkProfiler::queryIndex(

@@ -15,10 +15,8 @@ than introducing generic engine abstractions without a concrete need.
 ## Project context
 
 - Read `README.md` and `AGENTS.md` first. Use existing documentation in `doc/`,
-  especially `doc/1_howto.md`, `doc/2_luaapi.md`,
-  `doc/3_buildinstructions.md`, and relevant `doc/performance-plan/` pages.
-  Some links in older guidance may point to files that are not present; verify
-  paths and treat current source and tests as authoritative.
+  especially `doc/1_howto.md`, `doc/2_luaapi.md`, and
+  `doc/3_buildinstructions.md`. Treat current source and tests as authoritative.
 - Engine and game code is in `src/`; data-defined ships, equipment, scenarios,
   and scripts are in `data/`; Bandit tests are in `test/`.
 - Trace runtime behavior through its callers, owning state, builders/property
@@ -42,11 +40,11 @@ than introducing generic engine abstractions without a concrete need.
 - Treat spatial indexes and world mutation as shared mutable state. Do not
   parallelize world updates or collision handling without proving ownership,
   ordering, and race safety.
-- For performance work, use the existing benchmark and profiler. Distinguish
-  parent timings from nested subtasks, compare equivalent workloads, and do not
-  claim an improvement from FPS alone. Client benchmarks write detailed
-  per-frame JSON profiles to `benchmark-results/`; the server large-combat
-  benchmark reports fixed-tick percentiles and missed deadlines. These measure
+- For performance work, use the large-combat benchmark and profiler. Distinguish
+  server and each client, identify nested timings, compare equivalent workloads,
+  and do not claim an improvement from FPS alone. Reports in
+  `benchmark-results/` share a run ID and include server simulation/network
+  metrics plus separate client frame/replication profiles; these measure
   different work and are not interchangeable.
 - Preserve gameplay and collision semantics when optimizing. Add focused tests
   for edge cases and update directly related documentation.

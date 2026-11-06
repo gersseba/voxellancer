@@ -205,7 +205,10 @@ bool SimulationSession::createSnapshotState(
         const Speed& speed = worldObject->physics().speed();
         const glm::vec3 engineState =
             worldObject->objectType() == WorldObjectType::Ship
-                ? worldObject->components().engineState().directional()
+                ? glm::clamp(
+                    worldObject->components().engineState().directional(),
+                    glm::vec3(-1.0f),
+                    glm::vec3(1.0f))
                 : glm::vec3(0.0f);
         current.push_back(voxellancer::protocol::EntitySnapshot{
             *id,

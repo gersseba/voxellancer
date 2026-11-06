@@ -15,7 +15,6 @@ clusters describe ships and equipment.
 - [How to play](doc/1_howto.md)
 - [Build instructions](doc/3_buildinstructions.md)
 - [Lua API reference](doc/2_luaapi.md)
-- [Server-side simulation and client/server migration plan](doc/performance-plan/06-server-side-simulation.md)
 - [Agent development guide](AGENTS.md)
 
 ## Quick start for contributors
@@ -31,7 +30,7 @@ harness from the repository root:
 
 The first run configures a Visual Studio build under
 `build/agent-vcpkg-vs<major>-stable` when Build Tools are installed, resolves the
-manifest dependencies, builds the game and `all_tests`, and runs the tests.
+manifest dependencies, builds `all_tests`, and runs the tests.
 See [AGENTS.md](AGENTS.md) for the development workflow and
 [doc/5_engine_architecture.md](doc/5_engine_architecture.md) for where to look
 when changing a subsystem.
@@ -44,18 +43,19 @@ cmake --build build/agent-vcpkg-vs18-stable --target protocol_tests --config Rel
 .\build\agent-vcpkg-vs18-stable\Release\protocol_tests.exe
 ```
 
-In VS Code, run **Terminal: Run Task** and choose **Build and Run Game** or
-**Build and Test**. **Ctrl+Shift+B** runs the default **Build and Test** task.
+In VS Code, **Terminal: Run Task** contains four runtime tasks: **Start Server**,
+**Start Client**, **Start Local Client with Integrated Server (Large Combat
+Benchmark)**, and **Start Server and Two Clients (Large Combat Benchmark)**.
+Run `.\tools\agent-check.ps1 -Mode Test` to build and execute the test suite.
 
 ## Headless simulation server
 
-The server executable runs the large-combat simulation without creating a
-window or initializing audio. Build it with the configured CMake build
-directory, then run a fixed-tick workload:
+The server executable runs without creating a window or initializing audio.
+Start a normal battle server with:
 
 ```powershell
 cmake --build build/agent-vcpkg-vs18-stable --target voxellancer-server --config Release
-.\build\agent-vcpkg-vs18-stable\Release\voxellancer-server.exe --ticks 600 --ships-per-team 200
+.\build\agent-vcpkg-vs18-stable\Release\voxellancer-server.exe --scenario battle --listen-port 27801
 ```
 
 For a server-only configuration without graphical/audio dependencies, configure
@@ -73,28 +73,16 @@ packages. With the client disabled, `all_tests` is not configured. The standard
 configuration continues to build the game, server, network client, and full
 test suite.
 
-`--ships-per-team` accepts values from 1 to 400 (400 means the existing
-800-ship stress workload); `--ticks` accepts values from 1 to 10,000,000.
-The optional `--scenario battle` runs the playable battle scenario instead of
-the benchmark workload.
-The server prints tick-time percentiles, missed deadlines, entity counts, and
-remaining simulation backlog as JSON. It uses the current single-world
-simulation and is a migration step, not yet a networked multiplayer server.
-The benchmark run tasks include **Build and Run Server Large Combat Benchmark**,
-which builds the server and measures the same seeded 800-ship workload for
-1,800 ticks. The corresponding client large-combat task measures rendered frame
-times and writes detailed timing and workload profiles under
-`benchmark-results\`; server tick metrics are printed as JSON to the task
-terminal. Client frame times and server tick times describe different work and
-should not be compared as interchangeable measurements.
-During `--listen`, it also prints one JSON record per second with cumulative
-application bytes sent and visible entity counts per client.
-The version 16 protocol defines generation-protected entity IDs, tick-stamped
+`--target-players` accepts values from 1 to 16. With this option the server
+waits in a lobby before creating the selected scenario and assigning player
+ships. Without a target it starts the scenario immediately. Normal server
+operation prints per-client byte and visibility counters once per second.
+The version 17 protocol defines generation-protected entity IDs, tick-stamped
 input commands, versioned snapshot deltas with entity kind and shield/hull
 fractions, uniform scale, and maximum mass, full voxel content, initial
 equipment slot/key state for newly visible entities, stable ship-definition
 keys, authoritative voxel damage/removal and shield-absorption events, and
-mission state notifications.
+mission state notifications, and lobby player counts/world-start state.
 Entity-content definition keys and equipment keys are limited to 63 bytes.
 Snapshot records are 65 bytes, using a compressed quaternion, 8-bit shield and
 hull fractions, a 32-bit scale and maximum-mass value, and three signed
@@ -109,19 +97,35 @@ transient shield sparks per frame. Mission start, success, and failure
 notifications are delivered to the remote preview HUD.
 Replicated engine state is interpolated and shown as a bounded thrust indicator
 for the controlled remote ship.
-A local TCP prototype is available
-with `--listen`; it binds to loopback, assigns a scenario ship to each
-client, and exchanges sequenced input and snapshot frames. Use
-`--scenario battle` for the playable battle setup; the default remains the
-large-combat benchmark:
+A two-player lobby can also be started manually:
 
 ```powershell
-cmake --build build/agent-vcpkg-vs18-stable --target voxellancer-server voxellancer-client --config Release
-# Terminal 1
-.\build\agent-vcpkg-vs18-stable\Release\voxellancer-server.exe --listen --listen-port 27800
-# Terminal 2
-.\build\agent-vcpkg-vs18-stable\Release\voxellancer-client.exe --port 27800
+.\build\agent-vcpkg-vs18-stable\Release\voxellancer-server.exe --scenario battle --listen-port 27801 --target-players 2
+.\build\agent-vcpkg-vs18-stable\Release\voxellancer.exe -multiplayer-client
+.\build\agent-vcpkg-vs18-stable\Release\voxellancer.exe -multiplayer-client -benchmark-client-id client-2
 ```
+
+While a lobby is waiting, clients show a centered waiting indicator and do not
+send gameplay input. Once full, the server creates the world and assigns one
+ship to each connection.
+
+The large-combat benchmark runs a seeded 800-ship battle for exactly 1,800
+server simulation intervals. The integrated task starts the authoritative server as a child of
+the graphical executable. The multiplayer task starts the server first, opens
+two visible clients side-by-side, and begins the benchmark after both join.
+Each run writes a server report and distinct `client-1`/`client-2` reports to
+`benchmark-results\`, all sharing a run ID. Client frame recording begins on
+the first started-world snapshot, so the client's observed tick span may be
+slightly shorter than the server's full run.
+
+Server reports identify simulation tick, network poll, snapshot construction,
+interest filtering, delta building, encoding, and packet-queue costs; they also
+include per-client bytes and visible-entity counts. Client reports identify
+rendered frame phases, network polling, snapshot sampling, input prediction,
+replica updates, and GPU timings when supported. Reports include p50/p95/p99
+and maximum timings plus aligned time series. Nested timings overlap and must
+not be summed; server tick times and client frame times describe different
+work.
 
 For local singleplayer through the authoritative server, launch only the
 graphical executable:
@@ -135,9 +139,6 @@ the battle scenario, chooses an available loopback port, and connects the
 client before graphics and gameplay initialization. The server process is
 stopped when the game exits. Without this option, `voxellancer.exe` continues
 to run its existing standalone local simulation.
-
-For longer measurements, the headless client accepts `--hold-ms 1500` to keep
-polling after its initial input is acknowledged.
 
 The client executable is a headless transport/integration probe; the graphical
 game can show opt-in interpolated, render-only voxel proxies, capped

@@ -7,6 +7,7 @@
 #include <iostream>
 #include <memory>
 #include <stdexcept>
+#include <string>
 #include <thread>
 
 #ifdef WIN32
@@ -38,7 +39,7 @@
 #include "benchmark/benchmarkmode.h"
 #include "benchmark/benchmarkrunner.h"
 #include "scenarios/battlescenario.h"
-#include "scenarios/performancebenchmarkscenario.h"
+#include "scenarios/largecombatscenario.h"
 
 #include "display/stereorenderinfo.h"
 #include "display/viewer.h"
@@ -49,6 +50,7 @@
 #include "gamestate/gameplay/gameplay.h"
 #include "gamestate/gameplay/running/gameplayrunning.h"
 #include "gamestate/gameplay/gameplayinput.h"
+#include "gamestate/gameplay/input/gameplayfreecaminput.h"
 #include "gamestate/game.h"
 #include "gamestate/gameplay/gameplayscene.h"
 
@@ -60,6 +62,28 @@ static GLint MajorVersionRequire = 3;
 static GLint MinorVersionRequire = 1;
 
 static Game* game;
+
+namespace {
+    std::string benchmarkIdentifier(std::string value) {
+        for (char& character : value) {
+            const bool valid =
+                (character >= 'a' && character <= 'z') ||
+                (character >= 'A' && character <= 'Z') ||
+                (character >= '0' && character <= '9') ||
+                character == '-' || character == '_';
+            if (!valid) {
+                character = '_';
+            }
+        }
+        return value;
+    }
+
+    std::string newBenchmarkRunId() {
+        return std::to_string(
+            std::chrono::duration_cast<std::chrono::milliseconds>(
+                std::chrono::system_clock::now().time_since_epoch()).count());
+    }
+}
 
 static void checkGLVersion() {
     glow::info("OpenGL Version Needed %;.%; (%;.%; Found)",
@@ -224,17 +248,44 @@ int main(int argc, char* argv[]) {
     clParser.parse(argc, argv);
     const BenchmarkMode benchmarkMode = clParser.benchmarkMode();
     if (benchmarkMode == BenchmarkMode::Invalid) {
-        std::cerr << "Choose only one benchmark mode: -benchmark-rendering, -benchmark-combat, or -benchmark-large-combat.\n";
+        std::cerr << "Invalid benchmark mode.\n";
         delete initTimer;
         return 1;
     }
-    if (clParser.localSingleplayer() &&
-        (clParser.serverPreview() || benchmarkMode != BenchmarkMode::None)) {
+    if (clParser.localSingleplayer() && clParser.serverPreview()) {
         std::cerr << "-local-singleplayer cannot be combined with "
-            "-server-preview or benchmark options.\n";
+            "-server-preview.\n";
         delete initTimer;
         return 1;
     }
+    if (clParser.localSingleplayer() && clParser.multiplayerClient()) {
+        std::cerr << "-local-singleplayer cannot be combined with "
+            "-multiplayer-client.\n";
+        delete initTimer;
+        return 1;
+    }
+    if (clParser.multiplayerClient() && clParser.serverPreview()) {
+        std::cerr << "-multiplayer-client cannot be combined with "
+            "-server-preview.\n";
+        delete initTimer;
+        return 1;
+    }
+    if (benchmarkMode != BenchmarkMode::None &&
+        !clParser.localSingleplayer() && !clParser.multiplayerClient()) {
+        std::cerr << "-benchmark-large-combat requires -local-singleplayer "
+            "or -multiplayer-client.\n";
+        delete initTimer;
+        return 1;
+    }
+
+    const std::string runId = benchmarkIdentifier(
+        clParser.benchmarkRunId().empty()
+            ? newBenchmarkRunId()
+            : clParser.benchmarkRunId());
+    const std::string clientId = benchmarkIdentifier(
+        clParser.benchmarkClientId().empty()
+            ? (clParser.localSingleplayer() ? "integrated-client" : "client")
+            : clParser.benchmarkClientId());
 
     LocalServerProcess localServer;
     std::unique_ptr<TcpClient> preconnectedClient;
@@ -243,7 +294,9 @@ int main(int argc, char* argv[]) {
             const std::uint16_t port = availableLocalPort();
             if (!localServer.start(
                     std::filesystem::absolute(argv[0]),
-                    port)) {
+                    port,
+                    benchmarkMode == BenchmarkMode::LargeCombat,
+                    runId)) {
                 throw std::runtime_error(localServer.lastError());
             }
             preconnectedClient = connectToLocalServer(localServer, port);
@@ -257,7 +310,7 @@ int main(int argc, char* argv[]) {
 
     const unsigned int randomSeed = benchmarkMode == BenchmarkMode::None
         ? static_cast<unsigned int>(std::time(nullptr))
-        : PerformanceBenchmarkScenario::SimulationRandomSeed;
+        : LargeCombatScenario::SimulationRandomSeed;
     std::srand(randomSeed);
 
     PropertyManager::instance()->load("data/config.ini");
@@ -278,13 +331,32 @@ int main(int argc, char* argv[]) {
     glfwSetErrorCallback(errorCallback);
 
     ContextProvider::instance()->setRequiredGLVersion(MajorVersionRequire, MinorVersionRequire);
-    if(clParser.fullScreen()) {
+    if (clParser.fullScreen()) {
         ContextProvider::instance()->initFullScreen(1);
+    } else if (clParser.multiplayerClient()) {
+        const GLFWvidmode* mode = glfwGetVideoMode(glfwGetPrimaryMonitor());
+        if (mode == nullptr) {
+            std::cerr << "Could not read the primary monitor size.\n";
+            glfwTerminate();
+            delete initTimer;
+            return 1;
+        }
+        const int halfWidth = mode->width / 2;
+        const int halfHeight = mode->height / 2;
+        const bool secondWindow = clientId == "client-2";
+        ContextProvider::instance()->initWindowed(
+            Size<int>(halfWidth, halfHeight),
+            Size<int>(secondWindow ? halfWidth : 0, 0));
     } else {
         ContextProvider::instance()->initWindowed();
     }
 
     GLFWwindow* window = glfwGetCurrentContext();
+    if (clParser.multiplayerClient()) {
+        glfwSetWindowTitle(
+            window,
+            ("Voxellancer - " + clientId).c_str());
+    }
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
 
 
@@ -298,10 +370,10 @@ int main(int argc, char* argv[]) {
     }
     CheckGLError();
 
-    const bool swapIntervalSet = miscSettings(benchmarkMode == BenchmarkMode::None ||
-        benchmarkMode == BenchmarkMode::LargeCombatVsync);
-    if (benchmarkMode == BenchmarkMode::LargeCombatVsync && !swapIntervalSet) {
-        std::cerr << "Could not enable VSync for the large combat benchmark.\n";
+    const bool enableVsync = true;
+    const bool swapIntervalSet = miscSettings(enableVsync);
+    if (benchmarkMode == BenchmarkMode::LargeCombat && !swapIntervalSet) {
+        std::cerr << "Could not enable VSync for the large-combat benchmark.\n";
         ContextProvider::instance()->shutdown();
         glfwTerminate();
         delete initTimer;
@@ -328,19 +400,19 @@ int main(int argc, char* argv[]) {
 
         loadingScreen->display("Loading... Game");
         game = new Game(benchmarkMode == BenchmarkMode::None &&
+            !clParser.multiplayerClient() &&
             !clParser.localSingleplayer() &&
             clParser.showIntro() && Property<bool>::get("general.showIntro", true));
 
-        if (benchmarkMode == BenchmarkMode::Rendering) {
-            game->gamePlay().setInitialScenario(PerformanceBenchmarkScenario::RenderingScenarioId);
-        } else if (benchmarkMode == BenchmarkMode::Combat) {
-            game->gamePlay().setInitialScenario(PerformanceBenchmarkScenario::CombatScenarioId);
-        } else if (benchmarkMode == BenchmarkMode::LargeCombatVsync) {
-            game->gamePlay().setInitialScenario(PerformanceBenchmarkScenario::LargeCombatVsyncScenarioId);
+        if (benchmarkMode == BenchmarkMode::LargeCombat ||
+            clParser.multiplayerClient()) {
+            game->gamePlay().setInitialScenario(99);
         }
 
         if (clParser.localSingleplayer()) {
-            game->gamePlay().setInitialScenario(BattleScenario::ScenarioId);
+            if (benchmarkMode == BenchmarkMode::None) {
+                game->gamePlay().setInitialScenario(BattleScenario::ScenarioId);
+            }
             if (!game->gamePlay().running().connectRemotePreview(
                     std::move(preconnectedClient))) {
                 std::cerr << "Could not initialize the local simulation client.\n";
@@ -348,6 +420,15 @@ int main(int argc, char* argv[]) {
             }
         } else if (clParser.serverPreview()) {
             game->gamePlay().running().connectRemotePreview(27800);
+        } else if (clParser.multiplayerClient()) {
+            if (!game->gamePlay().running().connectRemotePreview(27801)) {
+                std::cerr << "Could not connect to multiplayer server.\n";
+                exitCode = 1;
+            } else {
+                game->gamePlay().setFreecamActive(true);
+                game->gamePlay().freecamInput().setPosition(
+                        glm::vec3(0.0f, 0.0f, 1800.0f));
+            }
         }
 
         if(clParser.stereoView()) {
@@ -361,8 +442,27 @@ int main(int argc, char* argv[]) {
         if (benchmarkMode == BenchmarkMode::None && exitCode == 0) {
             mainloop();
         } else {
-            if (benchmarkMode != BenchmarkMode::None) {
-                exitCode = BenchmarkRunner(benchmarkMode).run(*game);
+            if (benchmarkMode != BenchmarkMode::None && exitCode == 0) {
+                exitCode = BenchmarkRunner(benchmarkMode, runId, clientId).run(*game);
+            }
+        }
+
+        if (clParser.localSingleplayer() &&
+            benchmarkMode == BenchmarkMode::LargeCombat &&
+            exitCode == 0) {
+            if (!localServer.waitForExit(std::chrono::seconds(60))) {
+                std::cerr << "Timed out waiting for the integrated benchmark server "
+                    "to finish: " << localServer.lastError() << '\n';
+                exitCode = 1;
+            } else {
+                const std::filesystem::path serverReport =
+                    std::filesystem::path("benchmark-results") /
+                    ("large-combat-" + runId + "-server.json");
+                if (!std::filesystem::exists(serverReport)) {
+                    std::cerr << "Integrated benchmark server finished without "
+                        "writing " << serverReport.string() << ".\n";
+                    exitCode = 1;
+                }
             }
         }
 

@@ -3,6 +3,9 @@
 #include <memory>
 
 #include "gamestate/gamestate.h"
+#ifndef VOXELLANCER_HEADLESS_SERVER
+#include "input/inputhandler.h"
+#endif
 
 
 class BaseScenario;
@@ -33,6 +36,10 @@ public:
 
     bool freecamActive() const;
     void setFreecamActive(bool active);
+#ifndef VOXELLANCER_HEADLESS_SERVER
+    bool waitingForRemoteWorld() const;
+    GamePlayFreecamInput& freecamInput();
+#endif
 
     virtual const Scene& scene() const override;
     virtual const CameraHead& cameraHead() const override;
@@ -61,6 +68,9 @@ protected:
 
     GamePlayRunning* m_runningState;
     GamePlayPaused* m_pausedState;
+#ifndef VOXELLANCER_HEADLESS_SERVER
+    InputHandler m_waitingInput;
+#endif
     std::unique_ptr<GamePlayNormalInput> m_normalInput;
     std::unique_ptr<GamePlayFreecamInput> m_freecamInput;
 

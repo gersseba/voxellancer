@@ -2,26 +2,7 @@
     "version": "2.0.0",
     "tasks": [
         {
-            "label": "Build and Run Game",
-            "type": "process",
-            "command": "powershell.exe",
-            "args": [
-                "-NoProfile",
-                "-ExecutionPolicy",
-                "Bypass",
-                "-File",
-                "${workspaceFolder}\\tools\\agent-check.ps1",
-                "-Mode",
-                "Run"
-            ],
-            "problemMatcher": [],
-            "presentation": {
-                "reveal": "always",
-                "panel": "shared"
-            }
-        },
-        {
-            "label": "Build and Run Client Rendering Benchmark",
+            "label": "Start Server",
             "type": "process",
             "command": "powershell.exe",
             "args": [
@@ -33,7 +14,7 @@
                 "-Mode",
                 "Run",
                 "-Benchmark",
-                "Rendering"
+                "StartServer"
             ],
             "problemMatcher": [],
             "presentation": {
@@ -42,7 +23,7 @@
             }
         },
         {
-            "label": "Build and Run Client Combat Benchmark",
+            "label": "Start Client",
             "type": "process",
             "command": "powershell.exe",
             "args": [
@@ -54,7 +35,7 @@
                 "-Mode",
                 "Run",
                 "-Benchmark",
-                "Combat"
+                "StartClient"
             ],
             "problemMatcher": [],
             "presentation": {
@@ -63,7 +44,7 @@
             }
         },
         {
-            "label": "Build and Run Client Large Fleet VSync Benchmark",
+            "label": "Start Local Client with Integrated Server (Large Combat Benchmark)",
             "type": "process",
             "command": "powershell.exe",
             "args": [
@@ -75,7 +56,7 @@
                 "-Mode",
                 "Run",
                 "-Benchmark",
-                "LargeCombatVsync"
+                "LocalLargeCombat"
             ],
             "problemMatcher": [],
             "presentation": {
@@ -84,7 +65,7 @@
             }
         },
         {
-            "label": "Build and Run Server Large Combat Benchmark",
+            "label": "Start Server and Two Clients (Large Combat Benchmark)",
             "type": "process",
             "command": "powershell.exe",
             "args": [
@@ -96,31 +77,8 @@
                 "-Mode",
                 "Run",
                 "-Benchmark",
-                "ServerLargeCombat"
+                "MultiplayerLargeCombat"
             ],
-            "problemMatcher": [],
-            "presentation": {
-                "reveal": "always",
-                "panel": "shared"
-            }
-        },
-        {
-            "label": "Build and Test",
-            "type": "process",
-            "command": "powershell.exe",
-            "args": [
-                "-NoProfile",
-                "-ExecutionPolicy",
-                "Bypass",
-                "-File",
-                "${workspaceFolder}\\tools\\agent-check.ps1",
-                "-Mode",
-                "Test"
-            ],
-            "group": {
-                "kind": "build",
-                "isDefault": true
-            },
             "problemMatcher": [],
             "presentation": {
                 "reveal": "always",

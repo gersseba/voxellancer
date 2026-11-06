@@ -33,7 +33,8 @@ public:
         std::uint16_t port,
         float interestRadius = 650.0f,
         std::optional<voxellancer::protocol::EntityId> preferredActor =
-            std::nullopt
+            std::nullopt,
+        std::size_t targetPlayers = 0
     );
     ~TcpServer();
 
@@ -42,6 +43,10 @@ public:
 
     std::uint16_t port() const;
     std::size_t clientCount() const;
+    bool worldStarted() const;
+    void startWorldForPlayers(
+        const std::vector<voxellancer::protocol::EntityId>& actors
+    );
     std::vector<ClientStatistics> clientStatistics() const;
     void poll();
 
@@ -77,6 +82,10 @@ private:
     std::uint16_t m_port;
     float m_interestRadiusSquared;
     std::optional<voxellancer::protocol::EntityId> m_preferredActor;
+    std::size_t m_targetPlayers;
+    bool m_worldStarted = true;
+    std::size_t m_lastLobbyConnected = static_cast<std::size_t>(-1);
+    bool m_lastLobbyStarted = false;
     std::uint64_t m_snapshotSequence = 0;
     std::uint64_t m_nextSnapshotTick = SnapshotIntervalTicks;
     std::unordered_set<std::uint64_t> m_controlledActors;
@@ -89,6 +98,11 @@ private:
     bool flushDeferred(Connection& connection);
     bool queuePacket(Connection& connection, const std::uint8_t* data, std::size_t size);
     bool sendSnapshot(Connection& connection, std::uint64_t sequence);
+    bool sendSnapshot(
+        Connection& connection,
+        std::uint64_t sequence,
+        const std::vector<voxellancer::protocol::EntitySnapshot>& worldState
+    );
     bool sendEntityContent(
         Connection& connection,
         voxellancer::protocol::EntityId entity
@@ -113,7 +127,8 @@ private:
         const std::vector<voxellancer::protocol::WeaponFiredEvent>& events
     );
     void broadcastSnapshot();
+    void broadcastLobbyStatus();
     void sendAcknowledgements();
-    void removeConnection(std::size_t index);
+    void removeConnection(std::size_t index, const char* reason);
     std::optional<voxellancer::protocol::EntityId> availableActor() const;
 };

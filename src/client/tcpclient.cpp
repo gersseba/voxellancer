@@ -23,6 +23,11 @@ namespace {
             (static_cast<std::uint32_t>(data[2]) << 16) |
             (static_cast<std::uint32_t>(data[3]) << 24);
     }
+
+    std::uint64_t entityIdKey(voxellancer::protocol::EntityId entity) {
+        return (static_cast<std::uint64_t>(entity.index) << 32) |
+            static_cast<std::uint64_t>(entity.generation);
+    }
 }
 
 bool TcpClient::connectLocal(std::uint16_t port) {
@@ -82,6 +87,9 @@ bool TcpClient::requestSnapshotResync() {
     m_snapshotSequence = 0;
     m_snapshotTick = 0;
     m_replicaState.clear();
+    for (const auto& content : m_entityContents) {
+        markEntityContentChanged(content.id);
+    }
     m_entityContents.clear();
     m_replicaVoxelStateCount = 0;
     m_replicaEquipmentStateCount = 0;
@@ -99,6 +107,10 @@ std::optional<voxellancer::protocol::EntityId> TcpClient::actor() const {
     return m_actor;
 }
 
+std::optional<voxellancer::protocol::LobbyStatus> TcpClient::lobbyStatus() const {
+    return m_lobbyStatus;
+}
+
 std::uint64_t TcpClient::snapshotSequence() const {
     return m_snapshotSequence;
 }
@@ -114,6 +126,22 @@ const std::vector<voxellancer::protocol::EntitySnapshot>& TcpClient::replicaStat
 const std::vector<voxellancer::protocol::EntityContentSnapshot>&
 TcpClient::entityContents() const {
     return m_entityContents;
+}
+
+std::vector<voxellancer::protocol::EntityId>
+TcpClient::drainEntityContentChanges() {
+    std::vector<voxellancer::protocol::EntityId> changes;
+    changes.swap(m_changedEntityContents);
+    m_changedEntityContentKeys.clear();
+    return changes;
+}
+
+void TcpClient::markEntityContentChanged(
+    voxellancer::protocol::EntityId entity)
+{
+    if (m_changedEntityContentKeys.insert(entityIdKey(entity)).second) {
+        m_changedEntityContents.push_back(entity);
+    }
 }
 
 std::optional<voxellancer::protocol::EntitySnapshot> TcpClient::sample(
@@ -224,6 +252,16 @@ bool TcpClient::processFrames() {
             continue;
         }
         switch (packet[1]) {
+        case 13: {
+            voxellancer::protocol::LobbyStatus status;
+            if (voxellancer::protocol::decodeLobbyStatus(
+                    packet, packetSize, status) !=
+                voxellancer::protocol::DecodeError::None) {
+                return fail("Server sent an invalid multiplayer lobby status.");
+            }
+            m_lobbyStatus = status;
+            break;
+        }
         case 1: {
             if (m_actor) {
                 return fail("Server attempted to assign more than one actor.");
@@ -278,6 +316,7 @@ bool TcpClient::processFrames() {
                     }
                     m_replicaVoxelStateCount -= content->voxels.size();
                     m_replicaEquipmentStateCount -= content->equipment.size();
+                    markEntityContentChanged(removed);
                     m_entityContents.erase(content);
                 }
             }
@@ -328,6 +367,7 @@ bool TcpClient::processFrames() {
             if (voxel != content->voxels.end()) {
                 content->voxels.erase(voxel);
                 --m_replicaVoxelStateCount;
+                markEntityContentChanged(event.entity);
             }
             m_voxelRemovalEvents.push_back(event);
             break;
@@ -360,6 +400,7 @@ bool TcpClient::processFrames() {
                 existing == m_entityContents.end() ? 0 : existing->voxels.size();
             const std::size_t oldEquipmentCount =
                 existing == m_entityContents.end() ? 0 : existing->equipment.size();
+            const auto contentId = content.id;
             if (oldVoxelCount > m_replicaVoxelStateCount ||
                 oldEquipmentCount > m_replicaEquipmentStateCount ||
                 content.voxels.size() >
@@ -380,6 +421,7 @@ bool TcpClient::processFrames() {
             } else {
                 *existing = std::move(content);
             }
+            markEntityContentChanged(contentId);
             break;
         }
         case 8: {
@@ -417,6 +459,7 @@ bool TcpClient::processFrames() {
                 return fail("Server damaged a voxel beyond its replicated maximum HP.");
             }
             voxel->hp = event.hp;
+            markEntityContentChanged(event.entity);
             m_voxelDamageEvents.push_back(event);
             break;
         }
@@ -449,6 +492,7 @@ bool TcpClient::processFrames() {
                 m_replicaEquipmentStateCount - content->equipment.size() +
                 update.equipment.size();
             content->equipment = std::move(update.equipment);
+            markEntityContentChanged(update.id);
             break;
         }
         case 10: {

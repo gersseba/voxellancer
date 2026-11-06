@@ -1,5 +1,7 @@
 #include "tcpserver.h"
 
+#include "benchmark/benchmarkprofiler.h"
+
 #include <algorithm>
 #include <array>
 #include <cmath>
@@ -129,14 +131,20 @@ TcpServer::TcpServer(
     SimulationSession& session,
     std::uint16_t port,
     float interestRadius,
-    std::optional<voxellancer::protocol::EntityId> preferredActor
+    std::optional<voxellancer::protocol::EntityId> preferredActor,
+    std::size_t targetPlayers
 ) :
     m_world(world),
     m_session(session),
     m_port(port),
     m_interestRadiusSquared(interestRadius * interestRadius),
-    m_preferredActor(preferredActor)
+    m_preferredActor(preferredActor),
+    m_targetPlayers(targetPlayers),
+    m_worldStarted(targetPlayers == 0)
 {
+    if (targetPlayers > MaxClients) {
+        throw std::invalid_argument("Target player count exceeds the server client limit.");
+    }
     if (!std::isfinite(interestRadius) || interestRadius <= 0.0f ||
         !std::isfinite(m_interestRadiusSquared)) {
         throw std::invalid_argument("Interest radius must be a positive finite value.");
@@ -172,6 +180,56 @@ std::size_t TcpServer::clientCount() const {
     return m_connections.size();
 }
 
+bool TcpServer::worldStarted() const {
+    return m_worldStarted;
+}
+
+void TcpServer::startWorldForPlayers(
+    const std::vector<voxellancer::protocol::EntityId>& actors
+) {
+    if (m_targetPlayers == 0 || m_worldStarted ||
+        m_connections.size() != m_targetPlayers ||
+        actors.size() != m_targetPlayers) {
+        throw std::logic_error(
+            "The lobby cannot start until every target player has an actor.");
+    }
+    std::unordered_set<std::uint64_t> assignedActors;
+    for (std::size_t index = 0; index < actors.size(); ++index) {
+        const auto actor = actors[index];
+        WorldObject* object = m_world.worldObject(actor);
+        if (!actor.valid() || object == nullptr ||
+            object->objectType() != WorldObjectType::Ship ||
+            m_controlledActors.find(entityIdKey(actor)) != m_controlledActors.end() ||
+            !assignedActors.insert(entityIdKey(actor)).second) {
+            throw std::logic_error("A lobby player actor is invalid or already assigned.");
+        }
+        static_cast<Ship*>(object)->character()->setTask(nullptr);
+        m_connections[index].actor = actor;
+        m_controlledActors.insert(entityIdKey(actor));
+    }
+
+    std::vector<voxellancer::protocol::EntitySnapshot> worldState;
+    {
+        BenchmarkCpuScope scope(BenchmarkMetric::ServerSnapshotBuild);
+        if (!m_session.createSnapshotState(worldState)) {
+            throw std::runtime_error(
+                "Could not create the initial authoritative snapshot.");
+        }
+    }
+
+    m_worldStarted = true;
+    for (Connection& connection : m_connections) {
+        voxellancer::protocol::EntityIdPacket actorPacket{};
+        if (!voxellancer::protocol::encodeEntityId(
+                connection.actor, actorPacket) ||
+            !queuePacket(connection, actorPacket.data(), actorPacket.size()) ||
+            !sendSnapshot(connection, ++m_snapshotSequence, worldState)) {
+            throw std::runtime_error("Could not initialize a multiplayer player connection.");
+        }
+    }
+    broadcastLobbyStatus();
+}
+
 std::vector<TcpServer::ClientStatistics> TcpServer::clientStatistics() const {
     std::vector<ClientStatistics> statistics;
     statistics.reserve(m_connections.size());
@@ -186,21 +244,30 @@ std::vector<TcpServer::ClientStatistics> TcpServer::clientStatistics() const {
 }
 
 void TcpServer::poll() {
+    BenchmarkCpuScope pollScope(BenchmarkMetric::ServerPoll);
     if (!acceptConnections()) {
         throw std::runtime_error("TCP listener failed while accepting a client.");
     }
 
     for (std::size_t index = 0; index < m_connections.size();) {
         Connection& connection = m_connections[index];
-        if (!m_world.worldObject(connection.actor) ||
-            !receiveInput(connection) ||
-            !sendPending(connection)) {
-            removeConnection(index);
+        const char* failure = nullptr;
+        if (connection.actor.valid() &&
+            !m_world.worldObject(connection.actor)) {
+            failure = "assigned actor no longer exists";
+        } else if (connection.actor.valid() && !receiveInput(connection)) {
+            failure = "input receive failed";
+        } else if (!sendPending(connection)) {
+            failure = "pending socket send failed";
+        }
+        if (failure != nullptr) {
+            removeConnection(index, failure);
             continue;
         }
         ++index;
     }
 
+    broadcastLobbyStatus();
     sendAcknowledgements();
     sendVoxelDamageEvents(m_session.drainVoxelDamageEvents());
     sendShieldHitEvents(m_world.worldLogic().drainShieldHitEvents());
@@ -216,7 +283,7 @@ void TcpServer::poll() {
 
     for (std::size_t index = 0; index < m_connections.size();) {
         if (!sendPending(m_connections[index])) {
-            removeConnection(index);
+            removeConnection(index, "pending socket send failed after update");
         } else {
             ++index;
         }
@@ -224,7 +291,10 @@ void TcpServer::poll() {
 }
 
 bool TcpServer::acceptConnections() {
-    while (m_connections.size() < MaxClients) {
+    const std::size_t connectionLimit = m_targetPlayers == 0
+        ? MaxClients
+        : m_targetPlayers;
+    while (m_connections.size() < connectionLimit) {
         auto socket = std::make_unique<sf::TcpSocket>();
         const sf::Socket::Status status = m_listener.accept(*socket);
         if (status == sf::Socket::Status::NotReady) {
@@ -234,28 +304,29 @@ bool TcpServer::acceptConnections() {
             return false;
         }
 
-        const auto actor = availableActor();
-        if (!actor) {
+        const auto actor = m_worldStarted ? availableActor() : std::nullopt;
+        if (m_worldStarted && !actor) {
             socket->disconnect();
             continue;
         }
 
-        Ship* ship = static_cast<Ship*>(m_world.worldObject(*actor));
-        ship->character()->setTask(nullptr);
-        m_controlledActors.insert(entityIdKey(*actor));
-
         Connection connection;
         connection.socket = std::move(socket);
-        connection.actor = *actor;
         connection.socket->setBlocking(false);
 
-        voxellancer::protocol::EntityIdPacket actorPacket{};
-        if (!voxellancer::protocol::encodeEntityId(*actor, actorPacket) ||
-            !queuePacket(connection, actorPacket.data(), actorPacket.size()) ||
-            !sendSnapshot(connection, ++m_snapshotSequence)) {
-            connection.socket->disconnect();
-            m_controlledActors.erase(entityIdKey(*actor));
-            continue;
+        if (actor) {
+            Ship* ship = static_cast<Ship*>(m_world.worldObject(*actor));
+            ship->character()->setTask(nullptr);
+            m_controlledActors.insert(entityIdKey(*actor));
+            connection.actor = *actor;
+            voxellancer::protocol::EntityIdPacket actorPacket{};
+            if (!voxellancer::protocol::encodeEntityId(*actor, actorPacket) ||
+                !queuePacket(connection, actorPacket.data(), actorPacket.size()) ||
+                !sendSnapshot(connection, ++m_snapshotSequence)) {
+                connection.socket->disconnect();
+                m_controlledActors.erase(entityIdKey(*actor));
+                continue;
+            }
         }
         m_connections.push_back(std::move(connection));
     }
@@ -419,6 +490,7 @@ bool TcpServer::queuePacket(
     const std::uint8_t* data,
     std::size_t size
 ) {
+    BenchmarkCpuScope queueScope(BenchmarkMetric::ServerPacketQueue);
     if (size == 0 || size > MaxOutboundBytes - FrameHeaderSize) {
         return false;
     }
@@ -431,6 +503,9 @@ bool TcpServer::queuePacket(
         }
         connection.deferredOutgoing.emplace_back(data, data + size);
         connection.deferredOutgoingBytes += framedSize;
+        BenchmarkProfiler::instance().addCounter(BenchmarkCounter::PacketsQueued);
+        BenchmarkProfiler::instance().addCounter(
+            BenchmarkCounter::PacketBytesQueued, framedSize);
         return true;
     }
     std::vector<std::uint8_t> frame(size + FrameHeaderSize);
@@ -438,39 +513,72 @@ bool TcpServer::queuePacket(
     std::copy(data, data + size, frame.begin() + FrameHeaderSize);
     connection.outgoingBytes += frame.size();
     connection.outgoing.push_back(std::move(frame));
+    BenchmarkProfiler::instance().addCounter(BenchmarkCounter::PacketsQueued);
+    BenchmarkProfiler::instance().addCounter(
+        BenchmarkCounter::PacketBytesQueued, size + FrameHeaderSize);
     return true;
 }
 
 bool TcpServer::sendSnapshot(Connection& connection, std::uint64_t sequence) {
     WorldObject* actor = m_world.worldObject(connection.actor);
-    std::vector<voxellancer::protocol::EntitySnapshot> current;
-    voxellancer::protocol::SnapshotFrame frame;
-    if (actor == nullptr || !m_session.createSnapshotState(current)) {
+    std::vector<voxellancer::protocol::EntitySnapshot> worldState;
+    {
+        BenchmarkCpuScope scope(BenchmarkMetric::ServerSnapshotBuild);
+        if (actor == nullptr || !m_session.createSnapshotState(worldState)) {
+            return false;
+        }
+    }
+    return sendSnapshot(connection, sequence, worldState);
+}
+
+bool TcpServer::sendSnapshot(
+    Connection& connection,
+    std::uint64_t sequence,
+    const std::vector<voxellancer::protocol::EntitySnapshot>& worldState
+) {
+    WorldObject* actor = m_world.worldObject(connection.actor);
+    if (actor == nullptr) {
         return false;
     }
 
+    std::vector<voxellancer::protocol::EntitySnapshot> current;
+    voxellancer::protocol::SnapshotFrame frame;
+
+    BenchmarkProfiler::instance().addCounter(
+        BenchmarkCounter::SnapshotEntitiesConsidered, worldState.size());
+    current.reserve(worldState.size());
     const glm::vec3 center = actor->position();
-    current.erase(
-        std::remove_if(
-            current.begin(),
-            current.end(),
-            [this, &connection, &center](const auto& snapshot) {
-                if (snapshot.id == connection.actor) {
-                    return false;
-                }
-                const glm::vec3 offset = snapshot.position - center;
-                return glm::dot(offset, offset) > m_interestRadiusSquared;
+    bool deltaBuilt = false;
+    {
+        BenchmarkCpuScope scope(BenchmarkMetric::ServerInterestFilter);
+        for (const auto& snapshot : worldState) {
+            if (snapshot.id == connection.actor) {
+                current.push_back(snapshot);
+                continue;
             }
-        ),
-        current.end()
-    );
-    if (!voxellancer::protocol::buildSnapshotDelta(
+            const glm::vec3 offset = snapshot.position - center;
+            if (glm::dot(offset, offset) <= m_interestRadiusSquared) {
+                current.push_back(snapshot);
+            }
+        }
+    }
+    {
+        BenchmarkCpuScope scope(BenchmarkMetric::ServerSnapshotDelta);
+        deltaBuilt = voxellancer::protocol::buildSnapshotDelta(
             sequence,
             m_session.tickIndex(),
             connection.snapshotSequence,
             current,
             connection.snapshotBaseline,
-            frame)) {
+            frame);
+    }
+    BenchmarkProfiler::instance().addCounter(
+        BenchmarkCounter::SnapshotEntitiesVisible, current.size());
+    if (!deltaBuilt) {
+        std::cerr << "Could not build snapshot delta at simulation interval "
+            << m_session.tickIndex() << " ("
+            << current.size() << " visible entities, "
+            << connection.snapshotBaseline.size() << " baseline entities).\n";
         return false;
     }
 
@@ -488,8 +596,12 @@ bool TcpServer::sendSnapshot(Connection& connection, std::uint64_t sequence) {
     }
 
     std::vector<std::uint8_t> packet;
-    if (!voxellancer::protocol::encodeSnapshotFrame(frame, packet) ||
-        !queuePacket(connection, packet.data(), packet.size())) {
+    bool packetEncoded = false;
+    {
+        BenchmarkCpuScope scope(BenchmarkMetric::ServerSnapshotEncoding);
+        packetEncoded = voxellancer::protocol::encodeSnapshotFrame(frame, packet);
+    }
+    if (!packetEncoded || !queuePacket(connection, packet.data(), packet.size())) {
         return false;
     }
     for (const auto entity : newEntities) {
@@ -505,7 +617,10 @@ bool TcpServer::sendSnapshot(Connection& connection, std::uint64_t sequence) {
     for (const auto removed : frame.removals) {
         connection.equipmentBaseline.erase(entityIdKey(removed));
     }
-    return sendEquipmentUpdates(connection, current);
+    if (!sendEquipmentUpdates(connection, current)) {
+        return false;
+    }
+    return true;
 }
 
 void TcpServer::sendVoxelRemovalEvents(
@@ -535,7 +650,7 @@ void TcpServer::sendVoxelRemovalEvents(
             }
         }
         if (connectionFailed) {
-            removeConnection(index);
+            removeConnection(index, "voxel removal event send failed");
         } else {
             ++index;
         }
@@ -569,7 +684,7 @@ void TcpServer::sendVoxelDamageEvents(
             }
         }
         if (connectionFailed) {
-            removeConnection(index);
+            removeConnection(index, "voxel damage event send failed");
         } else {
             ++index;
         }
@@ -604,7 +719,7 @@ void TcpServer::sendShieldHitEvents(
             }
         }
         if (connectionFailed) {
-            removeConnection(index);
+            removeConnection(index, "shield-hit event send failed");
         } else {
             ++index;
         }
@@ -629,7 +744,7 @@ void TcpServer::sendMissionStateEvents(
             }
         }
         if (connectionFailed) {
-            removeConnection(index);
+            removeConnection(index, "mission-state event send failed");
         } else {
             ++index;
         }
@@ -664,7 +779,7 @@ void TcpServer::sendWeaponFiredEvents(
             }
         }
         if (connectionFailed) {
-            removeConnection(index);
+            removeConnection(index, "weapon-fired event send failed");
         } else {
             ++index;
         }
@@ -762,13 +877,70 @@ bool TcpServer::sendEquipmentUpdates(
 
 void TcpServer::broadcastSnapshot() {
     const std::uint64_t sequence = ++m_snapshotSequence;
+    const bool hasActorConnection = std::any_of(
+        m_connections.begin(),
+        m_connections.end(),
+        [](const Connection& connection) {
+            return connection.actor.valid();
+        });
+    if (!hasActorConnection) {
+        return;
+    }
+
+    std::vector<voxellancer::protocol::EntitySnapshot> worldState;
+    bool snapshotCreated = false;
+    {
+        BenchmarkCpuScope scope(BenchmarkMetric::ServerSnapshotBuild);
+        snapshotCreated = m_session.createSnapshotState(worldState);
+    }
+    if (!snapshotCreated) {
+        std::cerr << "Could not build shared snapshot at simulation interval "
+            << m_session.tickIndex() << ".\n";
+        for (std::size_t index = 0; index < m_connections.size();) {
+            if (m_connections[index].actor.valid()) {
+                removeConnection(index, "shared snapshot build failed");
+            } else {
+                ++index;
+            }
+        }
+        return;
+    }
+
     for (std::size_t index = 0; index < m_connections.size();) {
-        if (!sendSnapshot(m_connections[index], sequence)) {
-            removeConnection(index);
+        if (!m_connections[index].actor.valid()) {
+            ++index;
+            continue;
+        }
+        if (!sendSnapshot(m_connections[index], sequence, worldState)) {
+            removeConnection(index, "snapshot send failed");
         } else {
             ++index;
         }
     }
+}
+
+void TcpServer::broadcastLobbyStatus() {
+    if (m_targetPlayers == 0 ||
+        (m_lastLobbyConnected == m_connections.size() &&
+            m_lastLobbyStarted == m_worldStarted)) {
+        return;
+    }
+    const voxellancer::protocol::LobbyStatus status{
+        static_cast<std::uint16_t>(m_connections.size()),
+        static_cast<std::uint16_t>(m_targetPlayers),
+        m_worldStarted
+    };
+    voxellancer::protocol::LobbyStatusPacket packet{};
+    if (!voxellancer::protocol::encodeLobbyStatus(status, packet)) {
+        throw std::runtime_error("Could not encode multiplayer lobby status.");
+    }
+    for (Connection& connection : m_connections) {
+        if (!queuePacket(connection, packet.data(), packet.size())) {
+            throw std::runtime_error("Could not queue multiplayer lobby status.");
+        }
+    }
+    m_lastLobbyConnected = m_connections.size();
+    m_lastLobbyStarted = m_worldStarted;
 }
 
 void TcpServer::sendAcknowledgements() {
@@ -790,17 +962,21 @@ void TcpServer::sendAcknowledgements() {
             !queuePacket(*connection, packet.data(), packet.size())) {
             const std::size_t index =
                 static_cast<std::size_t>(connection - m_connections.begin());
-            removeConnection(index);
+            removeConnection(index, "input acknowledgement send failed");
         }
     }
 }
 
-void TcpServer::removeConnection(std::size_t index) {
+void TcpServer::removeConnection(std::size_t index, const char* reason) {
     Connection& connection = m_connections[index];
-    std::cerr << "Client disconnected from local simulation.\n";
+    std::cerr << "Client disconnected from local simulation at simulation "
+        "interval " << m_session.tickIndex() << ": " << reason << ".\n";
     connection.socket->disconnect();
-    m_controlledActors.erase(entityIdKey(connection.actor));
-    if (!m_session.requestActorRemoval(connection.actor)) {
+    if (connection.actor.valid()) {
+        m_controlledActors.erase(entityIdKey(connection.actor));
+    }
+    if (connection.actor.valid() &&
+        !m_session.requestActorRemoval(connection.actor)) {
         std::cerr << "Could not queue disconnected actor removal.\n";
     }
     m_connections.erase(m_connections.begin() + static_cast<std::ptrdiff_t>(index));

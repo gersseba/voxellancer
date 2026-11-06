@@ -41,52 +41,34 @@ cmake -S . -B build -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_ROOT\scripts\buildsystems
 cmake --build build --config Release --target voxellancer
 ```
 
-Or run `.\tools\agent-check.ps1` to build and test. In VS Code, choose **Build
-and Run Game**, **Build and Test**, or one of the client/server benchmark tasks
-from **Terminal: Run Task**.
+Run `.\tools\agent-check.ps1` to build and test. In VS Code, **Terminal: Run
+Task** contains four runtime tasks:
 
-To run a finite performance benchmark from the repository root after building:
+- **Start Server** — start a battle server on port 27801.
+- **Start Client** — start a graphical multiplayer client.
+- **Start Local Client with Integrated Server (Large Combat Benchmark)** —
+  run one graphical client with an integrated authoritative benchmark server.
+- **Start Server and Two Clients (Large Combat Benchmark)** — run the
+  coordinated two-client multiplayer benchmark.
 
-```powershell
-.\build\agent-vcpkg-vs18-stable\Release\voxellancer.exe -benchmark-rendering
-.\build\agent-vcpkg-vs18-stable\Release\voxellancer.exe -benchmark-combat
-.\build\agent-vcpkg-vs18-stable\Release\voxellancer.exe -benchmark-large-combat
-.\build\agent-vcpkg-vs18-stable\Release\voxellancer-server.exe --ticks 1800 --ships-per-team 400
-```
+Both benchmark tasks use the same seeded 800-ship combat scenario. The server
+advances exactly 1,800 simulation intervals after the target clients connect;
+clients record rendered frames from the first started-world snapshot to the
+final server tick. The two-client task launches a server waiting for two
+players, then opens two graphical
+clients side-by-side. Reports share a run ID and identify each role/client
+explicitly in `benchmark-results\`.
 
-The client large combat benchmark enables VSync and runs 400 AI ships per team
-in reproducibly randomized, separated clusters for 1,800 measured frames after
-120 warm-up frames. It reports the number and percentage of measured frames below 55 FPS, the longest
-consecutive below-target run, and the worst FPS. Each benchmark writes a JSON
-report, including per-frame timings, to `benchmark-results\`. Its
-`timing_profile` includes CPU timings for update, draw submission, buffer-swap
-wait, event polling, and world-update subsystems, plus GPU draw time when
-supported by the graphics driver. GPU work can overlap CPU work, and
-buffer-swap wait includes VSync, so these measurements should not be summed.
-The aligned `time_series` arrays record frame FPS, world-object voxel counts,
-ship/projectile counts, voxel-particle counts, and per-frame simulation timings
-for comparing workload changes with slow frames. Particle-buffer capacity is
-also recorded because the renderer submits allocated slots, including expired
-particles. Client benchmark modes write their reports to `benchmark-results\`.
+Server reports include tick and network-poll timing, snapshot state
+construction, interest filtering, snapshot delta construction and encoding,
+packet queue work, per-client bytes, and visible entity counts. Client reports
+include frame timing, game update/draw, network polling, snapshot sampling,
+input prediction, replica updates, and GPU draw timings when timer queries are
+available. Both include per-frame/tick time series and p50/p95/p99/max
+summaries. Timings can be nested and overlap; do not sum them. Server tick time
+excludes rendering and is not directly comparable to client frame time.
 
-The headless server benchmark runs the same seeded 800-ship combat scenario for
-1,800 fixed simulation ticks. It reports p50/p95/p99/max tick time, missed
-60 Hz deadlines, entity and ship counts, and remaining simulation backlog as
-JSON on stdout. These server tick metrics exclude rendering and are not directly
-comparable to client frame times; use them to evaluate server simulation cost
-against the 16.67 ms tick budget.
-
-The older `test_performance` Bandit target remains separate from `all_tests`.
-It currently runs a random-number microbenchmark; its three world/simulation
-performance cases are skipped. Build and run it with:
-
-```powershell
-cmake --build build\agent-vcpkg-vs18-stable --target test_performance --config Release
-.\build\agent-vcpkg-vs18-stable\Release\test_performance.exe
-```
-
-Use the client/server benchmark tasks above for the seeded gameplay workloads;
-the legacy target does not measure either executable's end-to-end performance.
+Use `.\tools\agent-check.ps1 -Mode Test` to build and execute `all_tests`.
 
 ## Linux
 

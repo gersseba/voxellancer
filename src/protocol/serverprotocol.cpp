@@ -27,6 +27,7 @@ constexpr std::uint8_t EntityEquipmentSnapshotMessageType = 9;
 constexpr std::uint8_t WeaponFiredEventMessageType = 10;
 constexpr std::uint8_t ShieldHitEventMessageType = 11;
 constexpr std::uint8_t MissionStateEventMessageType = 12;
+constexpr std::uint8_t LobbyStatusMessageType = 13;
 
 void writeU16(std::uint8_t* destination, std::uint16_t value) {
     destination[0] = static_cast<std::uint8_t>(value);
@@ -348,6 +349,12 @@ bool EntityId::operator!=(const EntityId& other) const {
     return !(*this == other);
 }
 
+bool LobbyStatus::operator==(const LobbyStatus& other) const {
+    return connectedPlayers == other.connectedPlayers &&
+        targetPlayers == other.targetPlayers &&
+        worldStarted == other.worldStarted;
+}
+
 bool EntitySnapshot::operator==(const EntitySnapshot& other) const {
     return id == other.id &&
         position == other.position &&
@@ -568,6 +575,43 @@ DecodeError decodeEntityId(
         return DecodeError::InvalidValue;
     }
     id = decoded;
+    return DecodeError::None;
+}
+
+bool encodeLobbyStatus(const LobbyStatus& status, LobbyStatusPacket& packet) {
+    if (status.targetPlayers == 0 ||
+        status.connectedPlayers > status.targetPlayers) {
+        return false;
+    }
+    packet[0] = ProtocolVersion;
+    packet[1] = LobbyStatusMessageType;
+    writeU16(packet.data() + 2, status.connectedPlayers);
+    writeU16(packet.data() + 4, status.targetPlayers);
+    packet[6] = status.worldStarted ? 1 : 0;
+    return true;
+}
+
+DecodeError decodeLobbyStatus(
+    const std::uint8_t* data,
+    std::size_t size,
+    LobbyStatus& status
+) {
+    const DecodeError headerError = validateHeader(
+        data, size, LobbyStatusPacketSize, LobbyStatusMessageType);
+    if (headerError != DecodeError::None) {
+        return headerError;
+    }
+    const LobbyStatus decoded{
+        readU16(data + 2),
+        readU16(data + 4),
+        data[6] != 0
+    };
+    if (decoded.targetPlayers == 0 ||
+        decoded.connectedPlayers > decoded.targetPlayers ||
+        data[6] > 1) {
+        return DecodeError::InvalidValue;
+    }
+    status = decoded;
     return DecodeError::None;
 }
 

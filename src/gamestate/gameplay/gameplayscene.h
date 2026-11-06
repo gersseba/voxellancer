@@ -1,6 +1,9 @@
 #pragma once
 
+#include <cstdint>
 #include <memory>
+#include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 #include <glm/glm.hpp>
@@ -49,6 +52,10 @@ protected:
 #ifndef VOXELLANCER_HEADLESS_SERVER
     struct RemoteVoxelProxy;
     std::vector<std::unique_ptr<RemoteVoxelProxy>> m_remoteVoxelProxies;
+    std::unordered_map<std::uint64_t, RemoteVoxelProxy*> m_remoteVoxelProxyIndex;
+    std::unordered_set<std::uint64_t> m_pendingRemoteContentKeys;
+    bool m_remotePreviewWasActive = false;
+    bool m_remoteContentSyncNeeded = true;
     void updateRemoteVoxelProxies();
 #endif
 

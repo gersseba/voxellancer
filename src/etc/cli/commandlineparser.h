@@ -17,8 +17,11 @@ public:
     bool fullScreen() const;
     bool showIntro() const;
     bool serverPreview() const;
+    bool multiplayerClient() const;
     bool localSingleplayer() const;
     BenchmarkMode benchmarkMode() const;
+    std::string benchmarkRunId() const;
+    std::string benchmarkClientId() const;
 
 private:
     std::unordered_map<std::string, std::string> m_options;

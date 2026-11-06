@@ -4,6 +4,7 @@
 #include <chrono>
 #include <cstddef>
 #include <cstdint>
+#include <ostream>
 #include <vector>
 
 enum class BenchmarkMetric : std::size_t {
@@ -36,6 +37,17 @@ enum class BenchmarkMetric : std::size_t {
     BufferSwapWait,
     EventPolling,
     OtherFrameWork,
+    ClientNetworkPoll,
+    ClientSnapshotSampling,
+    ClientInputPrediction,
+    ClientReplicaUpdate,
+    ServerSimulation,
+    ServerPoll,
+    ServerSnapshotBuild,
+    ServerInterestFilter,
+    ServerSnapshotDelta,
+    ServerSnapshotEncoding,
+    ServerPacketQueue,
     Count
 };
 
@@ -51,6 +63,12 @@ enum class BenchmarkCounter : std::size_t {
     WeaponAimChecks,
     BulletLineOfFireQueries,
     BulletsScheduled,
+    SnapshotEntitiesConsidered,
+    SnapshotEntitiesVisible,
+    PacketsQueued,
+    PacketBytesQueued,
+    RemoteSnapshotsReceived,
+    RemoteVoxelProxiesUpdated,
     Count
 };
 
@@ -103,6 +121,10 @@ private:
     bool m_gpuSlotUsable;
     bool m_gpuAvailable;
 };
+
+void writeBenchmarkProfile(
+    std::ostream& output,
+    const std::vector<BenchmarkMetricSample>& samples);
 
 class BenchmarkCpuScope {
 public:

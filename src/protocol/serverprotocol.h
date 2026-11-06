@@ -14,7 +14,7 @@
 namespace voxellancer {
 namespace protocol {
 
-constexpr std::uint8_t ProtocolVersion = 16;
+constexpr std::uint8_t ProtocolVersion = 17;
 constexpr std::size_t EntityIdPacketSize = 10;
 constexpr std::size_t InputCommandPacketSize = 40;
 constexpr std::size_t InputCommandAcknowledgementPacketSize = 11;
@@ -34,6 +34,7 @@ constexpr std::size_t MaxMissionKeyBytes = 63;
 constexpr std::size_t SnapshotHeaderSize = 30;
 constexpr std::size_t SnapshotEntitySize = 65;
 constexpr std::size_t SnapshotEntityIdSize = 8;
+constexpr std::size_t LobbyStatusPacketSize = 7;
 constexpr std::size_t MaxSnapshotEntries = 4096;
 constexpr std::size_t MaxEntityVoxels = 16000;
 constexpr std::size_t MaxEntityEquipmentStates = 256;
@@ -45,6 +46,14 @@ struct EntityId {
     bool valid() const;
     bool operator==(const EntityId& other) const;
     bool operator!=(const EntityId& other) const;
+};
+
+struct LobbyStatus {
+    std::uint16_t connectedPlayers = 0;
+    std::uint16_t targetPlayers = 0;
+    bool worldStarted = false;
+
+    bool operator==(const LobbyStatus& other) const;
 };
 
 struct EntitySnapshot {
@@ -272,9 +281,16 @@ using ShieldHitEventPacket =
     std::array<std::uint8_t, ShieldHitEventPacketSize>;
 using MissionStateEventPacket =
     std::array<std::uint8_t, MissionStateEventPacketSize>;
+using LobbyStatusPacket = std::array<std::uint8_t, LobbyStatusPacketSize>;
 
 bool encodeEntityId(const EntityId& id, EntityIdPacket& packet);
 DecodeError decodeEntityId(const std::uint8_t* data, std::size_t size, EntityId& id);
+bool encodeLobbyStatus(const LobbyStatus& status, LobbyStatusPacket& packet);
+DecodeError decodeLobbyStatus(
+    const std::uint8_t* data,
+    std::size_t size,
+    LobbyStatus& status
+);
 
 bool encodeInputCommand(const InputCommand& command, InputCommandPacket& packet);
 DecodeError decodeInputCommand(

@@ -118,4 +118,3 @@ Transform Movement::calculateStep(int s, int stepCount) const {
 
     return transform;
 }
-

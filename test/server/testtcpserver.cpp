@@ -109,6 +109,112 @@ go_bandit([]() {
                 client.actor()->generation,
                 Equals(playerEntity->generation));
         });
+        it("waits for the target lobby before assigning player ships", []() {
+            loadSimulationData();
+            World::reset(false);
+            WorldResetGuard resetGuard;
+            World* world = World::instance(World::Mode::Server);
+            SimulationSession session(*world);
+            TcpServer server(*world, session, 0, 250.0f, std::nullopt, 2);
+            TcpClient firstClient;
+            TcpClient secondClient;
+            AssertThat(firstClient.connectLocal(server.port()), IsTrue());
+            AssertThat(secondClient.connectLocal(server.port()), IsTrue());
+
+            server.poll();
+            AssertThat(firstClient.poll(), IsTrue());
+            AssertThat(secondClient.poll(), IsTrue());
+            AssertThat(server.clientCount(), Equals(static_cast<std::size_t>(2)));
+            AssertThat(server.worldStarted(), IsFalse());
+            AssertThat(session.tickIndex(), Equals(static_cast<std::uint64_t>(0)));
+            AssertThat(world->worldObjects().empty(), IsTrue());
+            AssertThat(firstClient.actor().has_value(), IsFalse());
+            AssertThat(secondClient.actor().has_value(), IsFalse());
+            AssertThat(firstClient.lobbyStatus().has_value(), IsTrue());
+            AssertThat(firstClient.lobbyStatus()->connectedPlayers,
+                Equals(static_cast<std::uint16_t>(2)));
+            AssertThat(firstClient.lobbyStatus()->targetPlayers,
+                Equals(static_cast<std::uint16_t>(2)));
+            AssertThat(firstClient.lobbyStatus()->worldStarted, IsFalse());
+            bool rejectedEarlyStart = false;
+            try {
+                server.startWorldForPlayers({});
+            } catch (const std::logic_error&) {
+                rejectedEarlyStart = true;
+            }
+            AssertThat(rejectedEarlyStart, IsTrue());
+            AssertThat(world->worldObjects().empty(), IsTrue());
+            AssertThat(session.tickIndex(), Equals(static_cast<std::uint64_t>(0)));
+
+            Ship* firstShip = WorldObjectBuilder("mox", *world).buildShip();
+            firstShip->transform().setPosition(glm::vec3(0.0f, 0.0f, 0.0f));
+            Ship* secondShip = WorldObjectBuilder("mox", *world).buildShip();
+            secondShip->transform().setPosition(glm::vec3(1000.0f, 0.0f, 0.0f));
+            Ship* nearFirstShip = WorldObjectBuilder("mox", *world).buildShip();
+            nearFirstShip->transform().setPosition(glm::vec3(100.0f, 0.0f, 0.0f));
+            Ship* nearSecondShip = WorldObjectBuilder("mox", *world).buildShip();
+            nearSecondShip->transform().setPosition(glm::vec3(900.0f, 0.0f, 0.0f));
+            Ship* distantShip = WorldObjectBuilder("mox", *world).buildShip();
+            distantShip->transform().setPosition(glm::vec3(5000.0f, 0.0f, 0.0f));
+            world->god().scheduleSpawn(firstShip);
+            world->god().scheduleSpawn(secondShip);
+            world->god().scheduleSpawn(nearFirstShip);
+            world->god().scheduleSpawn(nearSecondShip);
+            world->god().scheduleSpawn(distantShip);
+            world->god().spawn();
+            const auto firstActor = world->entityId(firstShip);
+            const auto secondActor = world->entityId(secondShip);
+            const auto nearFirst = world->entityId(nearFirstShip);
+            const auto nearSecond = world->entityId(nearSecondShip);
+            const auto distant = world->entityId(distantShip);
+            AssertThat(firstActor.has_value(), IsTrue());
+            AssertThat(secondActor.has_value(), IsTrue());
+            AssertThat(nearFirst.has_value(), IsTrue());
+            AssertThat(nearSecond.has_value(), IsTrue());
+            AssertThat(distant.has_value(), IsTrue());
+            server.startWorldForPlayers({*firstActor, *secondActor});
+            server.poll();
+            AssertThat(firstClient.poll(), IsTrue());
+            AssertThat(secondClient.poll(), IsTrue());
+
+            AssertThat(server.worldStarted(), IsTrue());
+            AssertThat(firstClient.actor().has_value(), IsTrue());
+            AssertThat(secondClient.actor().has_value(), IsTrue());
+            AssertThat(*firstClient.actor(), Equals(*firstActor));
+            AssertThat(*secondClient.actor(), Equals(*secondActor));
+            AssertThat(firstClient.lobbyStatus()->worldStarted, IsTrue());
+            AssertThat(secondClient.lobbyStatus()->worldStarted, IsTrue());
+            AssertThat(session.tickIndex(), Equals(static_cast<std::uint64_t>(0)));
+
+            for (int tick = 0; tick < 3; ++tick) {
+                session.advance(1.0 / 60.0);
+                server.poll();
+            }
+            AssertThat(firstClient.poll(), IsTrue());
+            AssertThat(secondClient.poll(), IsTrue());
+            const auto containsEntity = [](
+                const std::vector<voxellancer::protocol::EntitySnapshot>& state,
+                voxellancer::protocol::EntityId entity) {
+                return std::any_of(
+                    state.begin(),
+                    state.end(),
+                    [entity](const auto& snapshot) {
+                        return snapshot.id == entity;
+                    });
+            };
+            const auto& firstState = firstClient.replicaState();
+            const auto& secondState = secondClient.replicaState();
+            AssertThat(containsEntity(firstState, *firstActor), IsTrue());
+            AssertThat(containsEntity(firstState, *nearFirst), IsTrue());
+            AssertThat(containsEntity(firstState, *secondActor), IsFalse());
+            AssertThat(containsEntity(firstState, *nearSecond), IsFalse());
+            AssertThat(containsEntity(firstState, *distant), IsFalse());
+            AssertThat(containsEntity(secondState, *secondActor), IsTrue());
+            AssertThat(containsEntity(secondState, *nearSecond), IsTrue());
+            AssertThat(containsEntity(secondState, *firstActor), IsFalse());
+            AssertThat(containsEntity(secondState, *nearFirst), IsFalse());
+            AssertThat(containsEntity(secondState, *distant), IsFalse());
+        });
         it("requires an owning world when building rockets", []() {
             loadSimulationData();
             World::reset(false);
@@ -1215,6 +1321,14 @@ go_bandit([]() {
             AssertThat(client.poll(), IsTrue());
             AssertThat(client.actor().has_value(), IsTrue());
             AssertThat(*client.actor(), Equals(*world->entityId(actorShip)));
+            const auto initialContentChanges =
+                client.drainEntityContentChanges();
+            AssertThat(
+                std::find(
+                    initialContentChanges.begin(),
+                    initialContentChanges.end(),
+                    *world->entityId(actorShip)) != initialContentChanges.end(),
+                IsTrue());
 
             Ship* nearbyShip = spawnShip(glm::vec3(100.0f, 0.0f, 0.0f));
             Ship* distantShip = spawnShip(glm::vec3(1000.0f, 0.0f, 0.0f));
@@ -1233,8 +1347,22 @@ go_bandit([]() {
                 server.poll();
                 AssertThat(client.poll(), IsTrue());
             }
+            const auto nearbyContentChanges =
+                client.drainEntityContentChanges();
             AssertThat(contains(nearbyId), IsTrue());
             AssertThat(contains(distantId), IsFalse());
+            AssertThat(
+                std::find(
+                    nearbyContentChanges.begin(),
+                    nearbyContentChanges.end(),
+                    nearbyId) != nearbyContentChanges.end(),
+                IsTrue());
+            AssertThat(
+                std::find(
+                    nearbyContentChanges.begin(),
+                    nearbyContentChanges.end(),
+                    distantId) == nearbyContentChanges.end(),
+                IsTrue());
             const auto hasContent = [&client](voxellancer::protocol::EntityId id) {
                 return std::any_of(
                     client.entityContents().begin(),
@@ -1253,6 +1381,14 @@ go_bandit([]() {
             }
             AssertThat(contains(distantId), IsTrue());
             AssertThat(hasContent(distantId), IsTrue());
+            const auto enteredRangeChanges =
+                client.drainEntityContentChanges();
+            AssertThat(
+                std::find(
+                    enteredRangeChanges.begin(),
+                    enteredRangeChanges.end(),
+                    distantId) != enteredRangeChanges.end(),
+                IsTrue());
 
             distantShip->transform().setPosition(glm::vec3(1000.0f, 0.0f, 0.0f));
             for (int tick = 0; tick < 3; ++tick) {
@@ -1262,6 +1398,14 @@ go_bandit([]() {
             }
             AssertThat(contains(distantId), IsFalse());
             AssertThat(hasContent(distantId), IsFalse());
+            const auto leftRangeChanges =
+                client.drainEntityContentChanges();
+            AssertThat(
+                std::find(
+                    leftRangeChanges.begin(),
+                    leftRangeChanges.end(),
+                    distantId) != leftRangeChanges.end(),
+                IsTrue());
             client.disconnect();
         });
     });

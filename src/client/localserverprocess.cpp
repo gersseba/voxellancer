@@ -41,7 +41,9 @@ LocalServerProcess::~LocalServerProcess() {
 
 bool LocalServerProcess::start(
     const std::filesystem::path& clientExecutable,
-    std::uint16_t port)
+    std::uint16_t port,
+    bool largeCombatBenchmark,
+    const std::string& runId)
 {
     if (isRunning()) {
         m_lastError = "A local simulation server is already running.";
@@ -63,8 +65,24 @@ bool LocalServerProcess::start(
 
 #ifdef _WIN32
     std::wstring commandLine = L"\"" + serverExecutable.wstring() +
-        L"\" --listen --listen-port " +
-        std::to_wstring(port) + L" --scenario battle";
+        L"\" --listen-port " + std::to_wstring(port);
+    if (largeCombatBenchmark) {
+        std::wstring safeRunId;
+        for (const wchar_t character : std::wstring(runId.begin(), runId.end())) {
+            const bool valid =
+                (character >= L'a' && character <= L'z') ||
+                (character >= L'A' && character <= L'Z') ||
+                (character >= L'0' && character <= L'9') ||
+                character == L'-' || character == L'_';
+            safeRunId.push_back(valid ? character : L'_');
+        }
+        commandLine += L" --scenario benchmark --target-players 1 "
+            L"--ships-per-team 400 --benchmark-ticks 1800 --benchmark-run-id " +
+            safeRunId;
+        commandLine += L" --benchmark-client-id integrated-client";
+    } else {
+        commandLine += L" --scenario battle";
+    }
     STARTUPINFOW startupInfo{};
     startupInfo.cb = sizeof(startupInfo);
     PROCESS_INFORMATION processInfo{};
@@ -88,6 +106,20 @@ bool LocalServerProcess::start(
 #else
     const std::string portArgument = std::to_string(port);
     const std::string executable = serverExecutable.string();
+    const std::string safeRunId = [&runId]() {
+        std::string value = runId;
+        for (char& character : value) {
+            const bool valid =
+                (character >= 'a' && character <= 'z') ||
+                (character >= 'A' && character <= 'Z') ||
+                (character >= '0' && character <= '9') ||
+                character == '-' || character == '_';
+            if (!valid) {
+                character = '_';
+            }
+        }
+        return value;
+    }();
     const pid_t processId = fork();
     if (processId < 0) {
         m_lastError = "Could not start voxellancer-server: " +
@@ -95,15 +127,36 @@ bool LocalServerProcess::start(
         return false;
     }
     if (processId == 0) {
-        execl(
-            executable.c_str(),
-            executable.c_str(),
-            "--listen",
-            "--listen-port",
-            portArgument.c_str(),
-            "--scenario",
-            "battle",
-            static_cast<char*>(nullptr));
+        if (largeCombatBenchmark) {
+            execl(
+                executable.c_str(),
+                executable.c_str(),
+                "--listen-port",
+                portArgument.c_str(),
+                "--scenario",
+                "benchmark",
+                "--target-players",
+                "1",
+                "--ships-per-team",
+                "400",
+                "--benchmark-ticks",
+                "1800",
+                "--benchmark-run-id",
+                safeRunId.c_str(),
+                "--benchmark-client-id",
+                "integrated-client",
+                static_cast<char*>(nullptr));
+        } else {
+            execl(
+                executable.c_str(),
+                executable.c_str(),
+                "--listen",
+                "--listen-port",
+                portArgument.c_str(),
+                "--scenario",
+                "battle",
+                static_cast<char*>(nullptr));
+        }
         _exit(127);
     }
     m_processId = static_cast<int>(processId);
@@ -144,6 +197,17 @@ bool LocalServerProcess::isRunning() {
     }
     return false;
 #endif
+}
+
+bool LocalServerProcess::waitForExit(std::chrono::milliseconds timeout) {
+    const auto deadline = std::chrono::steady_clock::now() + timeout;
+    while (isRunning()) {
+        if (std::chrono::steady_clock::now() >= deadline) {
+            return false;
+        }
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    }
+    return m_lastError.empty();
 }
 
 void LocalServerProcess::stop() {

@@ -26,12 +26,13 @@
 
    The harness requires `VCPKG_ROOT` to point to a bootstrapped vcpkg checkout.
    It selects the installed Visual Studio generator when available, resolves the
-   manifest dependencies, builds the game and `all_tests`, then runs the tests.
-   It defaults to Release; pass `-Configuration Debug` to use Debug or
+   manifest dependencies, builds `all_tests`, then runs the tests. It defaults
+   to Release; pass `-Configuration Debug` to use Debug or
    `-BuildDirectory <path>` to choose another build directory. See the build
    instructions for vcpkg setup.
-   In VS Code, use **Terminal: Run Task** to select **Build and Run Game** or
-   **Build and Test**; **Ctrl+Shift+B** runs **Build and Test**.
+   In VS Code, **Terminal: Run Task** offers the four runtime tasks for starting
+   a server/client or running local/multiplayer large-combat benchmarks. Use
+   `.\tools\agent-check.ps1 -Mode Test` for test validation.
 4. If the harness cannot run because prerequisites are unavailable, report the
    exact blocker rather than treating an unrun test as a pass.
 

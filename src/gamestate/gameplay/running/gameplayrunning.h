@@ -36,6 +36,8 @@ public:
     bool connectRemotePreview(std::uint16_t port);
     bool connectRemotePreview(std::unique_ptr<TcpClient> client);
     bool remotePreviewActive() const;
+    std::optional<voxellancer::protocol::LobbyStatus> remoteLobbyStatus() const;
+    std::uint64_t remotePreviewTick() const;
     void submitRemoteInput(
         const glm::vec3& movement,
         const glm::vec3& aim,
@@ -47,6 +49,8 @@ public:
     remoteReplicaSnapshots() const;
     const std::vector<voxellancer::protocol::EntityContentSnapshot>&
     remoteEntityContents() const;
+    std::vector<voxellancer::protocol::EntityId>
+    drainRemoteEntityContentChanges();
     std::vector<voxellancer::protocol::VoxelDamageEvent>
     drainRemoteVoxelDamageEvents();
     std::vector<voxellancer::protocol::ShieldHitEvent>

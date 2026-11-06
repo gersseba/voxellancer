@@ -3,6 +3,7 @@
 #include <stdexcept>
 #include <vector>
 
+#include "equipment/enginestate.h"
 #include "property/propertymanager.h"
 #include "simulation/simulationsession.h"
 #include "voxel/voxel.h"
@@ -198,6 +199,28 @@ go_bandit([]() {
             AssertThat(snapshot.front().hullFraction, Equals(0.6f));
 
             world->god().scheduleRemoval(object);
+            world->god().remove();
+        });
+
+        it("clamps replicated engine state to the protocol range", []() {
+            PropertyManager::instance()->load("data/config.ini");
+            World::reset(false);
+            WorldResetGuard resetGuard;
+            World* world = World::instance(World::Mode::Server);
+            Ship* ship = new Ship(*world);
+            ship->components().setEngineState(EngineState(
+                glm::vec3(0.0f, 0.0f, -1.000001f),
+                glm::vec3(0.0f)));
+            world->god().scheduleSpawn(ship);
+            world->god().spawn();
+
+            SimulationSession session(*world);
+            std::vector<voxellancer::protocol::EntitySnapshot> snapshot;
+            AssertThat(session.createSnapshotState(snapshot), IsTrue());
+            AssertThat(snapshot.size(), Equals(static_cast<std::size_t>(1)));
+            AssertThat(snapshot.front().engineState.z, Equals(-1.0f));
+
+            world->god().scheduleRemoval(ship);
             world->god().remove();
         });
     });

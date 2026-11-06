@@ -19,7 +19,7 @@
 #include "scenarios/missionscenario.h"
 #include "scenarios/scriptedscenario.h"
 #include "scenarios/piratescenario.h"
-#include "scenarios/performancebenchmarkscenario.h"
+#include "scenarios/largecombatscenario.h"
 
 #include "sound/soundmanager.h"
 
@@ -91,6 +91,22 @@ void GamePlay::setFreecamActive(bool active) {
     }
 }
 
+#ifndef VOXELLANCER_HEADLESS_SERVER
+bool GamePlay::waitingForRemoteWorld() const {
+    if (!m_runningState->remotePreviewActive()) {
+        return false;
+    }
+
+    const auto lobby = m_runningState->remoteLobbyStatus();
+    return !lobby || !lobby->worldStarted ||
+        !m_runningState->remotePreviewSnapshot().has_value();
+}
+
+GamePlayFreecamInput& GamePlay::freecamInput() {
+    return *m_freecamInput;
+}
+#endif
+
 const Scene& GamePlay::scene() const {
     return *m_scene;
 }
@@ -100,6 +116,11 @@ const CameraHead& GamePlay::cameraHead() const {
 }
 
 InputHandler& GamePlay::inputHandler() {
+#ifndef VOXELLANCER_HEADLESS_SERVER
+    if (waitingForRemoteWorld()) {
+        return m_waitingInput;
+    }
+#endif
     if (m_freecamActive) {
         return *m_freecamInput.get();
     } else {
@@ -145,16 +166,8 @@ void GamePlay::loadScenario(int i) {
     case 5:
         m_scenario.reset(new FriendlyFireScenario(world));
         break;
-    case PerformanceBenchmarkScenario::RenderingScenarioId:
-        m_scenario.reset(new PerformanceBenchmarkScenario(world, BenchmarkMode::Rendering));
-        break;
-    case PerformanceBenchmarkScenario::CombatScenarioId:
-        m_scenario.reset(new PerformanceBenchmarkScenario(world, BenchmarkMode::Combat));
-        break;
-    case PerformanceBenchmarkScenario::LargeCombatVsyncScenarioId:
-        m_scenario.reset(new PerformanceBenchmarkScenario(
-            world,
-            BenchmarkMode::LargeCombatVsync));
+    case LargeCombatScenario::ScenarioId:
+        m_scenario.reset(new LargeCombatScenario(world));
         break;
     default:
         m_scenario.reset(new BaseScenario(world));

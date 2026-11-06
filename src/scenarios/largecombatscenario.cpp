@@ -1,4 +1,4 @@
-#include "performancebenchmarkscenario.h"
+#include "largecombatscenario.h"
 
 #include <cmath>
 #include <memory>
@@ -12,7 +12,6 @@
 
 #include "ai/basictasks/fighttask.h"
 #include "ai/character.h"
-#include "benchmark/benchmarkmode.h"
 #ifndef VOXELLANCER_HEADLESS_SERVER
 #include "player.h"
 #endif
@@ -78,87 +77,22 @@ namespace {
     }
 }
 
-PerformanceBenchmarkScenario::PerformanceBenchmarkScenario(
+LargeCombatScenario::LargeCombatScenario(
     World& world,
-    BenchmarkMode mode,
     int shipsPerTeam
 ) :
     BaseScenario(world),
-    m_mode(mode),
     m_shipsPerTeam(shipsPerTeam)
 {
     validateShipsPerTeam(m_shipsPerTeam);
 }
 
-void PerformanceBenchmarkScenario::populateWorld() {
-    if (m_mode == BenchmarkMode::Rendering) {
-        populateRenderingBenchmark();
-    } else if (m_mode == BenchmarkMode::Combat) {
-        populateCombatBenchmark();
-    } else {
-        populateLargeCombatVsyncBenchmark();
-    }
+void LargeCombatScenario::populateWorld() {
+    populateLargeCombat();
 }
 
-void PerformanceBenchmarkScenario::populateRenderingBenchmark() {
-    constexpr int tunnelLength = 192;
-    constexpr int width = 32;
-    constexpr int height = 24;
-
-    WorldObject* tunnel = new WorldObject();
-    tunnel->info().setName("rendering_benchmark_tunnel");
-    tunnel->info().setShowOnHud(false);
-    tunnel->info().setCanLockOn(false);
-
-    for (int z = 0; z < tunnelLength; ++z) {
-        const unsigned int color = (z / 4) % 2 == 0 ? 0x4C7899 : 0x7B543A;
-        for (int y = 0; y <= height; ++y) {
-            for (int x = 0; x <= width; ++x) {
-                if (x != 0 && x != width && y != 0 && y != height) {
-                    continue;
-                }
-                tunnel->addVoxel(new Voxel(glm::ivec3(x, y, z), color));
-            }
-        }
-    }
-
-    m_world->god().scheduleSpawn(tunnel);
-}
-
-void PerformanceBenchmarkScenario::populateCombatBenchmark() {
-    constexpr int shipsPerTeam = 12;
-    constexpr int columns = 3;
-    constexpr float teamOffset = 38.0f;
-    constexpr float laneSpacing = 12.0f;
-    constexpr float rowSpacing = 16.0f;
-    std::vector<Ship*> teams[2];
-
-    for (int team = 0; team < 2; ++team) {
-        for (int i = 0; i < shipsPerTeam; ++i) {
-            Ship* ship = WorldObjectBuilder("basicship", *m_world).buildShip();
-            const int lane = i % columns;
-            const int row = i / columns;
-            const float x = team == 0 ? -teamOffset : teamOffset;
-            const float y = static_cast<float>(lane - 1) * laneSpacing;
-            const float z = static_cast<float>(row - 1) * rowSpacing;
-            const float yaw = team == 0 ? -glm::half_pi<float>() : glm::half_pi<float>();
-
-            ship->transform().setPosition(glm::vec3(x, y, z));
-            ship->transform().setOrientation(glm::angleAxis(yaw, glm::vec3(0, 1, 0)));
-            ship->info().setName(team == 0 ? "benchmark_blue" : "benchmark_red");
-            ship->info().setShowOnHud(false);
-            ship->info().setCanLockOn(false);
-
-            teams[team].push_back(ship);
-            m_world->god().scheduleSpawn(ship);
-        }
-    }
-
-    assignCombatTasks(teams);
-}
-
-void PerformanceBenchmarkScenario::populateLargeCombatVsyncBenchmark() {
-    std::mt19937 generator(LargeCombatPlacementSeed);
+void LargeCombatScenario::populateLargeCombat() {
+    std::mt19937 generator(PlacementSeed);
     std::normal_distribution<float> directionComponent(0.0f, 1.0f);
     std::uniform_real_distribution<float> radiusDistribution(0.0f, 1.0f);
     std::vector<Ship*> teams[2];
@@ -184,23 +118,20 @@ void PerformanceBenchmarkScenario::populateLargeCombatVsyncBenchmark() {
         }
     }
 
-    assignCombatTasks(teams);
-}
-
-void PerformanceBenchmarkScenario::assignCombatTasks(std::vector<Ship*> teams[2]) {
-#ifndef VOXELLANCER_HEADLESS_SERVER
-    if (m_world->hasPresentation()) {
-        m_world->player().setShip(teams[0].front());
-    }
-#endif
-
     for (int team = 0; team < 2; ++team) {
         std::vector<Handle<WorldObject>> targets;
         for (Ship* target : teams[1 - team]) {
             targets.push_back(target->handle<WorldObject>());
         }
         for (Ship* ship : teams[team]) {
-            ship->character()->setTask(std::make_shared<FightTask>(ship->boardComputer(), targets));
+            ship->character()->setTask(std::make_shared<FightTask>(
+                ship->boardComputer(), targets));
         }
     }
+
+#ifndef VOXELLANCER_HEADLESS_SERVER
+    if (m_world->hasPresentation()) {
+        m_world->player().setShip(teams[0].front());
+    }
+#endif
 }

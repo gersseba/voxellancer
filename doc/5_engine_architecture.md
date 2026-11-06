@@ -66,6 +66,20 @@ client-side effects and HUD active. The server's battle scenario is
 authoritative; the server prefers its designated player ship when assigning
 the first connecting client. The game stops the child server when it exits.
 
+### Multiplayer lobby and player binding
+
+Run `voxellancer-server --listen-port 27800 --target-players 2`, then connect
+two graphical clients with `-server-preview`. With a target-player count set,
+the server constructs an empty `World` and polls only the listener while
+waiting; it does not load/populate the scenario or advance the simulation.
+Clients receive lobby status packets and show `WAITING FOR PLAYERS n/2`.
+Once full, the server creates the selected scenario, creates enough player
+ships, assigns one unique ship entity to each connection, sends the world-start
+status and initial snapshots, and begins its normal simulation loop. The
+default scenario in lobby mode is battle; explicitly choosing
+`--scenario benchmark` selects the seeded fleet scenario. Non-lobby standalone
+and `--listen` paths retain the previous immediate scenario setup.
+
 ## Server simulation loop
 
 The server loads the shared configuration, voxel definitions, world-object
@@ -81,6 +95,9 @@ percentiles, missed deadlines, entity counts, and backlog as JSON. With
    and snapshots;
 4. sleeps briefly before the next iteration.
 
+In lobby mode, listener acceptance and lobby status delivery run before any
+scenario population; `SimulationSession::advance` is not called until the
+target player count has connected and actor assignment is complete.
 `SimulationTickRunner` advances authoritative state at 60 Hz. It runs at most
 five catch-up ticks per `advance` call and retains any remaining accumulator as
 backlog rather than skipping simulation time. The server loop currently runs
@@ -91,7 +108,7 @@ simulation and network polling on the same thread.
 The transport is an SFML TCP stream. TCP provides reliable, ordered delivery;
 there is no separate unreliable snapshot channel. Each application frame has a
 four-byte little-endian payload length followed by a packet with protocol
-version 16 and a message-type byte. There is no version negotiation: peers with
+version 17 and a message-type byte. There is no version negotiation: peers with
 different protocol versions reject each other's packets.
 
 On connection, the server assigns a generation-protected entity ID for a ship,
@@ -104,7 +121,7 @@ The main message families are:
 | Direction | Data |
 |---|---|
 | Client to server | Sequenced, tick-stamped input commands and snapshot-resync requests. |
-| Server to client | Actor assignment; snapshot deltas and input acknowledgements; full entity voxel/equipment content and equipment-only updates; voxel damage/removal, shield-hit, weapon-fired, and mission-state events. |
+| Server to client | Lobby player-count/world-start status; actor assignment; snapshot deltas and input acknowledgements; full entity voxel/equipment content and equipment-only updates; voxel damage/removal, shield-hit, weapon-fired, and mission-state events. |
 
 Input carries quantized movement and aim axes, button state, a target entity
 where applicable, a monotonically increasing sequence, and a requested
@@ -170,9 +187,6 @@ state.
 - Networking is loopback-only, unauthenticated, unencrypted, and TCP-based.
   Remote hosting requires a deliberate transport, security, reconnect, and
   overload design; this prototype should not be exposed as an internet server.
-- TCP integration and development-machine benchmarks exist, but network-load
-  testing and target-hardware capacity evidence are still needed before
-  promising a player or ship-count capacity.
-
-See the [server-side simulation plan](performance-plan/06-server-side-simulation.md)
-for migration status and the remaining load/capacity work.
+- The large-combat benchmark records server simulation, snapshot/network work,
+  and per-client rendering/replication separately. These development-machine
+  measurements are diagnostic leads, not target-hardware capacity guarantees.

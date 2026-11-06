@@ -1,9 +1,12 @@
 #include "gameplayrunning.h"
 
+#include "benchmark/benchmarkprofiler.h"
+
 #ifndef VOXELLANCER_HEADLESS_SERVER
 #include <algorithm>
 #include <cmath>
 #include <limits>
+#include <optional>
 #include <utility>
 
 #include <glow/logging.h>
@@ -108,6 +111,15 @@ bool GamePlayRunning::remotePreviewActive() const {
     return m_remotePreview != nullptr;
 }
 
+std::optional<voxellancer::protocol::LobbyStatus>
+GamePlayRunning::remoteLobbyStatus() const {
+    return m_remotePreview ? m_remotePreview->lobbyStatus() : std::nullopt;
+}
+
+std::uint64_t GamePlayRunning::remotePreviewTick() const {
+    return m_remotePreview ? m_remotePreview->snapshotTick() : 0;
+}
+
 const std::optional<voxellancer::protocol::EntitySnapshot>&
 GamePlayRunning::remotePreviewSnapshot() const {
     return m_remotePreviewSnapshot;
@@ -122,6 +134,13 @@ const std::vector<voxellancer::protocol::EntityContentSnapshot>&
 GamePlayRunning::remoteEntityContents() const {
     static const std::vector<voxellancer::protocol::EntityContentSnapshot> Empty;
     return m_remotePreview ? m_remotePreview->entityContents() : Empty;
+}
+
+std::vector<voxellancer::protocol::EntityId>
+GamePlayRunning::drainRemoteEntityContentChanges() {
+    return m_remotePreview
+        ? m_remotePreview->drainEntityContentChanges()
+        : std::vector<voxellancer::protocol::EntityId>();
 }
 
 std::vector<voxellancer::protocol::VoxelDamageEvent>
@@ -224,7 +243,21 @@ void GamePlayRunning::update(float deltaSec) {
         m_simulationSession.advance(deltaSec);
     }
     if (m_remotePreview) {
-        if (!m_remotePreview->poll()) {
+        const std::uint64_t previousSnapshotSequence =
+            m_remotePreview->snapshotSequence();
+        bool pollSucceeded = false;
+        {
+            BenchmarkCpuScope scope(BenchmarkMetric::ClientNetworkPoll);
+            pollSucceeded = m_remotePreview->poll();
+        }
+        const std::uint64_t currentSnapshotSequence =
+            m_remotePreview->snapshotSequence();
+        if (currentSnapshotSequence > previousSnapshotSequence) {
+            BenchmarkProfiler::instance().addCounter(
+                BenchmarkCounter::RemoteSnapshotsReceived,
+                currentSnapshotSequence - previousSnapshotSequence);
+        }
+        if (!pollSucceeded) {
             glow::warning(
                 "Remote snapshot preview disconnected: %;",
                 m_remotePreview->lastError()
@@ -235,6 +268,7 @@ void GamePlayRunning::update(float deltaSec) {
             m_remoteRenderTick.reset();
             return;
         }
+        static_cast<void>(m_remotePreview->drainVoxelRemovalEvents());
         for (const auto& acknowledgement : m_remotePreview->drainAcknowledgements()) {
             const auto pending = std::find_if(
                 m_remoteInputCommands.begin(),
@@ -290,15 +324,20 @@ void GamePlayRunning::update(float deltaSec) {
                 *m_remoteRenderTick = std::max(
                     *m_remoteRenderTick, earliestBufferedTick);
             }
-            for (const auto& snapshot : m_remotePreview->replicaState()) {
-                const auto sampled = m_remotePreview->sample(
-                    snapshot.id, *m_remoteRenderTick);
-                if (sampled) {
-                    m_remoteReplicaSnapshots.push_back(*sampled);
+            std::optional<voxellancer::protocol::EntitySnapshot> authoritativeActor;
+            {
+                BenchmarkCpuScope scope(
+                    BenchmarkMetric::ClientSnapshotSampling);
+                for (const auto& snapshot : m_remotePreview->replicaState()) {
+                    const auto sampled = m_remotePreview->sample(
+                        snapshot.id, *m_remoteRenderTick);
+                    if (sampled) {
+                        m_remoteReplicaSnapshots.push_back(*sampled);
+                    }
                 }
+                authoritativeActor = m_remotePreview->sample(
+                    *actor, static_cast<double>(tick));
             }
-            const auto authoritativeActor = m_remotePreview->sample(
-                *actor, static_cast<double>(tick));
             const auto actorContent = std::find_if(
                 m_remotePreview->entityContents().begin(),
                 m_remotePreview->entityContents().end(),
@@ -330,16 +369,21 @@ void GamePlayRunning::update(float deltaSec) {
                      m_remoteInputCommands) {
                     commands.push_back(command.command);
                 }
-                const auto predicted = m_remoteInputPredictor.predict(
-                    *authoritativeActor,
-                    tick,
-                    predictionTargetTick(tick),
-                    commands,
-                    m_remoteInputEnginePower,
-                    Property<float>(
-                        "physics.globalDirectionalDampening").get(),
-                    Property<float>(
-                        "physics.globalAngularDampening").get());
+                std::optional<voxellancer::protocol::EntitySnapshot> predicted;
+                {
+                    BenchmarkCpuScope scope(
+                        BenchmarkMetric::ClientInputPrediction);
+                    predicted = m_remoteInputPredictor.predict(
+                        *authoritativeActor,
+                        tick,
+                        predictionTargetTick(tick),
+                        commands,
+                        m_remoteInputEnginePower,
+                        Property<float>(
+                            "physics.globalDirectionalDampening").get(),
+                        Property<float>(
+                            "physics.globalAngularDampening").get());
+                }
                 if (predicted) {
                     const auto actorSnapshot = std::find_if(
                         m_remoteReplicaSnapshots.begin(),

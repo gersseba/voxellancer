@@ -36,4 +36,3 @@ protected:
     int calculateStepCount();
     Transform calculateStep(int s, int stepCount) const;
 };
-
