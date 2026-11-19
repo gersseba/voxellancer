@@ -381,6 +381,10 @@ bool ShieldHitEvent::operator==(const ShieldHitEvent& other) const {
     return entity == other.entity &&
         tick == other.tick &&
         cell == other.cell &&
+        localImpactPosition.x == other.localImpactPosition.x &&
+        localImpactPosition.y == other.localImpactPosition.y &&
+        localImpactPosition.z == other.localImpactPosition.z &&
+        impactColor == other.impactColor &&
         absorbedDamage == other.absorbedDamage;
 }
 
@@ -817,6 +821,9 @@ bool encodeShieldHitEvent(
 ) {
     if (!event.entity.valid() ||
         !std::isfinite(event.absorbedDamage) ||
+        !std::isfinite(event.localImpactPosition.x) ||
+        !std::isfinite(event.localImpactPosition.y) ||
+        !std::isfinite(event.localImpactPosition.z) ||
         event.absorbedDamage <= 0.0f) {
         return false;
     }
@@ -829,7 +836,11 @@ bool encodeShieldHitEvent(
     writeU32(packet.data() + 18, static_cast<std::uint32_t>(event.cell.x));
     writeU32(packet.data() + 22, static_cast<std::uint32_t>(event.cell.y));
     writeU32(packet.data() + 26, static_cast<std::uint32_t>(event.cell.z));
-    writeFloat(packet.data() + 30, event.absorbedDamage);
+    writeFloat(packet.data() + 30, event.localImpactPosition.x);
+    writeFloat(packet.data() + 34, event.localImpactPosition.y);
+    writeFloat(packet.data() + 38, event.localImpactPosition.z);
+    writeU32(packet.data() + 42, event.impactColor);
+    writeFloat(packet.data() + 46, event.absorbedDamage);
     return true;
 }
 
@@ -854,9 +865,17 @@ DecodeError decodeShieldHitEvent(
         readI32(data + 18),
         readI32(data + 22),
         readI32(data + 26));
-    decoded.absorbedDamage = readFloat(data + 30);
+    decoded.localImpactPosition = glm::vec3(
+        readFloat(data + 30),
+        readFloat(data + 34),
+        readFloat(data + 38));
+    decoded.impactColor = readU32(data + 42);
+    decoded.absorbedDamage = readFloat(data + 46);
     if (!decoded.entity.valid() ||
         !std::isfinite(decoded.absorbedDamage) ||
+        !std::isfinite(decoded.localImpactPosition.x) ||
+        !std::isfinite(decoded.localImpactPosition.y) ||
+        !std::isfinite(decoded.localImpactPosition.z) ||
         decoded.absorbedDamage <= 0.0f) {
         return DecodeError::InvalidValue;
     }

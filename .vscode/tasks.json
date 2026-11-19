@@ -44,6 +44,27 @@
             }
         },
         {
+            "label": "Start Shield Showcase Scenario",
+            "type": "process",
+            "command": "powershell.exe",
+            "args": [
+                "-NoProfile",
+                "-ExecutionPolicy",
+                "Bypass",
+                "-File",
+                "${workspaceFolder}\\tools\\agent-check.ps1",
+                "-Mode",
+                "Run",
+                "-Scenario",
+                "ShieldShowcase"
+            ],
+            "problemMatcher": [],
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
+            }
+        },
+        {
             "label": "Start Local Client with Integrated Server (Large Combat Benchmark)",
             "type": "process",
             "command": "powershell.exe",

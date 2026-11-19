@@ -30,6 +30,7 @@
 #include "scenarios/battlescenario.h"
 #include "server/tcpserver.h"
 #include "simulation/simulationsession.h"
+#include "utils/simulationtickrunner.h"
 #include "voxel/voxel.h"
 #include "voxel/specialvoxels/hardpointvoxel.h"
 #include "world/god.h"
@@ -187,7 +188,7 @@ go_bandit([]() {
             AssertThat(session.tickIndex(), Equals(static_cast<std::uint64_t>(0)));
 
             for (int tick = 0; tick < 3; ++tick) {
-                session.advance(1.0 / 60.0);
+                session.advance(SimulationTickRunner::TickDurationSeconds);
                 server.poll();
             }
             AssertThat(firstClient.poll(), IsTrue());
@@ -295,7 +296,7 @@ go_bandit([]() {
             for (int attempt = 0; attempt < 100 && !inputAccepted; ++attempt) {
                 AssertThat(client.poll(), IsTrue());
                 server.poll();
-                session.advance(1.0 / 60.0);
+                session.advance(SimulationTickRunner::TickDurationSeconds);
                 server.poll();
                 AssertThat(client.poll(), IsTrue());
                 for (const auto& acknowledgement : client.drainAcknowledgements()) {
@@ -311,14 +312,14 @@ go_bandit([]() {
             for (int tick = 0;
                  tick < 30 &&
                     (client.snapshotSequence() <= initialSnapshotSequence ||
-                     client.snapshotTick() < commandTick);
+                      client.snapshotTick() <= commandTick);
                  ++tick) {
-                session.advance(1.0 / 60.0);
+                session.advance(SimulationTickRunner::TickDurationSeconds);
                 server.poll();
                 AssertThat(client.poll(), IsTrue());
             }
             AssertThat(client.snapshotSequence() > initialSnapshotSequence, IsTrue());
-            AssertThat(client.snapshotTick() >= commandTick, IsTrue());
+            AssertThat(client.snapshotTick() > commandTick, IsTrue());
             AssertThat(client.replicaState().size(), Equals(static_cast<std::size_t>(1)));
             AssertThat(
                 ship->components().engineState().directional().x,
@@ -336,7 +337,7 @@ go_bandit([]() {
                 std::this_thread::sleep_for(std::chrono::milliseconds(1));
             }
             AssertThat(server.clientCount(), Equals(static_cast<std::size_t>(0)));
-            session.advance(1.0 / 60.0);
+            session.advance(SimulationTickRunner::TickDurationSeconds);
             AssertThat(world->worldObject(*client.actor()) == nullptr, IsTrue());
         });
 
@@ -366,11 +367,11 @@ go_bandit([]() {
             AssertThat(client.sendInput(lateCommand), IsTrue());
             AssertThat(client.poll(), IsTrue());
             for (int tick = 0; tick < 5; ++tick) {
-                session.advance(1.0 / 60.0);
+                session.advance(SimulationTickRunner::TickDurationSeconds);
             }
 
             server.poll();
-            session.advance(1.0 / 60.0);
+            session.advance(SimulationTickRunner::TickDurationSeconds);
             server.poll();
             AssertThat(client.poll(), IsTrue());
             const auto acknowledgements = client.drainAcknowledgements();
@@ -418,7 +419,7 @@ go_bandit([]() {
             bool inputAccepted = false;
             for (int attempt = 0; attempt < 100 && !inputAccepted; ++attempt) {
                 server.poll();
-                session.advance(1.0 / 60.0);
+                session.advance(SimulationTickRunner::TickDurationSeconds);
                 server.poll();
                 AssertThat(client.poll(), IsTrue());
                 for (const auto& acknowledgement : client.drainAcknowledgements()) {
@@ -437,7 +438,7 @@ go_bandit([]() {
 
             while (session.tickIndex() <= command.tick) {
                 const bool scheduledTick = session.tickIndex() == command.tick;
-                session.advance(1.0 / 60.0);
+                session.advance(SimulationTickRunner::TickDurationSeconds);
                 server.poll();
                 AssertThat(client.poll(), IsTrue());
                 if (!scheduledTick) {
@@ -498,7 +499,7 @@ go_bandit([]() {
             AssertThat(predicted.has_value(), IsTrue());
 
             while (session.tickIndex() < command.tick + 2) {
-                session.advance(1.0 / 60.0);
+                session.advance(SimulationTickRunner::TickDurationSeconds);
             }
             std::vector<voxellancer::protocol::EntitySnapshot> serverState;
             AssertThat(session.createSnapshotState(serverState), IsTrue());
@@ -580,7 +581,7 @@ go_bandit([]() {
             AssertThat(predictedWithoutCollision.has_value(), IsTrue());
 
             for (int tick = 0; tick < 8; ++tick) {
-                session.advance(1.0 / 60.0);
+                session.advance(SimulationTickRunner::TickDurationSeconds);
             }
             AssertThat(
                 world.worldLogic().voxelCollisionPairCount() > 0,
@@ -667,7 +668,7 @@ go_bandit([]() {
                 AssertThat(firstClient.poll(), IsTrue());
                 AssertThat(secondClient.poll(), IsTrue());
                 server.poll();
-                session.advance(1.0 / 60.0);
+                session.advance(SimulationTickRunner::TickDurationSeconds);
                 server.poll();
                 AssertThat(firstClient.poll(), IsTrue());
                 AssertThat(secondClient.poll(), IsTrue());
@@ -686,14 +687,14 @@ go_bandit([]() {
             AssertThat(inputAccepted, IsTrue());
 
             for (int attempt = 0;
-                 attempt < 30 && firstClient.snapshotTick() < command.tick;
+                 attempt < 30 && firstClient.snapshotTick() <= command.tick;
                  ++attempt) {
-                session.advance(1.0 / 60.0);
+                session.advance(SimulationTickRunner::TickDurationSeconds);
                 server.poll();
                 AssertThat(firstClient.poll(), IsTrue());
                 AssertThat(secondClient.poll(), IsTrue());
             }
-            AssertThat(firstClient.snapshotTick() >= command.tick, IsTrue());
+            AssertThat(firstClient.snapshotTick() > command.tick, IsTrue());
 
             Ship* controlledShip = static_cast<Ship*>(
                 world.worldObject(*firstClient.actor()));
@@ -712,7 +713,7 @@ go_bandit([]() {
                 std::this_thread::sleep_for(std::chrono::milliseconds(1));
             }
             AssertThat(server.clientCount(), Equals(static_cast<std::size_t>(1)));
-            session.advance(1.0 / 60.0);
+            session.advance(SimulationTickRunner::TickDurationSeconds);
             server.poll();
             AssertThat(
                 world.worldObject(*secondClient.actor()) != nullptr,
@@ -787,7 +788,7 @@ go_bandit([]() {
                 ship->components().engineSlots().front()->engine();
             ship->components().engineSlots().front()->setEngine(nullptr);
             for (int attempt = 0; attempt < 5; ++attempt) {
-                session.advance(1.0 / 60.0);
+                session.advance(SimulationTickRunner::TickDurationSeconds);
                 server.poll();
                 std::this_thread::sleep_for(std::chrono::milliseconds(1));
             }
@@ -805,7 +806,7 @@ go_bandit([]() {
             ship->components().engineSlots().front()->setEngine(originalEngine);
             bool engineEquipped = false;
             for (int attempt = 0; attempt < 12 && !engineEquipped; ++attempt) {
-                session.advance(1.0 / 60.0);
+                session.advance(SimulationTickRunner::TickDurationSeconds);
                 server.poll();
                 AssertThat(client.poll(), IsTrue());
                 engineEquipped = hasEquipment(
@@ -817,7 +818,7 @@ go_bandit([]() {
             ship->components().engineSlots().front()->setEngine(nullptr);
             bool engineUnequipped = false;
             for (int attempt = 0; attempt < 12 && !engineUnequipped; ++attempt) {
-                session.advance(1.0 / 60.0);
+                session.advance(SimulationTickRunner::TickDurationSeconds);
                 server.poll();
                 AssertThat(client.poll(), IsTrue());
                 engineUnequipped = hasEquipment(
@@ -870,7 +871,7 @@ go_bandit([]() {
                  ++attempt) {
                 AssertThat(client.poll(), IsTrue());
                 server.poll();
-                session.advance(1.0 / 60.0);
+                session.advance(SimulationTickRunner::TickDurationSeconds);
                 server.poll();
                 AssertThat(client.poll(), IsTrue());
                 for (const auto& acknowledgement : client.drainAcknowledgements()) {
@@ -925,7 +926,7 @@ go_bandit([]() {
                 DamageImpact(ship, voxel, glm::vec3(2.0f, 0.0f, 0.0f), 1.0f)
             });
             for (int tick = 0; tick < 3; ++tick) {
-                session.advance(1.0 / 60.0);
+                session.advance(SimulationTickRunner::TickDurationSeconds);
             }
             server.poll();
             for (int attempt = 0;
@@ -959,6 +960,7 @@ go_bandit([]() {
             World* world = World::instance(World::Mode::Server);
 
             Ship* ship = new Ship(*world);
+            ship->setShieldType(ShieldType::Hull);
             ship->addVoxel(new Voxel(glm::ivec3(0), 0xffffff, 1.0f, 10.0f));
             std::shared_ptr<ShieldSlot> shieldSlot =
                 std::make_shared<ShieldSlot>(&ship->components(), 0);
@@ -985,7 +987,7 @@ go_bandit([]() {
                 DamageImpact(ship, voxel, glm::vec3(2.0f, 0.0f, 0.0f), 1.0f)
             });
             for (int tick = 0; tick < 3; ++tick) {
-                session.advance(1.0 / 60.0);
+                session.advance(SimulationTickRunner::TickDurationSeconds);
             }
             server.poll();
             std::vector<voxellancer::protocol::ShieldHitEvent> events;
@@ -1000,6 +1002,10 @@ go_bandit([]() {
             AssertThat(events.size(), Equals(static_cast<std::size_t>(1)));
             AssertThat(events.front().entity, Equals(entity));
             AssertThat(events.front().cell, Equals(glm::ivec3(0)));
+            AssertThat(events.front().localImpactPosition.x, Equals(0.0f));
+            AssertThat(events.front().localImpactPosition.y, Equals(0.8f));
+            AssertThat(events.front().localImpactPosition.z, Equals(0.0f));
+            AssertThat(events.front().impactColor, Equals(0xffffffu));
             AssertThat(events.front().absorbedDamage, Equals(2.0f));
             const auto content = std::find_if(
                 client.entityContents().begin(),
@@ -1036,7 +1042,7 @@ go_bandit([]() {
             }
             AssertThat(client.actor().has_value(), IsTrue());
 
-            session.advance(1.0 / 60.0);
+            session.advance(SimulationTickRunner::TickDurationSeconds);
             std::shared_ptr<Mission> mission = std::make_shared<Mission>(
                 world, "test/data/mission-state-replication.lua");
             world.missionSystem().addMission(mission);
@@ -1117,7 +1123,7 @@ go_bandit([]() {
             world->worldLogic().processDamageImpacts({
                 DamageImpact(target, voxel, glm::vec3(2.0f, 0.0f, 0.0f), 1.0f)
             });
-            session.advance(1.0 / 60.0);
+            session.advance(SimulationTickRunner::TickDurationSeconds);
             server.poll();
             AssertThat(client.poll(), IsTrue());
 
@@ -1179,7 +1185,7 @@ go_bandit([]() {
                 DamageImpact(ship, destroyedVoxel, glm::vec3(2.0f, 0.0f, 0.0f), 1.0f)
             });
             for (int tick = 0; tick < 3; ++tick) {
-                session.advance(1.0 / 60.0);
+                session.advance(SimulationTickRunner::TickDurationSeconds);
             }
             server.poll();
             for (int attempt = 0;
@@ -1256,7 +1262,7 @@ go_bandit([]() {
 
             firstClient.disconnect();
             server.poll();
-            session.advance(1.0 / 60.0);
+            session.advance(SimulationTickRunner::TickDurationSeconds);
 
             TcpClient reconnectingClient;
             AssertThat(reconnectingClient.connectLocal(server.port()), IsTrue());
@@ -1280,7 +1286,7 @@ go_bandit([]() {
             for (int attempt = 0; attempt < 100 && !accepted; ++attempt) {
                 AssertThat(reconnectingClient.poll(), IsTrue());
                 server.poll();
-                session.advance(1.0 / 60.0);
+                session.advance(SimulationTickRunner::TickDurationSeconds);
                 server.poll();
                 AssertThat(reconnectingClient.poll(), IsTrue());
                 for (const auto& acknowledgement :
@@ -1343,7 +1349,7 @@ go_bandit([]() {
             };
 
             for (int tick = 0; tick < 3; ++tick) {
-                session.advance(1.0 / 60.0);
+                session.advance(SimulationTickRunner::TickDurationSeconds);
                 server.poll();
                 AssertThat(client.poll(), IsTrue());
             }
@@ -1375,7 +1381,7 @@ go_bandit([]() {
 
             distantShip->transform().setPosition(glm::vec3(120.0f, 0.0f, 0.0f));
             for (int tick = 0; tick < 3; ++tick) {
-                session.advance(1.0 / 60.0);
+                session.advance(SimulationTickRunner::TickDurationSeconds);
                 server.poll();
                 AssertThat(client.poll(), IsTrue());
             }
@@ -1392,7 +1398,7 @@ go_bandit([]() {
 
             distantShip->transform().setPosition(glm::vec3(1000.0f, 0.0f, 0.0f));
             for (int tick = 0; tick < 3; ++tick) {
-                session.advance(1.0 / 60.0);
+                session.advance(SimulationTickRunner::TickDurationSeconds);
                 server.poll();
                 AssertThat(client.poll(), IsTrue());
             }

@@ -13,7 +13,7 @@ namespace {
     using voxellancer::protocol::InputCommand;
     using voxellancer::protocol::EntitySnapshot;
 
-    constexpr std::uint64_t MaxPredictionTicks = 8;
+    constexpr std::uint64_t MaxPredictionTicks = 4;
 
     float normalizedAxis(std::int16_t value) {
         const float divisor = value < 0 ? 32768.0f : 32767.0f;

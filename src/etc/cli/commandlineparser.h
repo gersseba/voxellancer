@@ -19,6 +19,7 @@ public:
     bool serverPreview() const;
     bool multiplayerClient() const;
     bool localSingleplayer() const;
+    std::string scenario() const;
     BenchmarkMode benchmarkMode() const;
     std::string benchmarkRunId() const;
     std::string benchmarkClientId() const;

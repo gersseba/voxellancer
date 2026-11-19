@@ -74,7 +74,7 @@ private:
     static constexpr std::size_t MaxIncomingBytes = 4096;
     static constexpr std::size_t MaxOutboundBytes = 1024 * 1024;
     static constexpr std::size_t MaxDeferredOutboundBytes = 16 * 1024 * 1024;
-    static constexpr std::uint64_t SnapshotIntervalTicks = 3;
+    static constexpr std::uint64_t SnapshotIntervalTicks = 2;
 
     World& m_world;
     SimulationSession& m_session;

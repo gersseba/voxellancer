@@ -149,7 +149,9 @@ void LargeCombatScenario::populateLargeCombat() {
 
 #ifndef VOXELLANCER_HEADLESS_SERVER
     if (m_world->hasPresentation()) {
-        m_world->player().setShip(teams[0].front());
+        Ship* playerShip = teams[0].front();
+        playerShip->transform().setPosition(glm::vec3(-200.0f, 0.0f, 0.0f));
+        m_world->player().setShip(playerShip);
     }
 #endif
 }

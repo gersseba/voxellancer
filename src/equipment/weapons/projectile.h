@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cstdint>
+
 #include "sound/soundproperties.h"
 
 #include "worldobject/worldobject.h"
@@ -24,10 +26,12 @@ public:
 
     const SoundProperties& hitSound() const;
     void setHitSound(const SoundProperties& hitSound);
+    virtual std::uint32_t impactColor() const;
 
     virtual void update(float deltaSec) override;
 
     virtual void onCollision() override;
+    void onShieldImpact();
     virtual void onSpawnFail() override;
 
 
@@ -40,4 +44,3 @@ protected:
     virtual void onLifetimeOver();
     virtual void spawnExplosion() = 0;
 };
-

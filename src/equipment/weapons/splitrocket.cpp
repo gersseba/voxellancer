@@ -190,3 +190,7 @@ void SplitRocket::spawnExplosion() {
 
     generator.spawn();
 }
+
+std::uint32_t SplitRocket::impactColor() const {
+    return 0xFFAA00;
+}

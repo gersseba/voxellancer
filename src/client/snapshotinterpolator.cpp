@@ -39,6 +39,10 @@ void SnapshotInterpolator::reset() {
     m_currentState.clear();
 }
 
+bool SnapshotInterpolator::hasInterpolationPair() const {
+    return m_initialized && m_previousTick < m_currentTick;
+}
+
 bool SnapshotInterpolator::push(
     std::uint64_t tick,
     const std::vector<voxellancer::protocol::EntitySnapshot>& state
@@ -103,12 +107,11 @@ std::optional<voxellancer::protocol::EntitySnapshot> SnapshotInterpolator::sampl
             : std::nullopt;
     }
     if (renderTick >= static_cast<double>(m_currentTick)) {
-        constexpr double MaxPredictionTicks = 3.0;
-        const double predictionTicks = std::min(
-            renderTick - static_cast<double>(m_currentTick),
-            MaxPredictionTicks);
-        const float predictionSeconds = static_cast<float>(
-            predictionTicks / SimulationTickRunner::TickRate);
+        constexpr double MaxPredictionSeconds = 0.05;
+        const float predictionSeconds = static_cast<float>(std::min(
+            (renderTick - static_cast<double>(m_currentTick)) /
+                SimulationTickRunner::TickRate,
+            MaxPredictionSeconds));
         EntitySnapshot predicted = *current;
         predicted.position += current->directionalVelocity * predictionSeconds;
         predicted.orientation = glm::normalize(

@@ -6,7 +6,7 @@
 
 class SimulationTickRunner {
 public:
-    static constexpr double TickRate = 60.0;
+    static constexpr double TickRate = 30.0;
     static constexpr double TickDurationSeconds = 1.0 / TickRate;
     static constexpr std::uint32_t DefaultMaxTicksPerAdvance = 5;
 

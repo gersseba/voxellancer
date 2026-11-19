@@ -2,8 +2,12 @@
 
 #include "equipment.h"
 
+#include <glm/glm.hpp>
+
+#include "shieldtype.h"
 
 class ShieldSlot;
+class WorldObject;
 
 class Shield : public Equipment {
 public:
@@ -19,8 +23,23 @@ public:
     float maxHP() const;
     void setMaxHP(float maxHP);
 
+    int maxHits() const;
+    void setMaxHits(int maxHits);
+
     float regeneration() const;
     void setRegeneration(float regeneration);
+
+    bool depleted() const;
+    bool registerHit();
+    bool intersectsSegment(
+        WorldObject& protectedObject,
+        ShieldType shieldType,
+        const glm::vec3& start,
+        const glm::vec3& end,
+        float projectileRadius,
+        glm::ivec3& impactCell,
+        float& hitParameter
+    ) const;
 
     float compensate(float damage);
 
@@ -32,7 +51,8 @@ protected:
     float m_regeneration;
     float m_maxHP;
     ShieldSlot* m_shieldSlot;
+    unsigned int m_hitCount;
+    int m_maxHits;
 
     virtual void onDamageTaken(float damage);
 };
-

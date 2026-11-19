@@ -36,7 +36,6 @@ void IntroScene::drawImpl(const Camera& camera) const {
 
     m_voxelRenderer->prepareDraw(camera, false);
     VoxelFont::instance()->drawString("Voxellancer", glm::vec3(0, 0.5f, -1) * 40.f, glm::quat(), FontSize::SIZE5x7, 0.4f, FontAlign::CENTER);
-    VoxelFont::instance()->drawString("Pre Alpha Version", glm::vec3(0, 0.3f, -1) * 40.f, glm::quat(), FontSize::SIZE5x7, 0.2f, FontAlign::CENTER);
 
     int lineNum = 0;
     for (const std::string& line : m_intro.lines()) {
@@ -46,4 +45,3 @@ void IntroScene::drawImpl(const Camera& camera) const {
 
     m_voxelRenderer->afterDraw();
 }
-

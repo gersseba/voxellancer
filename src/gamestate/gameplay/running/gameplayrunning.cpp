@@ -22,6 +22,7 @@
 #include "camera/camerahead.h"
 #include "camera/cameradolly.h"
 #include "world/world.h"
+#include "world/worldlogic.h"
 #include "player.h"
 #include "worldobject/ship.h"
 #include "sound/soundmanager.h"
@@ -29,7 +30,9 @@
 #ifndef VOXELLANCER_HEADLESS_SERVER
 namespace {
     constexpr std::size_t MaxPendingRemoteInputCommands = 128;
-    constexpr std::uint64_t RemoteInputLeadTicks = 4;
+    constexpr std::uint64_t RemoteInputLeadTicks = 2;
+    constexpr std::uint64_t RemoteInputPredictionTicks = 1;
+    constexpr double RemoteInterpolationDelaySeconds = 0.05;
 
     std::int16_t quantizeInputAxis(float value) {
         const float clamped = glm::clamp(value, -1.0f, 1.0f);
@@ -46,9 +49,10 @@ namespace {
 
     std::uint64_t predictionTargetTick(std::uint64_t tick) {
         const std::uint64_t commandTick = inputTargetTick(tick);
-        return commandTick > std::numeric_limits<std::uint64_t>::max() - 2
+        return commandTick > std::numeric_limits<std::uint64_t>::max() -
+                RemoteInputPredictionTicks
             ? std::numeric_limits<std::uint64_t>::max()
-            : commandTick + 2;
+            : commandTick + RemoteInputPredictionTicks;
     }
 }
 #endif
@@ -57,6 +61,7 @@ namespace {
 GamePlayRunning::GamePlayRunning(GamePlay* gamePlay, World& world):
     GameState("GamePlay Main", gamePlay),
     m_gamePlay(gamePlay),
+    m_world(world),
     m_pauseTrigger(GLFW_KEY_P),
     m_simulationSession(world)
 {
@@ -151,10 +156,10 @@ GamePlayRunning::drainRemoteVoxelDamageEvents() {
 }
 
 std::vector<voxellancer::protocol::ShieldHitEvent>
-GamePlayRunning::drainRemoteShieldHitEvents() {
+GamePlayRunning::drainShieldHitEvents() {
     return m_remotePreview
         ? m_remotePreview->drainShieldHitEvents()
-        : std::vector<voxellancer::protocol::ShieldHitEvent>();
+        : m_world.worldLogic().drainShieldHitEvents();
 }
 
 std::vector<voxellancer::protocol::MissionStateEvent>
@@ -314,13 +319,19 @@ void GamePlayRunning::update(float deltaSec) {
                     ++command;
                 }
             }
-            const double earliestBufferedTick = static_cast<double>(
-                tick > 3 ? tick - 3 : tick);
+            const double interpolationDelayTicks =
+                RemoteInterpolationDelaySeconds *
+                SimulationTickRunner::TickRate;
+            const double earliestBufferedTick = std::max(
+                0.0,
+                static_cast<double>(tick) - interpolationDelayTicks);
             if (!m_remoteRenderTick) {
                 m_remoteRenderTick = earliestBufferedTick;
             } else {
-                *m_remoteRenderTick += static_cast<double>(deltaSec) *
-                    SimulationTickRunner::TickRate;
+                if (m_remotePreview->interpolationReady()) {
+                    *m_remoteRenderTick += static_cast<double>(deltaSec) *
+                        SimulationTickRunner::TickRate;
+                }
                 *m_remoteRenderTick = std::max(
                     *m_remoteRenderTick, earliestBufferedTick);
             }
@@ -433,10 +444,17 @@ void GamePlayRunning::update(float deltaSec) {
 
 void GamePlayRunning::onEntered() {
     GameState::onEntered();
+#ifndef VOXELLANCER_HEADLESS_SERVER
+    m_world.worldLogic().setShieldHitEventReplicationEnabled(
+        !m_remotePreview);
+#endif
     m_gamePlay->soundManager().activate();
 }
 
 void GamePlayRunning::onLeft() {
     GameState::onLeft();
+#ifndef VOXELLANCER_HEADLESS_SERVER
+    m_world.worldLogic().setShieldHitEventReplicationEnabled(false);
+#endif
     m_gamePlay->soundManager().deactivate();
 }

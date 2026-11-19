@@ -43,9 +43,10 @@ cmake --build build/agent-vcpkg-vs18-stable --target protocol_tests --config Rel
 .\build\agent-vcpkg-vs18-stable\Release\protocol_tests.exe
 ```
 
-In VS Code, **Terminal: Run Task** contains four runtime tasks: **Start Server**,
-**Start Client**, **Start Local Client with Integrated Server (Large Combat
-Benchmark)**, and **Start Server and Two Clients (Large Combat Benchmark)**.
+In VS Code, **Terminal: Run Task** contains runtime tasks to start the server or
+client, start the **Shield Showcase Scenario**, or run either large-combat
+benchmark. The shield showcase task builds and launches the graphical client
+directly in the showcase.
 Run `.\tools\agent-check.ps1 -Mode Test` to build and execute the test suite.
 
 ## Headless simulation server
@@ -77,12 +78,14 @@ test suite.
 waits in a lobby before creating the selected scenario and assigning player
 ships. Without a target it starts the scenario immediately. Normal server
 operation prints per-client byte and visibility counters once per second.
-The version 17 protocol defines generation-protected entity IDs, tick-stamped
+The version 18 protocol defines generation-protected entity IDs, tick-stamped
 input commands, versioned snapshot deltas with entity kind and shield/hull
 fractions, uniform scale, and maximum mass, full voxel content, initial
 equipment slot/key state for newly visible entities, stable ship-definition
 keys, authoritative voxel damage/removal and shield-absorption events, and
 mission state notifications, and lobby player counts/world-start state.
+Shield-hit events include ship-local impact coordinates and projectile color
+for accurate client effects.
 Entity-content definition keys and equipment keys are limited to 63 bytes.
 Snapshot records are 65 bytes, using a compressed quaternion, 8-bit shield and
 hull fractions, a 32-bit scale and maximum-mass value, and three signed

@@ -66,6 +66,22 @@ go_bandit([]() {
             AssertThat(interpolator.push(29, {second}), IsFalse());
         });
 
+        it("waits for two distinct ticks before reporting an interpolation pair", []() {
+            EntitySnapshot state;
+            state.id = EntityId{2, 1};
+
+            SnapshotInterpolator interpolator;
+            AssertThat(interpolator.hasInterpolationPair(), IsFalse());
+            AssertThat(interpolator.push(3, {state}), IsTrue());
+            AssertThat(interpolator.hasInterpolationPair(), IsFalse());
+            AssertThat(interpolator.push(3, {state}), IsTrue());
+            AssertThat(interpolator.hasInterpolationPair(), IsFalse());
+            AssertThat(interpolator.push(6, {state}), IsTrue());
+            AssertThat(interpolator.hasInterpolationPair(), IsTrue());
+            interpolator.reset();
+            AssertThat(interpolator.hasInterpolationPair(), IsFalse());
+        });
+
         it("rejects unordered or duplicate entity IDs", []() {
             EntitySnapshot first;
             first.id = EntityId{2, 1};

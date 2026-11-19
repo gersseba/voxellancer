@@ -119,6 +119,10 @@ std::uint64_t TcpClient::snapshotTick() const {
     return m_snapshotTick;
 }
 
+bool TcpClient::interpolationReady() const {
+    return m_snapshotInterpolator.hasInterpolationPair();
+}
+
 const std::vector<voxellancer::protocol::EntitySnapshot>& TcpClient::replicaState() const {
     return m_replicaState;
 }

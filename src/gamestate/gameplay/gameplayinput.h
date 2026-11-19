@@ -7,7 +7,7 @@ class GamePlay;
 
 class GamePlayInput : public InputHandler {
 public:
-    GamePlayInput(GamePlay& gamePlay);
+    GamePlayInput(GamePlay& gamePlay, bool waitingOnly = false);
 
     void onResizeEvent(const unsigned int width, const unsigned int height);
     void onKeyEvent(int key, int scancode, int action, int mods) override;
@@ -18,5 +18,9 @@ public:
 
 protected:
     GamePlay& m_gamePlay;
-};
 
+    bool handleHudOverlayMouseButtonEvent(int button, int action, int mods);
+    bool mouseInputCaptured() const;
+
+    bool m_waitingOnly;
+};

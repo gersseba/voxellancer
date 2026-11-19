@@ -54,7 +54,7 @@ public:
     std::vector<voxellancer::protocol::VoxelDamageEvent>
     drainRemoteVoxelDamageEvents();
     std::vector<voxellancer::protocol::ShieldHitEvent>
-    drainRemoteShieldHitEvents();
+    drainShieldHitEvents();
     std::vector<voxellancer::protocol::MissionStateEvent>
     drainRemoteMissionStateEvents();
     std::vector<voxellancer::protocol::WeaponFiredEvent>
@@ -69,6 +69,7 @@ public:
 
 protected:
     GamePlay* m_gamePlay;
+    World& m_world;
     KeyTrigger m_pauseTrigger;
     SimulationSession m_simulationSession;
 #ifndef VOXELLANCER_HEADLESS_SERVER

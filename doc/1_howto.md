@@ -7,11 +7,16 @@ You can fly around, fight and destroy other ships or do missions.
 * W,A,S,D - direction
 * Left Mouse - fire
 * Right Mouse - click to select target / hold to change direction
+* M - toggle a free mouse cursor (mouse look is paused; cursor can leave the window)
 * Space - change to fight controls
 * Q, E - roll
 * R - Rocket
 * P - Pause
-* F1-F5 change scenarios
+* F1-F7 change scenarios; F7 loads the shield showcase
+
+When a HUD overlay is visible, press M to free the cursor, then click the overlay
+to focus it. Drag its header to move it, drag the lower-right corner to resize
+it, and use - to minimize or restore it. The X closes the overlay.
 
 You can configure the controls as you want. The instructions are currently only displayed in the console.
 

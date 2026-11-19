@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include <set>
 #include <memory>
 #include <unordered_map>
@@ -42,6 +43,7 @@ public:
 
     const std::unordered_map<glm::ivec3, Voxel*>& voxelMap() const;
     int voxelCount() const;
+    std::uint64_t voxelRevision() const;
 
 #ifndef VOXELLANCER_HEADLESS_SERVER
     VoxelRenderData* voxelRenderData();
@@ -58,5 +60,6 @@ protected:
 #endif
     std::unique_ptr<VoxelClusterBounds> m_bounds;
     float m_emissiveness;
+    std::uint64_t m_voxelRevision;
     Transform m_transform;
 };

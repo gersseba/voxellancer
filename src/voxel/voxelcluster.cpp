@@ -18,13 +18,13 @@
 
 
 VoxelCluster::VoxelCluster(float scale):
-    m_voxels(),
-    m_bounds(new VoxelClusterBounds(this)),
 #ifndef VOXELLANCER_HEADLESS_SERVER
     m_voxelRenderData(nullptr),
 #endif
-    m_transform(glm::vec3(0), scale),
-    m_emissiveness(0)
+    m_bounds(new VoxelClusterBounds(this)),
+    m_emissiveness(0),
+    m_voxelRevision(0),
+    m_transform(glm::vec3(0), scale)
 {
 }
 
@@ -72,6 +72,7 @@ void VoxelCluster::addVoxel(Voxel* voxel) {
     assert(m_voxels[voxel->cell()] == nullptr);
 
     m_voxels[voxel->cell()] = voxel;
+    ++m_voxelRevision;
     m_bounds->addVoxel(voxel);
 #ifndef VOXELLANCER_HEADLESS_SERVER
     if (m_voxelRenderData) {
@@ -85,6 +86,7 @@ void VoxelCluster::removeVoxel(Voxel* voxel) {
 
     m_bounds->removeVoxel(voxel); // Needs to be done before removal from m_voxels
     m_voxels.erase(voxel->cell());
+    ++m_voxelRevision;
 #ifndef VOXELLANCER_HEADLESS_SERVER
     if (m_voxelRenderData) {
         m_voxelRenderData->invalidate();
@@ -109,6 +111,10 @@ const std::unordered_map<glm::ivec3, Voxel*>& VoxelCluster::voxelMap() const {
 
 int VoxelCluster::voxelCount() const {
     return m_voxels.size();
+}
+
+std::uint64_t VoxelCluster::voxelRevision() const {
+    return m_voxelRevision;
 }
 
 float VoxelCluster::emissiveness() const {

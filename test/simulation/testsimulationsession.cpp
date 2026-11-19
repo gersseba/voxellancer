@@ -6,6 +6,7 @@
 #include "equipment/enginestate.h"
 #include "property/propertymanager.h"
 #include "simulation/simulationsession.h"
+#include "utils/simulationtickrunner.h"
 #include "voxel/voxel.h"
 #include "world/helper/damageimpact.h"
 #include "world/god.h"
@@ -55,13 +56,18 @@ go_bandit([]() {
                     voxellancer::protocol::InputCommand{1025}),
                 Equals(voxellancer::protocol::InputCommandResult::QueueFull)
             );
-            const std::uint32_t ticksRun = session.advance(1.0 / 30.0);
+            const std::uint32_t ticksRun = session.advance(
+                2.0 * SimulationTickRunner::TickDurationSeconds);
 
             AssertThat(world->hasPresentation(), IsFalse());
             AssertThat(presentationAccessRejected, IsTrue());
             AssertThat(ticksRun, Equals(static_cast<std::uint32_t>(2)));
             AssertThat(session.tickIndex(), Equals(static_cast<std::uint64_t>(2)));
-            AssertThat(world->deltaSec(), EqualsWithDelta(1.0f / 60.0f, 1e-7f));
+            AssertThat(
+                world->deltaSec(),
+                EqualsWithDelta(
+                    static_cast<float>(SimulationTickRunner::TickDurationSeconds),
+                    1e-7f));
             const auto acknowledgements = session.drainInputCommandAcknowledgements();
             AssertThat(acknowledgements.size(), Equals(static_cast<std::size_t>(1024)));
             AssertThat(
@@ -140,7 +146,9 @@ go_bandit([]() {
                 session.submitInputCommand(*actorId, command),
                 Equals(voxellancer::protocol::InputCommandResult::Queued)
             );
-            AssertThat(session.advance(1.0 / 60.0), Equals(static_cast<std::uint32_t>(1)));
+            AssertThat(
+                session.advance(SimulationTickRunner::TickDurationSeconds),
+                Equals(static_cast<std::uint32_t>(1)));
             const auto acknowledgements = session.drainInputCommandAcknowledgements();
             AssertThat(acknowledgements.size(), Equals(static_cast<std::size_t>(1)));
             AssertThat(
@@ -189,7 +197,9 @@ go_bandit([]() {
             });
 
             SimulationSession session(*world);
-            AssertThat(session.advance(1.0 / 60.0), Equals(static_cast<std::uint32_t>(1)));
+            AssertThat(
+                session.advance(SimulationTickRunner::TickDurationSeconds),
+                Equals(static_cast<std::uint32_t>(1)));
             const auto damageEvents = session.drainVoxelDamageEvents();
             AssertThat(damageEvents.size(), Equals(static_cast<std::size_t>(1)));
             AssertThat(damageEvents.front().hp, Equals(6.0f));

@@ -26,6 +26,7 @@ class SoundManager;
 class GamePlay: public GameState {
 public:
     GamePlay(Game* game);
+    ~GamePlay();
 
     Game* game();
 
@@ -39,6 +40,9 @@ public:
 #ifndef VOXELLANCER_HEADLESS_SERVER
     bool waitingForRemoteWorld() const;
     GamePlayFreecamInput& freecamInput();
+    bool mouseCursorFree() const;
+    void setMouseCursorFree(bool free);
+    void refreshMouseCursorMode();
 #endif
 
     virtual const Scene& scene() const override;
@@ -69,11 +73,14 @@ protected:
     GamePlayRunning* m_runningState;
     GamePlayPaused* m_pausedState;
 #ifndef VOXELLANCER_HEADLESS_SERVER
-    InputHandler m_waitingInput;
+    std::unique_ptr<GamePlayInput> m_waitingInput;
 #endif
     std::unique_ptr<GamePlayNormalInput> m_normalInput;
     std::unique_ptr<GamePlayFreecamInput> m_freecamInput;
 
     bool m_freecamActive;
+#ifndef VOXELLANCER_HEADLESS_SERVER
+    bool m_mouseCursorFree;
+#endif
     int m_initialScenario;
 };

@@ -208,6 +208,8 @@ go_bandit([]() {
                 EntityId{0x12345678, 0x90abcdef},
                 987654321,
                 glm::ivec3(-120, 45, -1),
+                glm::vec3(-12.5f, 45.25f, -0.75f),
+                0xff2200,
                 17.25f
             };
             ShieldHitEventPacket packet{};
@@ -226,10 +228,10 @@ go_bandit([]() {
                     packet.data(), packet.size() - 1, decoded),
                 Equals(DecodeError::InvalidLength)
             );
-            packet[30] = 0;
-            packet[31] = 0;
-            packet[32] = 0;
-            packet[33] = 0;
+            packet[46] = 0;
+            packet[47] = 0;
+            packet[48] = 0;
+            packet[49] = 0;
             AssertThat(
                 decodeShieldHitEvent(packet.data(), packet.size(), decoded),
                 Equals(DecodeError::InvalidValue)
@@ -237,7 +239,12 @@ go_bandit([]() {
             AssertThat(
                 encodeShieldHitEvent(
                     ShieldHitEvent{
-                        EntityId{1, 1}, 0, glm::ivec3(0), -1.0f
+                        EntityId{1, 1},
+                        0,
+                        glm::ivec3(0),
+                        glm::vec3(0.0f),
+                        0xff0000,
+                        -1.0f
                     },
                     packet),
                 Equals(false)
@@ -248,10 +255,28 @@ go_bandit([]() {
                         EntityId{1, 1},
                         0,
                         glm::ivec3(0),
-                        std::numeric_limits<float>::quiet_NaN()
-                    },
+                            glm::vec3(0.0f),
+                            0xff0000,
+                            std::numeric_limits<float>::quiet_NaN()
+                        },
                     packet),
-                Equals(false)
+                    Equals(false)
+            );
+            AssertThat(
+                    encodeShieldHitEvent(
+                        ShieldHitEvent{
+                            EntityId{1, 1},
+                            0,
+                            glm::ivec3(0),
+                            glm::vec3(
+                                std::numeric_limits<float>::quiet_NaN(),
+                                0.0f,
+                                0.0f),
+                            0xff0000,
+                            1.0f
+                        },
+                        packet),
+                    Equals(false)
             );
         });
 

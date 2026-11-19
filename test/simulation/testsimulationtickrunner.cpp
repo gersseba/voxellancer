@@ -22,13 +22,13 @@ go_bandit([]() {
                     runner.advance(frameDuration,
                         [&tickIndices](float tickDurationSeconds, std::uint64_t tickIndex) {
                             AssertThat(tickDurationSeconds,
-                                EqualsWithDelta(1.0f / 60.0f, 1e-7f));
+                                EqualsWithDelta(1.0f / 30.0f, 1e-7f));
                             tickIndices.push_back(tickIndex);
                         });
                 }
 
-                AssertThat(tickIndices.size(), Equals(static_cast<std::size_t>(60)));
-                AssertThat(runner.tickIndex(), Equals(static_cast<std::uint64_t>(60)));
+                AssertThat(tickIndices.size(), Equals(static_cast<std::size_t>(30)));
+                AssertThat(runner.tickIndex(), Equals(static_cast<std::uint64_t>(30)));
                 for (std::uint64_t tick = 0; tick < runner.tickIndex(); ++tick) {
                     AssertThat(tickIndices[static_cast<std::size_t>(tick)], Equals(tick));
                 }
@@ -39,7 +39,7 @@ go_bandit([]() {
             SimulationTickRunner runner(5);
             std::uint32_t callbackCount = 0;
 
-            const std::uint32_t firstAdvance = runner.advance(0.25,
+            const std::uint32_t firstAdvance = runner.advance(0.5,
                 [&callbackCount](float, std::uint64_t) {
                     ++callbackCount;
                 });

@@ -49,6 +49,11 @@ bool CommandLineParser::localSingleplayer() const {
     return isSet("local-singleplayer");
 }
 
+std::string CommandLineParser::scenario() const {
+    const auto option = m_options.find("scenario");
+    return option == m_options.end() ? std::string() : option->second;
+}
+
 BenchmarkMode CommandLineParser::benchmarkMode() const {
     if (isSet("benchmark-rendering") || isSet("benchmark-combat") ||
         isSet("benchmark-multiplayer")) {
@@ -75,7 +80,7 @@ bool CommandLineParser::isSet(const std::string& arg) const {
 
 void CommandLineParser::checkHelp() {
     if (isSet("help") || isSet("-help") || isSet("h")) {
-        glow::debug("Usage: voxellancer [-fullscreen] [-stereo] [-server-preview] [-multiplayer-client] [-local-singleplayer -benchmark-large-combat | -multiplayer-client -benchmark-large-combat]\n");
+        glow::debug("Usage: voxellancer [-fullscreen] [-stereo] [-server-preview] [-multiplayer-client] [-local-singleplayer -benchmark-large-combat | -multiplayer-client -benchmark-large-combat] [-scenario shield-showcase]\n");
         glow::debug("  -fullscreen  fullscreen mode");
         glow::debug("  -stereo      stereo rendering");
         glow::debug("  -nointro     [dev] don't show the intro");
@@ -85,6 +90,7 @@ void CommandLineParser::checkHelp() {
         glow::debug("  -benchmark-large-combat  benchmark client rendering and replication during a server-side 800-ship battle");
         glow::debug("  -benchmark-run-id <id>   group server and client benchmark reports");
         glow::debug("  -benchmark-client-id <id> identify this client in its benchmark report");
+        glow::debug("  -scenario shield-showcase  start the shield showcase scenario");
         exit(0);
     }
 }

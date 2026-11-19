@@ -9,6 +9,7 @@
 class SnapshotInterpolator {
 public:
     void reset();
+    bool hasInterpolationPair() const;
     bool push(
         std::uint64_t tick,
         const std::vector<voxellancer::protocol::EntitySnapshot>& state

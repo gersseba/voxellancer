@@ -115,8 +115,22 @@ Ship* WorldObjectBuilder::buildShip() {
         throw std::invalid_argument(
             "Unknown ship_type '" + shipType + "' for ship '" + m_name + "'.");
     }
+    const std::string shieldType = Property<std::string>(
+        m_name + ".general.shield_type");
+    ShieldType parsedShieldType;
+    if (shieldType == "HULL") {
+        parsedShieldType = ShieldType::Hull;
+    } else if (shieldType == "SPHERE") {
+        parsedShieldType = ShieldType::Sphere;
+    } else if (shieldType == "NONE") {
+        parsedShieldType = ShieldType::None;
+    } else {
+        throw std::invalid_argument(
+            "Unknown shield_type '" + shieldType + "' for ship '" + m_name + "'.");
+    }
     Ship* ship = makeWorldObject<Ship>(*m_world);
     ship->setShipType(parsedShipType);
+    ship->setShieldType(parsedShieldType);
     if (ship->crucialVoxel() == nullptr) {
         glow::warning("WorldObjectBuilder: ship %; has no crucial voxel", m_name);
     }

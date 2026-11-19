@@ -62,8 +62,8 @@ WorldObject* TargetSelector::findNextTarget(IteratorType begin, IteratorType end
 }
 
 std::function<bool(WorldObject*)> TargetSelector::canLockOnPredicate() {
-    return [] (WorldObject* worldObject) {
-        return worldObject->info().canLockOn();
+    return [this] (WorldObject* worldObject) {
+        return worldObject != m_player->ship() &&
+            worldObject->info().canLockOn();
     };
 }
-

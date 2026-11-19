@@ -114,6 +114,7 @@ void WorldLogic::setVoxelReplicationEnabled(bool enabled) {
 }
 
 void WorldLogic::setShieldHitEventReplicationEnabled(bool enabled) {
+    m_mover.setShieldHitEventReplicationEnabled(enabled);
     m_damager.setShieldHitEventReplicationEnabled(enabled);
 }
 
@@ -167,7 +168,12 @@ WorldLogic::drainVoxelDamageEvents() {
 
 std::vector<voxellancer::protocol::ShieldHitEvent>
 WorldLogic::drainShieldHitEvents() {
-    return m_damager.drainShieldHitEvents();
+    std::vector<voxellancer::protocol::ShieldHitEvent> events =
+        m_mover.drainShieldHitEvents();
+    std::vector<voxellancer::protocol::ShieldHitEvent> damageEvents =
+        m_damager.drainShieldHitEvents();
+    events.insert(events.end(), damageEvents.begin(), damageEvents.end());
+    return events;
 }
 
 std::vector<voxellancer::protocol::WeaponFiredEvent>

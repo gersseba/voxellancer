@@ -98,7 +98,7 @@ percentiles, missed deadlines, entity counts, and backlog as JSON. With
 In lobby mode, listener acceptance and lobby status delivery run before any
 scenario population; `SimulationSession::advance` is not called until the
 target player count has connected and actor assignment is complete.
-`SimulationTickRunner` advances authoritative state at 60 Hz. It runs at most
+`SimulationTickRunner` advances authoritative state at 30 Hz. It runs at most
 five catch-up ticks per `advance` call and retains any remaining accumulator as
 backlog rather than skipping simulation time. The server loop currently runs
 simulation and network polling on the same thread.
@@ -108,7 +108,7 @@ simulation and network polling on the same thread.
 The transport is an SFML TCP stream. TCP provides reliable, ordered delivery;
 there is no separate unreliable snapshot channel. Each application frame has a
 four-byte little-endian payload length followed by a packet with protocol
-version 17 and a message-type byte. There is no version negotiation: peers with
+version 18 and a message-type byte. There is no version negotiation: peers with
 different protocol versions reject each other's packets.
 
 On connection, the server assigns a generation-protected entity ID for a ship,
@@ -130,7 +130,7 @@ tick range, and queue bounds. It acknowledges the result and applies accepted
 state at a simulation tick boundary; it never accepts client transforms, hits,
 or damage as authoritative facts.
 
-Snapshots are emitted every three simulation ticks (20 Hz). Each client has a
+Snapshots are emitted every two simulation ticks (15 Hz). Each client has a
 baseline and receives entity additions/changes/removals relative to that
 baseline. The server filters snapshots to entities within a 650-unit radius of
 the controlled actor, while always including that actor. A snapshot entity
@@ -141,10 +141,12 @@ Newly visible entities receive a separate content packet with a stable
 definition key, voxel coordinates/color/density/current and maximum HP, and
 equipment slot kind/group/cell/key. Later equipment changes use equipment-only
 updates. Damage and removal events update the client's existing voxel
-baseline; weapon, shield, and mission events carry authoritative event data for
-presentation. If a client cannot apply a snapshot delta against its baseline,
-it requests a full resynchronization. The server resets that client's baseline
-and sends a fresh full snapshot and content.
+baseline; shield-hit events include ship-local impact coordinates and
+projectile color for accurate presentation. Weapon and mission events carry
+their authoritative event data for presentation. If a client cannot apply a
+snapshot delta against its baseline, it requests a full resynchronization. The
+server resets that client's baseline and sends a fresh full snapshot and
+content.
 
 The implementation applies explicit bounds to clients, frame sizes,
 replicated voxel/equipment state, event queues, and outgoing data. The server
@@ -174,6 +176,16 @@ updates their transforms and voxel HP, and resolves engine/weapon visuals from
 the local equipment definitions. Server events drive bounded presentation
 effects. These proxies and effects do not change authoritative simulation
 state.
+
+Each ship's `[general]` INI section selects `shield_type=HULL`, `SPHERE`, or
+`NONE`. Hull shields cover exposed voxels; sphere shields enclose the ship's
+bounds. Active shields intercept projectiles, absorb collision damage before it
+reaches hull voxels, and permanently deplete after their configured hit capacity
+(five by default). The shield showcase sets all three shields to 100 hits.
+Active shields emit faint, shape-specific cyan shimmer particles while idle;
+shield-hit events create expanding cyan ripples in both local play and remote
+previews. The shield showcase scenario (F7) places the player in a fighter
+between two friendly cruisers, one using each shield shape.
 
 ## Remaining boundaries and validation
 

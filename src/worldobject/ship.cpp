@@ -18,7 +18,8 @@ Ship::Ship(World& world):
     m_world(&world),
     m_squadLogic(new SquadLogic(*this)),
     m_aiUpdatePhase(0),
-    m_shipType(ShipType::Fighter)
+    m_shipType(ShipType::Fighter),
+    m_shieldType(ShieldType::None)
 {
     setWorld(world);
     m_info->setShowOnHud(true);
@@ -75,4 +76,12 @@ ShipType Ship::shipType() const {
 
 void Ship::setShipType(ShipType shipType) {
     m_shipType = shipType;
+}
+
+ShieldType Ship::shieldType() const {
+    return m_shieldType;
+}
+
+void Ship::setShieldType(ShieldType shieldType) {
+    m_shieldType = shieldType;
 }

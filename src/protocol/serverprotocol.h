@@ -14,7 +14,7 @@
 namespace voxellancer {
 namespace protocol {
 
-constexpr std::uint8_t ProtocolVersion = 17;
+constexpr std::uint8_t ProtocolVersion = 18;
 constexpr std::size_t EntityIdPacketSize = 10;
 constexpr std::size_t InputCommandPacketSize = 40;
 constexpr std::size_t InputCommandAcknowledgementPacketSize = 11;
@@ -26,7 +26,7 @@ constexpr std::size_t EntityVoxelStateSize = 28;
 constexpr std::size_t EntityEquipmentStateHeaderSize = 16;
 constexpr std::size_t EntityEquipmentSnapshotHeaderSize = 12;
 constexpr std::size_t WeaponFiredEventPacketSize = 32;
-constexpr std::size_t ShieldHitEventPacketSize = 34;
+constexpr std::size_t ShieldHitEventPacketSize = 50;
 constexpr std::size_t MissionStateEventPacketSize = 75;
 constexpr std::size_t MaxEquipmentKeyBytes = 63;
 constexpr std::size_t MaxEntityDefinitionKeyBytes = 63;
@@ -97,6 +97,8 @@ struct ShieldHitEvent {
     EntityId entity;
     std::uint64_t tick = 0;
     glm::ivec3 cell{0};
+    glm::vec3 localImpactPosition{0.0f};
+    std::uint32_t impactColor = 0xffffff;
     float absorbedDamage = 0.0f;
 
     bool operator==(const ShieldHitEvent& other) const;

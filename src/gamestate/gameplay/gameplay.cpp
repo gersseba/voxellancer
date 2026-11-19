@@ -1,5 +1,8 @@
 #include "gameplay.h"
 
+#include <GL/glew.h>
+#include <GLFW/glfw3.h>
+
 #include "gamestate/game.h"
 #include "gamestate/gameplay/running/gameplayrunning.h"
 #include "gamestate/gameplay/paused/gameplaypaused.h"
@@ -20,6 +23,7 @@
 #include "scenarios/scriptedscenario.h"
 #include "scenarios/piratescenario.h"
 #include "scenarios/largecombatscenario.h"
+#include "scenarios/shieldshowcasescenario.h"
 
 #include "sound/soundmanager.h"
 
@@ -31,6 +35,7 @@
 #include "camera/camerahead.h"
 #include "camera/cameradolly.h"
 #include "ui/hud/hud.h"
+#include "ui/hud/hudoverlay.h"
 #include "display/viewer.h"
 
 #include "display/rendering/texturerenderer.h"
@@ -43,9 +48,15 @@ GamePlay::GamePlay(Game* game) :
     m_soundManager(new SoundManager()),
     m_runningState(new GamePlayRunning(this, *World::instance())),
     m_pausedState(new GamePlayPaused(this)),
+#ifndef VOXELLANCER_HEADLESS_SERVER
+    m_waitingInput(new GamePlayInput(*this, true)),
+#endif
     m_normalInput(new GamePlayNormalInput(*this)),
     m_freecamInput(new GamePlayFreecamInput(*this)),
     m_freecamActive(false),
+#ifndef VOXELLANCER_HEADLESS_SERVER
+    m_mouseCursorFree(false),
+#endif
     m_initialScenario(0)
 {
     updateView();
@@ -54,6 +65,8 @@ GamePlay::GamePlay(Game* game) :
     m_runningState->pauseTrigger().setTarget(new TriggeredTransition(m_runningState, m_pausedState));
     m_pausedState->continueTrigger().setTarget(new TriggeredTransition(m_pausedState, m_runningState));
 }
+
+GamePlay::~GamePlay() = default;
 
 Game* GamePlay::game() {
     return m_game;
@@ -105,6 +118,39 @@ bool GamePlay::waitingForRemoteWorld() const {
 GamePlayFreecamInput& GamePlay::freecamInput() {
     return *m_freecamInput;
 }
+
+bool GamePlay::mouseCursorFree() const {
+    return m_mouseCursorFree;
+}
+
+void GamePlay::setMouseCursorFree(bool free) {
+    m_mouseCursorFree = free;
+    refreshMouseCursorMode();
+}
+
+void GamePlay::refreshMouseCursorMode() {
+    GLFWwindow* window = glfwGetCurrentContext();
+    if (window == nullptr) {
+        return;
+    }
+
+    const bool cursorVisible =
+        m_mouseCursorFree || m_scene->hudOverlay().focused();
+    const int desiredMode = cursorVisible
+        ? GLFW_CURSOR_NORMAL
+        : GLFW_CURSOR_HIDDEN;
+    if (glfwGetInputMode(window, GLFW_CURSOR) == desiredMode) {
+        return;
+    }
+
+    if (!cursorVisible && glfwGetWindowAttrib(window, GLFW_FOCUSED)) {
+        int width = 0;
+        int height = 0;
+        glfwGetWindowSize(window, &width, &height);
+        glfwSetCursorPos(window, width / 2.0, height / 2.0);
+    }
+    glfwSetInputMode(window, GLFW_CURSOR, desiredMode);
+}
 #endif
 
 const Scene& GamePlay::scene() const {
@@ -118,7 +164,7 @@ const CameraHead& GamePlay::cameraHead() const {
 InputHandler& GamePlay::inputHandler() {
 #ifndef VOXELLANCER_HEADLESS_SERVER
     if (waitingForRemoteWorld()) {
-        return m_waitingInput;
+        return *m_waitingInput;
     }
 #endif
     if (m_freecamActive) {
@@ -166,6 +212,9 @@ void GamePlay::loadScenario(int i) {
     case 5:
         m_scenario.reset(new FriendlyFireScenario(world));
         break;
+    case ShieldShowcaseScenario::ScenarioId:
+        m_scenario.reset(new ShieldShowcaseScenario(world));
+        break;
     case LargeCombatScenario::ScenarioId:
         m_scenario.reset(new LargeCombatScenario(world));
         break;
@@ -177,6 +226,25 @@ void GamePlay::loadScenario(int i) {
 }
 
 void GamePlay::update(float deltaSec) {
+#ifndef VOXELLANCER_HEADLESS_SERVER
+    refreshMouseCursorMode();
+    if (m_scene->hudOverlay().focused()) {
+        GLFWwindow* window = glfwGetCurrentContext();
+        if (window != nullptr) {
+            double cursorX = 0.0;
+            double cursorY = 0.0;
+            int width = 0;
+            int height = 0;
+            glfwGetCursorPos(window, &cursorX, &cursorY);
+            glfwGetWindowSize(window, &width, &height);
+            if (width > 0 && height > 0) {
+                m_scene->hudOverlay().updatePointer(
+                    static_cast<float>(cursorX / width),
+                    static_cast<float>(cursorY / height));
+            }
+        }
+    }
+#endif
     inputHandler().update(deltaSec);
 
     if (m_freecamActive) {
@@ -193,10 +261,18 @@ void GamePlay::onEntered() {
     GameState::onEntered();
     m_soundManager->activate();
     loadScenario(m_initialScenario);
+#ifndef VOXELLANCER_HEADLESS_SERVER
+    refreshMouseCursorMode();
+#endif
 }
 
 void GamePlay::onLeft() {
     m_soundManager->deactivate();
+#ifndef VOXELLANCER_HEADLESS_SERVER
+    m_mouseCursorFree = false;
+    m_scene->hudOverlay().setFocused(false);
+    refreshMouseCursorMode();
+#endif
     GameState::onLeft();
 }
 

@@ -25,6 +25,7 @@ public:
     std::optional<voxellancer::protocol::LobbyStatus> lobbyStatus() const;
     std::uint64_t snapshotSequence() const;
     std::uint64_t snapshotTick() const;
+    bool interpolationReady() const;
     const std::vector<voxellancer::protocol::EntitySnapshot>& replicaState() const;
     const std::vector<voxellancer::protocol::EntityContentSnapshot>&
     entityContents() const;

@@ -4,6 +4,7 @@
 #include <list>
 #include <memory>
 
+#include "equipment/shieldtype.h"
 #include "worldobject.h"
 #include "property/property.h"
 
@@ -46,6 +47,9 @@ public:
     ShipType shipType() const;
     void setShipType(ShipType shipType);
 
+    ShieldType shieldType() const;
+    void setShieldType(ShieldType shieldType);
+
     void setCharacter(Character* character);
     Character* character();
 
@@ -56,6 +60,7 @@ protected:
     World* m_world;
     std::uint32_t m_aiUpdatePhase;
     ShipType m_shipType;
+    ShieldType m_shieldType;
 
     std::unique_ptr<SquadLogic> m_squadLogic;
 

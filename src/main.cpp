@@ -16,10 +16,6 @@
 
 #include <GL/glew.h>
 
-#ifdef WIN32
-#include <GL/wglew.h>
-#endif
-
 #include <GLFW/glfw3.h>
 #include <SFML/Network/TcpListener.hpp>
 
@@ -40,6 +36,7 @@
 #include "benchmark/benchmarkrunner.h"
 #include "scenarios/battlescenario.h"
 #include "scenarios/largecombatscenario.h"
+#include "scenarios/shieldshowcasescenario.h"
 
 #include "display/stereorenderinfo.h"
 #include "display/viewer.h"
@@ -160,17 +157,11 @@ static bool miscSettings(bool enableVsync) {
     glow::debugmessageoutput::enable();
 #endif
 
-#ifdef WIN32
-    if (!wglSwapIntervalEXT || !wglSwapIntervalEXT(enableVsync ? 1 : 0)) {
-        return false;
-    }
-#else
     glfwSwapInterval(enableVsync ? 1 : 0);
     const char* errorDescription = nullptr;
     if (glfwGetError(&errorDescription) != GLFW_NO_ERROR) {
         return false;
     }
-#endif
     return true;
 }
 
@@ -229,6 +220,9 @@ static void mainloop() {
 
 void toggleFullScreen() {
     ContextProvider::instance()->toggleFullScreen();
+    if (!miscSettings(true)) {
+        std::cerr << "Could not enable VSync after recreating the window context.\n";
+    }
 
     GLFWwindow* window = glfwGetCurrentContext();
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
@@ -249,6 +243,22 @@ int main(int argc, char* argv[]) {
     const BenchmarkMode benchmarkMode = clParser.benchmarkMode();
     if (benchmarkMode == BenchmarkMode::Invalid) {
         std::cerr << "Invalid benchmark mode.\n";
+        delete initTimer;
+        return 1;
+    }
+    const std::string scenario = clParser.scenario();
+    if (!scenario.empty() && scenario != "shield-showcase") {
+        std::cerr << "Unknown scenario: " << scenario << ".\n";
+        delete initTimer;
+        return 1;
+    }
+    if (!scenario.empty() &&
+        (benchmarkMode != BenchmarkMode::None ||
+         clParser.localSingleplayer() ||
+         clParser.multiplayerClient() ||
+         clParser.serverPreview())) {
+        std::cerr << "-scenario cannot be combined with benchmark or remote "
+            "simulation options.\n";
         delete initTimer;
         return 1;
     }
@@ -372,6 +382,9 @@ int main(int argc, char* argv[]) {
 
     const bool enableVsync = true;
     const bool swapIntervalSet = miscSettings(enableVsync);
+    if (!swapIntervalSet) {
+        std::cerr << "Could not enable VSync.\n";
+    }
     if (benchmarkMode == BenchmarkMode::LargeCombat && !swapIntervalSet) {
         std::cerr << "Could not enable VSync for the large-combat benchmark.\n";
         ContextProvider::instance()->shutdown();
@@ -407,6 +420,9 @@ int main(int argc, char* argv[]) {
         if (benchmarkMode == BenchmarkMode::LargeCombat ||
             clParser.multiplayerClient()) {
             game->gamePlay().setInitialScenario(99);
+        } else if (scenario == "shield-showcase") {
+            game->gamePlay().setInitialScenario(
+                ShieldShowcaseScenario::ScenarioId);
         }
 
         if (clParser.localSingleplayer()) {

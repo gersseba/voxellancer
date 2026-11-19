@@ -68,7 +68,9 @@ void GamePlayFreecamInput::update(float deltaSec) {
             }
 
             processUpdate();
-            processMouseUpdate(deltaSec);
+            if (!mouseInputCaptured()) {
+                processMouseUpdate(deltaSec);
+            }
             applyUpdates();
             resetHeadOrientation();
         }

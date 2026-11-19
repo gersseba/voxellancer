@@ -54,6 +54,10 @@ void Projectile::setHitSound(const SoundProperties& hitSound) {
     m_hitSound = hitSound;
 }
 
+std::uint32_t Projectile::impactColor() const {
+    return 0xff0000;
+}
+
 void Projectile::update(float deltaSec) {
     WorldObject::update(deltaSec);
 
@@ -86,6 +90,20 @@ void Projectile::onCollision() {
 
     owningWorld->god().scheduleRemoval(this);
     spawnExplosion();
+}
+
+void Projectile::onShieldImpact() {
+    World* owningWorld = world();
+    if (owningWorld == nullptr) {
+        throw std::logic_error("Projectile is not attached to a world.");
+    }
+#ifndef VOXELLANCER_HEADLESS_SERVER
+    if (owningWorld->hasPresentation()) {
+        SoundManager::current()->play(hitSound(), position());
+    }
+#endif
+
+    owningWorld->god().scheduleRemoval(this);
 }
 
 void Projectile::onSpawnFail() {

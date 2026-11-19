@@ -51,6 +51,7 @@ public:
 
     void split();
 
+    virtual std::uint32_t impactColor() const override;
 
 protected:
     int m_childrenCount;

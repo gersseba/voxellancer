@@ -26,10 +26,10 @@ go_bandit([]() {
             AssertThat(predicted.has_value(), IsTrue());
             AssertThat(
                 predicted->directionalVelocity.z,
-                EqualsWithDelta(-1.0f, 1e-5f));
+                EqualsWithDelta(-2.0f, 1e-5f));
             AssertThat(
                 predicted->position.z,
-                EqualsWithDelta(-1.0f / 60.0f, 1e-5f));
+                EqualsWithDelta(-2.0f / 30.0f, 1e-5f));
         });
 
         it("reconciles from each authoritative snapshot and bounds replay", []() {
@@ -90,10 +90,10 @@ go_bandit([]() {
             AssertThat(reconciled.has_value(), IsTrue());
             AssertThat(
                 reconciled->position.x,
-                EqualsWithDelta(5.0f - 5.0f / 60.0f, 1e-5f));
+                EqualsWithDelta(5.0f - 4.0f / 30.0f, 1e-5f));
             AssertThat(
                 reconciled->directionalVelocity.x,
-                EqualsWithDelta(-1.0f, 1e-5f));
+                EqualsWithDelta(0.0f, 1e-5f));
             AssertThat(
                 reconciled->engineState.x,
                 EqualsWithDelta(1.0f, 1e-5f));

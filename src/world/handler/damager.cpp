@@ -8,8 +8,10 @@
 
 #include "equipment/shield.h"
 #include "equipment/shieldslot.h"
+#include "geometry/sphere.h"
 
 #include "voxel/voxel.h"
+#include "voxel/voxelclusterbounds.h"
 
 #include "worldobject/ship.h"
 #include "worldobject/worldobject.h"
@@ -56,10 +58,37 @@ void Damager::applyDamages(std::list<DamageImpact> &damageImpacts) {
                 throw std::overflow_error(
                     "Shield-hit event queue exceeded its valid limit.");
             }
+            const glm::vec3 localCell(
+                damageImpact.voxel()->cell());
+            const Sphere boundsSphere =
+                damageImpact.worldObject()->bounds().sphere(
+                    damageImpact.worldObject()->transform());
+            const glm::vec3 localCenter =
+                damageImpact.worldObject()->transform().inverseApplyTo(
+                    boundsSphere.position());
+            glm::vec3 localImpactPosition = localCell;
+            Ship* ship = dynamic_cast<Ship*>(damageImpact.worldObject());
+            glm::vec3 localNormal = localCell - localCenter;
+            if (glm::length(localNormal) < 0.001f) {
+                localNormal = glm::vec3(0.0f, 1.0f, 0.0f);
+            } else {
+                localNormal = glm::normalize(localNormal);
+            }
+            if (ship != nullptr &&
+                ship->shieldType() == ShieldType::Sphere) {
+                localImpactPosition = localCenter + localNormal *
+                    (boundsSphere.radius() /
+                        damageImpact.worldObject()->transform().scale() +
+                     0.08f);
+            } else {
+                localImpactPosition += localNormal * 0.8f;
+            }
             m_shieldHitEvents.push_back({
                 *entity,
                 m_world.simulationTickIndex(),
                 damageImpact.voxel()->cell(),
+                localImpactPosition,
+                0xffffff,
                 absorbedDamage
             });
         }
@@ -133,5 +162,9 @@ void Damager::reset() {
 }
 
 void Damager::applyShields(DamageImpact& damageImpact) {
+    const Ship* ship = dynamic_cast<const Ship*>(damageImpact.worldObject());
+    if (ship != nullptr && ship->shieldType() == ShieldType::None) {
+        return;
+    }
     damageImpact.setDamage(damageImpact.worldObject()->components().compensateDamage(damageImpact.damage()));
 }

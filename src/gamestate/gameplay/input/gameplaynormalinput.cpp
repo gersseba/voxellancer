@@ -146,6 +146,11 @@ void GamePlayNormalInput::onKeyEvent(int key, int scancode, int action, int mods
 
 
 void GamePlayNormalInput::onMouseButtonEvent(int button, int action, int mods) {
+    if (handleHudOverlayMouseButtonEvent(button, action, mods)) {
+        m_currentTimePressed = 0;
+        return;
+    }
+
     if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_RELEASE) {
         if (m_currentTimePressed > 0 && m_currentTimePressed < m_maxClickTime) {
             World::instance()->player().hud().onClick(ClickType::Selection);
@@ -165,7 +170,11 @@ void GamePlayNormalInput::update(float deltaSec) {
                 m_inputConfigurator->update();
             } else {
                 processUpdate();
-                processMouseUpdate(deltaSec);
+                if (mouseInputCaptured()) {
+                    m_currentTimePressed = 0;
+                } else {
+                    processMouseUpdate(deltaSec);
+                }
                 applyUpdates();
                 resetHeadOrientation();
             }

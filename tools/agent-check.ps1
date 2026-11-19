@@ -6,6 +6,9 @@ param(
     [ValidateSet('None', 'StartServer', 'StartClient', 'LocalLargeCombat', 'MultiplayerLargeCombat')]
     [string]$Benchmark = 'None',
 
+    [ValidateSet('None', 'ShieldShowcase')]
+    [string]$Scenario = 'None',
+
     [ValidateRange(0, 400)]
     [int]$SquadSize = 0,
 
@@ -22,7 +25,11 @@ if ($Benchmark -ne 'None' -and $Mode -ne 'Run') {
     Write-Error 'Run tasks can only be used with -Mode Run.'
     exit 1
 }
-if ($Mode -eq 'Run' -and $Benchmark -eq 'None') {
+if ($Scenario -ne 'None' -and ($Mode -ne 'Run' -or $Benchmark -ne 'None')) {
+    Write-Error '-Scenario can only be used with -Mode Run and without -Benchmark.'
+    exit 1
+}
+if ($Mode -eq 'Run' -and $Benchmark -eq 'None' -and $Scenario -eq 'None') {
     $Benchmark = 'StartClient'
 }
 if ($SquadSize -gt 0 -and $Benchmark -ne 'MultiplayerLargeCombat') {
@@ -155,11 +162,20 @@ $targets = switch ($Benchmark) {
     'LocalLargeCombat' { @('voxellancer-server', 'voxellancer') }
     'MultiplayerLargeCombat' { @('voxellancer-server', 'voxellancer') }
 }
+if ($Scenario -eq 'ShieldShowcase') {
+    $targets = @('voxellancer')
+}
 foreach ($target in $targets) {
     & $cmakePath --build $BuildDirectory --target $target --config $Configuration
     if ($LASTEXITCODE -ne 0) {
         exit $LASTEXITCODE
     }
+}
+
+if ($Scenario -eq 'ShieldShowcase') {
+    $clientExecutable = Get-ExecutablePath 'voxellancer'
+    & $clientExecutable -scenario shield-showcase
+    exit $LASTEXITCODE
 }
 
 if ($Benchmark -eq 'StartServer') {
