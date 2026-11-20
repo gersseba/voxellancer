@@ -130,7 +130,7 @@ void StationOutfitter::layout() {
             const auto& node = m_status.route[m_status.selectedNode];
             destination = node.kind == RouteNodeKind::Base ? "TRAVEL - BASE" :
                 node.kind == RouteNodeKind::Encounter ? "INVESTIGATE - ENTER" :
-                    "TRAVEL - ATK "+std::to_string(node.level);
+                node.level == FlagshipLevel ? "ASSAULT FLAGSHIP" : "TRAVEL - ATK "+std::to_string(node.level);
         }
         m_buttons.push_back({{0.69f,0.855f,0.24f,0.06f},
             m_status.phase == ContractPhase::Complete ? "ROUTE COMPLETE" :
@@ -144,7 +144,8 @@ void StationOutfitter::layout() {
             const auto p = nodePosition(node);
             const bool reachable = m_status.currentNode < m_status.route.size() &&
                 (m_status.route[m_status.currentNode].links & (1u << i));
-            const auto label = node.kind == RouteNodeKind::Attack ? "ATK "+std::to_string(node.level)
+            const auto label = node.kind == RouteNodeKind::Attack ?
+                (node.level == FlagshipLevel ? "BOSS" : "ATK "+std::to_string(node.level))
                 : node.kind == RouteNodeKind::Base ? "BASE" : "SIGNAL ?";
             m_buttons.push_back({{p.x-0.032f,p.y-0.028f,0.064f,0.056f},label,
                 300+static_cast<int>(i),idle && m_status.alive && reachable &&
@@ -499,7 +500,9 @@ void StationOutfitter::drawRoute() {
                 text(level.description.substr(split+1),{0.68f,0.43f},0.016f,Muted,0.23f);
             text(std::to_string(level.reward)+" CR OR SALVAGE",
                 {0.68f,0.48f},0.017f,glm::vec3(1),0.23f);
-            text(level.enemiesPerPlayer == 0 ? "NO HOSTILES" : std::to_string(level.enemiesPerPlayer)+
+            text(node.kind == RouteNodeKind::Attack && node.level == FlagshipLevel ?
+                "ONE FLAGSHIP + ONE ESCORT PER PILOT" :
+                level.enemiesPerPlayer == 0 ? "NO HOSTILES" : std::to_string(level.enemiesPerPlayer)+
                 (level.enemiesPerPlayer == 1 ? " ENEMY PER PILOT" : " ENEMIES PER PILOT"),
                 {0.68f,0.54f},0.016f,Muted,0.23f);
             text(level.enemiesPerPlayer ? "DESTROY ALL HOSTILES" : "CHOOSE ONE SALVAGE REWARD",

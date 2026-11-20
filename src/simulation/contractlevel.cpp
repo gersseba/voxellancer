@@ -20,7 +20,7 @@ static ContractLevel loadLevel(const std::string& key, bool peaceful) {
 }
 
 ContractLevel contractLevel(std::uint8_t id) {
-    if (id < 1 || id > 3) throw std::invalid_argument("Unknown contract level.");
+    if (id < 1 || id > voxellancer::protocol::FlagshipLevel) throw std::invalid_argument("Unknown contract level.");
     return loadLevel("contractlevel" + std::to_string(id) + ".", false);
 }
 

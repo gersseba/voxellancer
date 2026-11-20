@@ -684,7 +684,8 @@ bool encodeContractStatus(const ContractStatus& status, ContractStatusPacket& pa
             const auto& node = status.route[i];
             const auto kind = static_cast<std::uint8_t>(node.kind);
             if (kind < 1 || kind > 3 || node.row > 6 || node.lane > 2 ||
-                (node.kind == RouteNodeKind::Base ? node.level != 0 : node.level < 1 || node.level > 3) ||
+                (node.kind == RouteNodeKind::Base ? node.level != 0 :
+                    node.level < 1 || node.level > (node.kind == RouteNodeKind::Attack ? FlagshipLevel : 3)) ||
                 (node.links & ~nodeMask)) return false;
             for (std::size_t j = 0; j < status.route.size(); ++j)
                 if ((node.links & (1u << j)) && status.route[j].row != node.row + 1)

@@ -34,7 +34,10 @@ and paid hull repair (**H** or the repair button). Repair restores HP on survivi
 blocks only; lost blocks and mounts stay lost. **?** nodes offer derelict salvage
 or an optional fight. The map previews the signal, known opposition, and reward.
 Follow the links toward the final attack; visited nodes cannot be
-replayed. Clearing the final attack and choosing salvage opens the victory
+replayed. In Fortified Blockade and the Iron Regent finale, **P** marks the
+shield projector and **o** marks a gun mount. Weaken the shield, then aim
+manually at a module: destroying a gun mount removes its weapon, and destroying
+the projector also shuts off the shield. Clearing the finale and choosing salvage opens the victory
 debrief. Solo death or a party wipe opens the defeat debrief. **NEW RUN / Enter**
 resets ships, credits, inventory, equipment, upgrades, statistics, and the map
 without reconnecting; every connected co-op pilot must confirm. Settings persist.

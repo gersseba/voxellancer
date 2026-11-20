@@ -14,7 +14,7 @@
 namespace voxellancer {
 namespace protocol {
 
-constexpr std::uint8_t ProtocolVersion = 28;
+constexpr std::uint8_t ProtocolVersion = 29;
 constexpr std::size_t ContractActionPacketSize = 22;
 constexpr std::size_t MaxContractMounts = 32;
 constexpr std::size_t ContractWeaponKinds = 6;
@@ -97,6 +97,7 @@ struct ContractAction {
 };
 
 enum class RouteNodeKind : std::uint8_t { Attack = 1, Base = 2, Encounter = 3 };
+constexpr std::uint8_t FlagshipLevel = 4;
 enum class SignalKind : std::uint8_t { Derelict = 1, Distress, Decoy };
 struct RouteNode {
     RouteNodeKind kind = RouteNodeKind::Attack;

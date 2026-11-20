@@ -53,6 +53,7 @@ private:
     // Participant keys survive ship loss; PlayerState::actor changes only on a fresh run.
     std::map<std::uint64_t, PlayerState> m_players;
     std::vector<voxellancer::protocol::EntityId> m_enemies;
+    std::vector<std::pair<voxellancer::protocol::EntityId, glm::ivec3>> m_projectors;
     std::uint32_t m_mission = 0;
     voxellancer::protocol::ContractPhase m_phase = voxellancer::protocol::ContractPhase::Station;
     std::vector<voxellancer::protocol::RouteNode> m_route;

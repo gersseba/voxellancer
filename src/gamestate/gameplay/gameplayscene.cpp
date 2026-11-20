@@ -815,6 +815,8 @@ void GamePlayScene::drawRemoteContacts(const Camera& camera) const {
     auto& player = World::instance()->player();
     const glm::vec3 origin = player.cameraHead().position();
     const glm::vec3 crosshairRay = glm::normalize(player.hud().crossHair().worldPosition() - origin);
+    const auto& contents = m_gamePlay.running().remoteEntityContents();
+    using SlotKind = voxellancer::protocol::EquipmentSlotKind;
     for (const auto& contact : m_gamePlay.running().remoteReplicaSnapshots()) {
         if (!contact.hostile || contact.id == actor->id ||
             contact.kind != voxellancer::protocol::EntitySnapshot::Kind::Ship) {
@@ -832,12 +834,38 @@ void GamePlayScene::drawRemoteContacts(const Camera& camera) const {
                 0.028f, color, FontAlign::CENTER);
         }
         const auto distance = std::lround(glm::distance(actor->position, contact.position));
-        const std::string label = std::string(marker.behind ? "ENEMY BEHIND - " : "ENEMY - ") +
+        const auto content = std::find_if(contents.begin(), contents.end(),
+            [&contact](const auto& entry) { return entry.id == contact.id; });
+        const auto root = content != contents.end() ? content->definitionKey + ".general." : std::string();
+        const auto name = root.empty() ? std::string("ENEMY") :
+            Property<std::string>::get(root + "contactName", "ENEMY");
+        const std::string label = name + (marker.behind ? " BEHIND - " : " - ") +
             std::to_string(distance) + " U";
         font->drawScreen(label,
             glm::vec2(glm::clamp(marker.position.x, 0.15f, 0.85f),
                 marker.position.y + 0.02f),
             0.017f, color, FontAlign::CENTER, 0.28f);
+
+        if (showLead && marker.onScreen && distance < 450 && !root.empty()) {
+            const int projector = Property<int>::get(root + "shieldProjectorGroup", -1);
+            if (projector >= 0) {
+                const bool projectorOnline = std::any_of(content->equipment.begin(), content->equipment.end(),
+                    [](const auto& slot) { return slot.kind == SlotKind::Shield && !slot.equipmentKey.empty(); });
+                const glm::vec4 moduleColor(1.0f,0.82f,0.38f,1.0f);
+                for (const auto& slot : content->equipment) {
+                    if (slot.kind != SlotKind::Weapon || slot.equipmentKey.empty()) continue;
+                    const auto point = contact.position + contact.orientation *
+                        (glm::vec3(slot.cell) * contact.scale);
+                    const auto module = projectContactMarker(camera.viewProjection() * glm::vec4(point, 1));
+                    if (!module.onScreen) continue;
+                    const bool isProjector = slot.group == projector && projectorOnline;
+                    font->drawScreen(isProjector ? "P" : "o", module.position - glm::vec2(0,0.009f),
+                        0.018f, moduleColor, FontAlign::CENTER);
+                }
+                font->drawScreen(projectorOnline ? "P: PROJECTOR / o: GUN" : "PROJECTOR OFFLINE",
+                    marker.position + glm::vec2(0,0.04f), 0.013f, moduleColor, FontAlign::CENTER);
+            }
+        }
 
         glm::vec3 sum(0.0f);
         int solutions = 0;

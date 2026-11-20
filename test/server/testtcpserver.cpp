@@ -639,6 +639,28 @@ go_bandit([]() {
                         glm::ivec3(0),static_cast<std::uint8_t>(selected)});
                     run.act(pilot,{++sequence,run.status(pilot).mission,ContractActionKind::Ready});
                     if (run.inMission()) {
+                        if (step == 5) {
+                            AssertThat(graph[selected].level,Equals(FlagshipLevel));
+                            auto* flagship = [&]() -> Ship* {
+                                for (auto* ship : world.ships())
+                                    if (ship->info().definitionKey() == "contractflagship") return ship;
+                                return nullptr;
+                            }();
+                            AssertThat(flagship != nullptr,IsTrue());
+                            AssertThat(run.status(pilot).remaining,Equals(std::uint16_t(2)));
+                            auto& components = flagship->components();
+                            const auto projector = std::find_if(components.hardpoints().begin(),
+                                components.hardpoints().end(), [](const auto& mount) { return mount->group() == 1; });
+                            AssertThat(projector != components.hardpoints().end(),IsTrue());
+                            const auto shield = components.shieldSlots().front();
+                            AssertThat(shield->shield() != nullptr,IsTrue());
+                            const auto armed = components.hardpoints().size();
+                            flagship->removeVoxel((*projector)->voxel());
+                            run.update();
+                            AssertThat(components.hardpoints().size(),Equals(armed-1));
+                            AssertThat(shield->shield() == nullptr,IsTrue());
+                            AssertThat(run.inMission(),IsTrue());
+                        }
                         for (auto* ship : world.ships())
                             if (world.entityId(ship) != pilot) world.god().scheduleRemoval(ship);
                         world.god().remove();

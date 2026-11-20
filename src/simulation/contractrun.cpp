@@ -92,6 +92,7 @@ ContractRun::ContractRun(World& world, const std::vector<EntityId>& players):
         contractLevel(id);
         contractSignal(id);
     }
+    contractLevel(FlagshipLevel);
     for (std::uint8_t id = 0; id <= ShieldCatalogSize; ++id) catalogShield(id);
     generateRoute();
     m_startTick = m_world.simulationTickIndex();
@@ -346,7 +347,7 @@ void ContractRun::generateRoute() {
             m_route.push_back({kind, static_cast<std::uint8_t>(level), row, lane, 0});
         }
     }
-    m_route.push_back({RouteNodeKind::Attack, 3, 6, 1, 0});
+    m_route.push_back({RouteNodeKind::Attack, FlagshipLevel, 6, 1, 0});
     for (auto& node : m_route) {
         for (std::size_t next = 0; next < m_route.size(); ++next) {
             const auto& candidate = m_route[next];
@@ -496,20 +497,28 @@ void ContractRun::deploy() {
         targets.push_back(ship->handle<WorldObject>());
         entry.second.ready = false;
     }
-    const std::size_t count = targets.size() * level.enemiesPerPlayer;
+    const bool finale = node.kind == RouteNodeKind::Attack && node.level == FlagshipLevel;
+    const std::size_t count = finale ? 1 + targets.size() : targets.size() * level.enemiesPerPlayer;
     std::vector<Ship*> enemies;
     for (std::size_t index = 0; index < count; ++index) {
-        Ship* enemy = WorldObjectBuilder(level.enemy, m_world).buildShip();
+        const bool flagship = finale && index == 0;
+        const auto definition = finale && !flagship ? "contractraider" : level.enemy;
+        Ship* enemy = WorldObjectBuilder(definition, m_world).buildShip();
         glm::vec3 position(static_cast<float>(index) * 70.0f, 0.0f, -180.0f);
         if (level.layout == 2)
             position = glm::vec3(index % 2 ? 150.0f : -150.0f,
                 (index / 2) * 30.0f, -130.0f - (index / 2) * 60.0f);
         if (level.layout == 3)
             position = glm::vec3(static_cast<float>(index) * 90.0f, 30.0f, -280.0f);
+        if (finale) position = flagship ? glm::vec3(35,0,-290) :
+            glm::vec3(index % 2 ? -115 : 135, 35.0f * (index/2), -210);
         enemy->transform().setPosition(position);
-        enemy->info().setName(level.name);
-        enemy->character()->setTask(std::make_shared<FightTask>(
-            enemy->boardComputer(), targets));
+        enemy->info().setName(finale && !flagship ? "REGENT ESCORT" : level.name);
+        if (flagship)
+            enemy->character()->setTask(std::make_shared<FightTask>(enemy->boardComputer(), targets,
+                AiArchetype::Cruiser, ShootingSkill{0.80f,0.55f,0.60f}));
+        else
+            enemy->character()->setTask(std::make_shared<FightTask>(enemy->boardComputer(), targets));
         m_world.god().scheduleSpawn(enemy);
         enemies.push_back(enemy);
     }
@@ -531,6 +540,14 @@ void ContractRun::deploy() {
             throw std::runtime_error("Could not spawn a contract enemy.");
         }
         m_enemies.push_back(*id);
+        const int group = Property<int>::get(enemy->info().definitionKey() + ".general.shieldProjectorGroup", -1);
+        if (group >= 0) {
+            const auto& mounts = enemy->components().hardpoints();
+            const auto projector = std::find_if(mounts.begin(), mounts.end(),
+                [group](const auto& mount) { return mount->group() == group; });
+            if (projector == mounts.end()) throw std::logic_error("Contract shield projector has no matching mount.");
+            m_projectors.emplace_back(*id, (*projector)->voxel()->cell());
+        }
     }
     m_phase = ContractPhase::Mission;
     m_remainingEnemies = m_enemies.size();
@@ -545,6 +562,14 @@ void ContractRun::update() {
         }
     }
     if (inMission()) {
+        m_projectors.erase(std::remove_if(m_projectors.begin(), m_projectors.end(),
+            [this](const auto& projector) {
+                auto* enemy = m_world.worldObject(projector.first);
+                if (!enemy) return true;
+                if (enemy->voxel(projector.second)) return false;
+                for (auto& slot : enemy->components().shieldSlots()) slot->setShield(nullptr);
+                return true;
+            }), m_projectors.end());
         const auto remaining = static_cast<std::size_t>(std::count_if(m_enemies.begin(), m_enemies.end(),
             [this](EntityId enemy) { return m_world.worldObject(enemy) != nullptr; }));
         m_enemiesDefeated += static_cast<std::uint16_t>(m_remainingEnemies - remaining);
@@ -596,6 +621,7 @@ void ContractRun::finishEncounter(bool success) {
 
 void ContractRun::clearEncounter(bool removePlayers) {
     m_enemies.clear();
+    m_projectors.clear();
     m_world.god().spawn();
     for (WorldObject* object : m_world.worldObjects()) {
         const auto id = m_world.entityId(object);
