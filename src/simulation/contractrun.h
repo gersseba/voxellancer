@@ -3,6 +3,7 @@
 #include <cstddef>
 #include <map>
 #include <array>
+#include <filesystem>
 #include <random>
 #include <string>
 #include <vector>
@@ -16,7 +17,8 @@ public:
     static std::vector<voxellancer::protocol::EntityId> createPlayers(
         World& world, std::size_t count);
 
-    ContractRun(World& world, const std::vector<voxellancer::protocol::EntityId>& players);
+    ContractRun(World& world, const std::vector<voxellancer::protocol::EntityId>& players,
+        std::filesystem::path checkpoint = {});
     void update();
     void act(voxellancer::protocol::EntityId player,
         const voxellancer::protocol::ContractAction& action);
@@ -50,6 +52,7 @@ private:
     };
 
     World& m_world;
+    std::filesystem::path m_checkpoint;
     // Participant keys survive ship loss; PlayerState::actor changes only on a fresh run.
     std::map<std::uint64_t, PlayerState> m_players;
     std::vector<voxellancer::protocol::EntityId> m_enemies;
@@ -61,6 +64,7 @@ private:
     std::uint32_t m_visitedNodes = 1, m_reward = 0;
     std::uint32_t m_run = 1;
     std::uint64_t m_startTick = 0, m_endTick = 0;
+    std::uint64_t m_previousElapsedTicks = 0;
     std::uint16_t m_attacksCleared = 0, m_enemiesDefeated = 0, m_basesVisited = 1;
     std::size_t m_remainingEnemies = 0;
     float m_damageBonus, m_shieldBonus;
@@ -71,6 +75,10 @@ private:
     void generateRoute();
     void chooseNext();
     void visitBase();
+    void saveCheckpoint() const;
+    bool loadCheckpoint();
+    bool tryCheckpoint();
+    voxellancer::protocol::ContractStatus statusForPlayer(const PlayerState& personal) const;
     std::uint32_t repairPrice(const PlayerState& player) const;
     voxellancer::protocol::ContractResult repair(PlayerState& player);
     void advanceRevision();

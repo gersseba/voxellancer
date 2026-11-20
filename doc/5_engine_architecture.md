@@ -81,6 +81,15 @@ Large-combat benchmarks retain their synchronous pre-graphics connection path,
 benchmark scenario, and reporting behavior; saved menu preferences are not
 loaded in benchmark mode.
 
+The local client starts its solo contracts server with `--solo-checkpoint`.
+The server stores `solo-contract.checkpoint` in the game's user config
+directory, replacing it only after writing the new file. Checkpoints include
+the route, run rewards, inventory, loadout, shop offer, and surviving hull
+cells and HP. They restore a docked ship with base shield and energy refills,
+not an in-progress fight. Manual servers do not use this save unless opted in
+for one pilot. Invalid or incompatible saves are rejected without overwriting
+them; move the checkpoint out of the config directory to start fresh.
+
 ### Multiplayer lobby and player binding
 
 Run `voxellancer-server --listen-port 27800 --target-players 2`, then connect
@@ -123,7 +132,7 @@ simulation and network polling on the same thread.
 The transport is an SFML TCP stream. TCP provides reliable, ordered delivery;
 there is no separate unreliable snapshot channel. Each application frame has a
 four-byte little-endian payload length followed by a packet with protocol
-version 29 and a message-type byte. There is no version negotiation: peers with
+version 30 and a message-type byte. There is no version negotiation: peers with
 different protocol versions reject each other's packets.
 
 On connection, the server assigns a generation-protected entity ID for a ship,

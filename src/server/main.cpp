@@ -30,6 +30,7 @@
 #include "simulation/simulationsession.h"
 #include "simulation/contractrun.h"
 #include "utils/simulationtickrunner.h"
+#include "utils/filesystem.h"
 #include "world/god.h"
 #include "world/world.h"
 #include "worldobject/ship.h"
@@ -44,6 +45,7 @@ namespace {
         int squadSize = 0;
         bool squadSizeSpecified = false;
         bool listen = false;
+        bool soloCheckpoint = false;
         std::size_t targetPlayers = 0;
         std::size_t benchmarkTicks = 0;
         std::uint16_t port = 27800;
@@ -68,7 +70,7 @@ namespace {
             const std::string argument(argv[i]);
             if (argument == "--help") {
                 std::cout << "Usage: voxellancer-server [--scenario battle|benchmark|contracts|ai-comparison] "
-                    << "[--listen] [--listen-port port] [--target-players count] "
+                    << "[--listen] [--listen-port port] [--target-players count] [--solo-checkpoint] "
                     << "[--ships-per-team count] [--benchmark-ticks count] "
                     << "[--squad-size count] "
                     << "[--benchmark-run-id id]\n";
@@ -76,6 +78,10 @@ namespace {
             }
             if (argument == "--listen") {
                 options.listen = true;
+                continue;
+            }
+            if (argument == "--solo-checkpoint") {
+                options.soloCheckpoint = true;
                 continue;
             }
             if (i + 1 >= argc) {
@@ -164,6 +170,9 @@ namespace {
         }
         if (options.scenario == "contracts" && options.targetPlayers > 4) {
             throw std::invalid_argument("Contracts support one to four players.");
+        }
+        if (options.soloCheckpoint && (options.scenario != "contracts" || options.targetPlayers > 1)) {
+            throw std::invalid_argument("--solo-checkpoint requires a solo contracts server.");
         }
         if (options.scenario == "contracts" && options.targetPlayers == 0) {
             options.targetPlayers = 1;
@@ -513,7 +522,9 @@ int main(int argc, char* argv[]) {
                     *world, session, options.port, 650.0f, preferredActor);
                 std::cout << "Listening on 127.0.0.1:" << server->port() << '\n';
             }
-            server->enableContracts(actors);
+            server->enableContracts(actors, options.soloCheckpoint
+                ? std::filesystem::path(FileSystem::userConfigDir()) / "solo-contract.checkpoint"
+                : std::filesystem::path{});
             if (options.targetPlayers != 0) {
                 server->startWorldForPlayers(actors);
             }

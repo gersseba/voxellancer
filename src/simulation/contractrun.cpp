@@ -4,7 +4,11 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdlib>
+#include <fstream>
+#include <iomanip>
+#include <iostream>
 #include <limits>
+#include <locale>
 #include <memory>
 #include <stdexcept>
 #include <utility>
@@ -33,6 +37,7 @@
 using namespace voxellancer::protocol;
 
 namespace {
+    constexpr char CheckpointHeader[] = "VOXELLANCER SOLO CHECKPOINT 1";
     std::uint64_t playerKey(EntityId actor) {
         return (static_cast<std::uint64_t>(actor.generation) << 32) | actor.index;
     }
@@ -66,8 +71,10 @@ std::vector<EntityId> ContractRun::createPlayers(World& world, std::size_t count
     return actors;
 }
 
-ContractRun::ContractRun(World& world, const std::vector<EntityId>& players):
+ContractRun::ContractRun(World& world, const std::vector<EntityId>& players,
+    std::filesystem::path checkpoint):
     m_world(world),
+    m_checkpoint(std::move(checkpoint)),
     m_damageBonus(Property<float>("contracts.damageRewardBonus")),
     m_shieldBonus(Property<float>("contracts.shieldRewardBonus"))
 {
@@ -94,8 +101,177 @@ ContractRun::ContractRun(World& world, const std::vector<EntityId>& players):
     }
     contractLevel(FlagshipLevel);
     for (std::uint8_t id = 0; id <= ShieldCatalogSize; ++id) catalogShield(id);
-    generateRoute();
     m_startTick = m_world.simulationTickIndex();
+    if (!m_checkpoint.empty() && players.size() != 1)
+        throw std::invalid_argument("Checkpoints require a solo contract.");
+    if (!loadCheckpoint()) {
+        generateRoute();
+        if (!m_checkpoint.empty()) saveCheckpoint();
+    }
+}
+
+void ContractRun::saveCheckpoint() const {
+    const auto& player = m_players.begin()->second;
+    const auto* ship = m_world.worldObject(player.actor);
+    auto state = statusForPlayer(player);
+    state.ready = false;
+    state.readyPlayers = 0;
+    state.result = ContractResult::None;
+    state.viewActor = {};
+    state.acknowledgedSequence = 0;
+    state.elapsedTicks = m_previousElapsedTicks + m_world.simulationTickIndex() - m_startTick;
+    ContractStatusPacket packet{};
+    if (m_phase != ContractPhase::Station || !ship || !encodeContractStatus(state, packet))
+        throw std::logic_error("Cannot checkpoint outside a live base visit.");
+
+    auto temporary = m_checkpoint;
+    temporary += "." + std::to_string(std::random_device{}()) + ".tmp";
+    try {
+        std::ofstream out(temporary, std::ios::binary | std::ios::trunc);
+        out.imbue(std::locale::classic());
+        out << CheckpointHeader << '\n';
+        out.write(reinterpret_cast<const char*>(packet.data()), packet.size());
+        out << '\n' << m_offerRandom << '\n'
+            << std::setprecision(std::numeric_limits<float>::max_digits10);
+        out << std::count_if(ship->voxelMap().begin(), ship->voxelMap().end(),
+            [](const auto& entry) { return entry.second->hp() > 0; }) << '\n';
+        for (const auto& entry : ship->voxelMap()) {
+            const auto& voxel = *entry.second;
+            if (voxel.hp() > 0) {
+                const auto cell = voxel.cell();
+                out << cell.x << ' ' << cell.y << ' ' << cell.z << ' ' << voxel.hp() << '\n';
+            }
+        }
+        out.close();
+        if (!out) throw std::runtime_error("Could not write " + temporary.string());
+        std::filesystem::rename(temporary, m_checkpoint);
+    } catch (const std::runtime_error&) {
+        std::error_code cleanupError;
+        std::filesystem::remove(temporary, cleanupError);
+        if (cleanupError) std::cerr << "Could not remove temporary checkpoint: " << cleanupError.message() << '\n';
+        throw;
+    }
+}
+
+bool ContractRun::tryCheckpoint() {
+    if (m_checkpoint.empty()) return true;
+    try {
+        saveCheckpoint();
+        return true;
+    } catch (const std::runtime_error& error) {
+        std::cerr << "Solo checkpoint save failed: " << error.what() << '\n';
+        return false;
+    }
+}
+
+bool ContractRun::loadCheckpoint() {
+    if (m_checkpoint.empty() || !std::filesystem::exists(m_checkpoint)) return false;
+    const auto invalid = [this]() {
+        return std::runtime_error("Invalid or incompatible solo checkpoint: " + m_checkpoint.string());
+    };
+    if (std::filesystem::file_size(m_checkpoint) > 1024 * 1024) throw invalid();
+    std::ifstream in(m_checkpoint, std::ios::binary);
+    in.imbue(std::locale::classic());
+    std::string header;
+    ContractStatusPacket packet{};
+    ContractStatus state;
+    if (!std::getline(in, header) || header != CheckpointHeader ||
+        !in.read(reinterpret_cast<char*>(packet.data()), packet.size()) ||
+        decodeContractStatus(packet.data(), packet.size(), state) != DecodeError::None ||
+        state.phase != ContractPhase::Station || !state.alive || state.players != 1 ||
+        state.route.empty() || state.route[state.currentNode].kind != RouteNodeKind::Base ||
+        state.selectedNode == NoRouteNode ||
+        state.mission == std::numeric_limits<std::uint32_t>::max() ||
+        state.run == std::numeric_limits<std::uint32_t>::max() ||
+        state.elapsedTicks > std::numeric_limits<std::uint64_t>::max() / 2)
+        throw invalid();
+    std::mt19937 random;
+    if (!(in >> random)) throw invalid();
+
+    auto& player = m_players.begin()->second;
+    auto* ship = m_world.worldObject(player.actor);
+    std::map<Voxel*, float> hull;
+    std::size_t voxelCount;
+    if (!(in >> voxelCount) || voxelCount == 0 || voxelCount > ship->voxelMap().size())
+        throw invalid();
+    for (std::size_t i = 0; i < voxelCount; ++i) {
+        glm::ivec3 cell;
+        float hp;
+        if (!(in >> cell.x >> cell.y >> cell.z >> hp) ||
+            glm::any(glm::lessThan(cell, glm::ivec3(0))) ||
+            glm::any(glm::greaterThan(cell, glm::ivec3(255))))
+            throw invalid();
+        auto* voxel = ship->voxel(cell);
+        if (!voxel || !std::isfinite(hp) || hp <= 0 || hp > voxel->maxHP() ||
+            !hull.emplace(voxel, hp).second) throw invalid();
+    }
+    in >> std::ws;
+    if (!in.eof() || (ship->crucialVoxel() && !hull.count(ship->crucialVoxel())))
+        throw invalid();
+
+    auto& components = ship->components();
+    std::size_t savedMounts = 0;
+    for (const auto& slot : components.hardpoints()) {
+        if (!hull.count(slot->voxel())) continue;
+        const auto mount = std::find_if(state.mounts.begin(), state.mounts.end(),
+            [&slot](const auto& entry) { return entry.cell == slot->voxel()->cell(); });
+        if (mount == state.mounts.end() ||
+            (mount->weapon && !slot->mountable(catalogWeapon(mount->weapon).key)))
+            throw invalid();
+        ++savedMounts;
+    }
+    if (savedMounts != state.mounts.size()) throw invalid();
+
+    if (state.shieldBuild) {
+        const auto key = catalogShield(state.shieldBuild).key;
+        for (auto& slot : components.shieldSlots()) {
+            if (!slot->mountable(key)) throw invalid();
+            slot->setShield(std::shared_ptr<Shield>(ShieldBuilder(key).build()));
+        }
+    }
+    std::vector<Voxel*> lost;
+    for (const auto& entry : ship->voxelMap()) {
+        auto* voxel = entry.second;
+        const auto saved = hull.find(voxel);
+        if (saved == hull.end()) lost.push_back(voxel);
+        else voxel->applyDamage(voxel->maxHP() - saved->second);
+    }
+    for (auto* voxel : lost) ship->removeVoxel(voxel);
+    for (const auto& slot : components.hardpoints()) {
+        const auto mount = std::find_if(state.mounts.begin(), state.mounts.end(),
+            [&slot](const auto& entry) { return entry.cell == slot->voxel()->cell(); });
+        slot->setWeapon(mount->weapon
+            ? std::shared_ptr<Weapon>(WeaponBuilder(catalogWeapon(mount->weapon).key).build())
+            : nullptr);
+    }
+    player.credits = state.credits;
+    player.gun = state.gun;
+    player.shield = state.shield;
+    player.offer = state.offer;
+    player.shieldBuild = state.shieldBuild;
+    player.inventory = state.inventory;
+    player.creditsEarned = state.creditsEarned;
+    player.weaponsFound = state.weaponsFound;
+    player.damageUpgrades = state.damageUpgrades;
+    player.shieldUpgrades = state.shieldUpgrades;
+    player.rewardWeapon = state.rewardWeapon;
+    player.rewardUpgrade = state.rewardUpgrade;
+    applyUpgrades(player);
+    components.refillWeaponEnergy();
+    for (auto& slot : components.shieldSlots())
+        if (slot->shield()) slot->shield()->refill();
+    m_run = state.run;
+    m_mission = state.mission;
+    m_route = std::move(state.route);
+    m_currentNode = state.currentNode;
+    m_selectedNode = state.selectedNode;
+    m_visitedNodes = state.visitedNodes;
+    m_attacksCleared = state.attacksCleared;
+    m_enemiesDefeated = state.enemiesDefeated;
+    m_basesVisited = state.basesVisited;
+    m_previousElapsedTicks = state.elapsedTicks;
+    m_offerRandom = random;
+    return true;
 }
 
 bool ContractRun::alive(const PlayerState& player) const {
@@ -128,12 +304,24 @@ bool ContractRun::isEnemy(EntityId actor) const {
 }
 
 ContractStatus ContractRun::status(EntityId player) const {
-    const auto& personal = m_players.at(playerKey(player));
+    return statusForPlayer(m_players.at(playerKey(player)));
+}
+
+ContractStatus ContractRun::statusForPlayer(const PlayerState& personal) const {
     ContractStatus state;
     state.phase = m_phase;
     state.run = m_run;
     state.alive = alive(personal);
-    state.viewActor = viewActor(player);
+    if (state.alive) {
+        state.viewActor = personal.actor;
+    } else {
+        for (const auto& entry : m_players) {
+            if (alive(entry.second)) {
+                state.viewActor = entry.second.actor;
+                break;
+            }
+        }
+    }
     state.livingPlayers = static_cast<std::uint8_t>(std::count_if(
         m_players.begin(), m_players.end(), [this](const auto& entry) { return alive(entry.second); }));
     state.pendingRewards = m_phase == ContractPhase::Reward
@@ -151,7 +339,7 @@ ContractStatus ContractRun::status(EntityId player) const {
     state.enemiesDefeated = m_enemiesDefeated;
     state.basesVisited = m_basesVisited;
     state.elapsedTicks = m_phase == ContractPhase::Complete || m_phase == ContractPhase::Defeat
-        ? m_endTick - m_startTick : 0;
+        ? m_previousElapsedTicks + m_endTick - m_startTick : 0;
     state.route = m_route;
     state.currentNode = m_currentNode;
     state.selectedNode = m_selectedNode;
@@ -295,6 +483,11 @@ void ContractRun::act(EntityId actor, const ContractAction& action) {
         player.result = ContractResult::Accepted;
         if (std::all_of(m_players.begin(), m_players.end(),
                 [this](const auto& entry) { return !alive(entry.second) || entry.second.ready; })) {
+            if (m_phase == ContractPhase::Station && !tryCheckpoint()) {
+                player.ready = false;
+                player.result = ContractResult::CheckpointFailed;
+                return;
+            }
             advanceRevision();
             if (m_route[m_selectedNode].kind == RouteNodeKind::Base) {
                 m_currentNode = m_selectedNode;
@@ -402,6 +595,7 @@ void ContractRun::visitBase() {
             for (auto& slot : ship->components().shieldSlots())
                 if (slot->shield()) slot->shield()->refill();
         }
+        if (!tryCheckpoint()) m_players.begin()->second.result = ContractResult::CheckpointFailed;
     }
 }
 
@@ -709,8 +903,10 @@ void ContractRun::startNewRun() {
     m_remainingEnemies = 0;
     m_startTick = m_world.simulationTickIndex();
     m_endTick = 0;
+    m_previousElapsedTicks = 0;
     generateRoute();
     m_phase = ContractPhase::Station;
+    if (!tryCheckpoint()) m_players.begin()->second.result = ContractResult::CheckpointFailed;
 }
 
 void ContractRun::removePlayer(EntityId player) {

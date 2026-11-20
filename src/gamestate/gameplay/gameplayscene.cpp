@@ -974,6 +974,7 @@ void GamePlayScene::updateRemoteInfoOverlay() {
         case ContractResult::InvalidSlot: result = "MOUNT NO LONGER AVAILABLE"; break;
         case ContractResult::InvalidRoute: result = "CHOOSE A CONNECTED DESTINATION"; break;
         case ContractResult::HullIntact: result = "NO SURVIVING HULL BLOCKS NEED REPAIR"; break;
+        case ContractResult::CheckpointFailed: result = "CHECKPOINT SAVE FAILED"; break;
         }
         lines.push_back(result);
         lines.push_back("TAB - HIDE / SHOW PANEL   ESC - MENU");

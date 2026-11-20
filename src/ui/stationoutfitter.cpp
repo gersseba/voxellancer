@@ -51,6 +51,7 @@ namespace {
         case ContractResult::RewardAlreadyClaimed: return "YOUR REWARD HAS ALREADY BEEN CLAIMED";
         case ContractResult::InvalidReward: return "THIS REWARD IS UNAVAILABLE - CHOOSE ANOTHER";
         case ContractResult::RunDefeated: return "ALL PILOTS LOST - RUN ENDED";
+        case ContractResult::CheckpointFailed: return "COULD NOT SAVE CHECKPOINT - CHECK DISK AND TRY TRAVEL AGAIN";
         }
         return "UNKNOWN SERVER RESULT";
     }

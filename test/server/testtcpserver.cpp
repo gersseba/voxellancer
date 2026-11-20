@@ -4,6 +4,8 @@
 #include <chrono>
 #include <cmath>
 #include <filesystem>
+#include <fstream>
+#include <random>
 #include <limits>
 #include <memory>
 #include <stdexcept>
@@ -598,6 +600,123 @@ go_bandit([]() {
             run.act(players[0],{10,quote.mission,ContractActionKind::RepairHull});
             AssertThat(run.status(players[0]).result,Equals(ContractResult::HullIntact));
             AssertThat(run.status(players[0]).credits,Equals(state.credits-1));
+        });
+
+        it("restores solo contracts at the latest base arrival or departure", []() {
+            using namespace voxellancer::protocol;
+            loadSimulationData();
+            struct CheckpointFile {
+                std::filesystem::path path = std::filesystem::temp_directory_path() /
+                    ("voxellancer-contract-" + std::to_string(std::random_device{}()) + ".checkpoint");
+                ~CheckpointFile() {
+                    std::error_code error;
+                    std::filesystem::remove(path, error);
+                }
+            } save;
+            ContractStatus arrival, departure;
+            glm::ivec3 damagedCell, lostMount;
+            float damagedHP = 0;
+            {
+                World::reset(false);
+                WorldResetGuard guard;
+                auto& world = *World::instance(World::Mode::Server);
+                const auto players = ContractRun::createPlayers(world, 1);
+                const auto pilot = players.front();
+                ContractRun run(world, players, save.path);
+                AssertThat(std::filesystem::exists(save.path), IsTrue());
+                std::uint64_t sequence = 0;
+                const auto act = [&](ContractActionKind action, std::uint8_t node = NoRouteNode,
+                        RewardChoice choice = RewardChoice::None) {
+                    run.act(pilot,{++sequence,run.status(pilot).mission,action,0,glm::ivec3(0),node,choice});
+                };
+                act(ContractActionKind::SelectNode, 2);
+                act(ContractActionKind::Ready);
+                for (auto* object : world.ships())
+                    if (run.isEnemy(*world.entityId(object))) world.god().scheduleRemoval(object);
+                world.god().remove();
+                run.update();
+                act(ContractActionKind::ClaimReward, NoRouteNode, RewardChoice::Credits);
+                auto* ship = world.worldObject(pilot);
+                lostMount = ship->components().hardpoints().back()->voxel()->cell();
+                ship->removeVoxel(ship->voxel(lostMount));
+                auto* voxel = ship->voxelMap().begin()->second;
+                voxel->applyDamage(2);
+                damagedCell = voxel->cell();
+                damagedHP = voxel->hp();
+                const auto route = run.status(pilot);
+                const auto base = std::find_if(route.route.begin(), route.route.end(), [](const auto& node) {
+                    return node.row == 2 && node.kind == RouteNodeKind::Base;
+                });
+                AssertThat(base != route.route.end(), IsTrue());
+                act(ContractActionKind::SelectNode, static_cast<std::uint8_t>(base-route.route.begin()));
+                act(ContractActionKind::Ready);
+                arrival = run.status(pilot);
+                AssertThat(arrival.phase, Equals(ContractPhase::Station));
+                AssertThat(arrival.missingHullBlocks, Equals(std::uint32_t(1)));
+                act(ContractActionKind::RepairHull); // Not checkpointed until departure.
+                AssertThat(voxel->hp(), Equals(voxel->maxHP()));
+            }
+            {
+                World::reset(false);
+                WorldResetGuard guard;
+                auto& world = *World::instance(World::Mode::Server);
+                const auto players = ContractRun::createPlayers(world, 1);
+                const auto pilot = players.front();
+                ContractRun run(world, players, save.path);
+                auto* ship = world.worldObject(pilot);
+                const auto restored = run.status(pilot);
+                AssertThat(restored.currentNode, Equals(arrival.currentNode));
+                AssertThat(restored.visitedNodes, Equals(arrival.visitedNodes));
+                AssertThat(restored.credits, Equals(arrival.credits));
+                AssertThat(restored.offer, Equals(arrival.offer));
+                AssertThat(restored.acknowledgedSequence, Equals(std::uint64_t(0)));
+                AssertThat(ship->voxel(lostMount) == nullptr, IsTrue());
+                AssertThat(ship->voxel(damagedCell)->hp(), Equals(damagedHP));
+                run.act(pilot,{1,restored.mission,ContractActionKind::RepairHull});
+                departure = run.status(pilot);
+                run.act(pilot,{2,departure.mission,ContractActionKind::Ready});
+                AssertThat(run.inMission(), IsTrue());
+                ship->voxel(damagedCell)->applyDamage(4);
+            }
+            {
+                World::reset(false);
+                WorldResetGuard guard;
+                auto& world = *World::instance(World::Mode::Server);
+                const auto players = ContractRun::createPlayers(world, 1);
+                ContractRun run(world, players, save.path);
+                const auto restored = run.status(players.front());
+                const auto* voxel = world.worldObject(players.front())->voxel(damagedCell);
+                AssertThat(restored.phase, Equals(ContractPhase::Station));
+                AssertThat(restored.ready, IsFalse());
+                AssertThat(restored.selectedNode, Equals(departure.selectedNode));
+                AssertThat(restored.credits, Equals(departure.credits));
+                AssertThat(voxel->hp(), Equals(voxel->maxHP()));
+                AssertThat(world.ships().size(), Equals(std::size_t(1)));
+                const auto pilot = players.front();
+                world.god().scheduleRemoval(world.worldObject(pilot));
+                world.god().remove();
+                run.update();
+                AssertThat(run.status(pilot).phase, Equals(ContractPhase::Defeat));
+                run.act(pilot,{1,run.status(pilot).mission,ContractActionKind::NewRun});
+                AssertThat(run.status(pilot).run, Equals(restored.run + 1));
+            }
+            {
+                World::reset(false);
+                WorldResetGuard guard;
+                auto& world = *World::instance(World::Mode::Server);
+                const auto players = ContractRun::createPlayers(world, 1);
+                ContractRun run(world, players, save.path);
+                const auto restored = run.status(players.front());
+                AssertThat(restored.run, Equals(departure.run + 1));
+                AssertThat(restored.currentNode, Equals(std::uint8_t(0)));
+                AssertThat(restored.missingHullBlocks, Equals(std::uint32_t(0)));
+            }
+            std::filesystem::resize_file(save.path, std::filesystem::file_size(save.path) / 2);
+            World::reset(false);
+            WorldResetGuard guard;
+            auto& world = *World::instance(World::Mode::Server);
+            const auto players = ContractRun::createPlayers(world, 1);
+            AssertThrows(std::runtime_error, ContractRun(world, players, save.path));
         });
 
         it("keeps every contract route playable and completes a finite run without replay rewards", []() {

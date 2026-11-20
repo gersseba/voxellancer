@@ -1023,12 +1023,13 @@ void TcpServer::removeConnection(std::size_t index, const char* reason) {
 }
 
 void TcpServer::enableContracts(
-    const std::vector<voxellancer::protocol::EntityId>& players
+    const std::vector<voxellancer::protocol::EntityId>& players,
+    std::filesystem::path checkpoint
 ) {
     if (m_contracts) {
         throw std::logic_error("Contracts are already enabled.");
     }
-    m_contracts = std::make_unique<ContractRun>(m_world, players);
+    m_contracts = std::make_unique<ContractRun>(m_world, players, std::move(checkpoint));
     m_session.setPlayerInputEnabled(false);
 }
 

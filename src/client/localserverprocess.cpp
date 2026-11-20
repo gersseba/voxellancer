@@ -86,7 +86,7 @@ bool LocalServerProcess::start(
             safeRunId;
         commandLine += L" --benchmark-client-id integrated-client";
     } else {
-        commandLine += contracts ? L" --scenario contracts" : L" --scenario battle";
+        commandLine += contracts ? L" --scenario contracts --solo-checkpoint" : L" --scenario battle";
     }
     STARTUPINFOW startupInfo{};
     startupInfo.cb = sizeof(startupInfo);
@@ -151,6 +151,10 @@ bool LocalServerProcess::start(
                 "--benchmark-client-id",
                 "integrated-client",
                 static_cast<char*>(nullptr));
+        } else if (contracts) {
+            execl(executable.c_str(), executable.c_str(),
+                "--listen-port", portArgument.c_str(), "--scenario", "contracts",
+                "--solo-checkpoint", static_cast<char*>(nullptr));
         } else {
             execl(
                 executable.c_str(),
@@ -159,7 +163,7 @@ bool LocalServerProcess::start(
                 "--listen-port",
                 portArgument.c_str(),
                 "--scenario",
-                contracts ? "contracts" : "battle",
+                "battle",
                 static_cast<char*>(nullptr));
         }
         _exit(127);

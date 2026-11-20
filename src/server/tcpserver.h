@@ -2,6 +2,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <filesystem>
 #include <deque>
 #include <memory>
 #include <optional>
@@ -50,7 +51,8 @@ public:
     );
     std::vector<ClientStatistics> clientStatistics() const;
     void poll();
-    void enableContracts(const std::vector<voxellancer::protocol::EntityId>& players);
+    void enableContracts(const std::vector<voxellancer::protocol::EntityId>& players,
+        std::filesystem::path checkpoint = {});
 
 private:
     struct Connection {

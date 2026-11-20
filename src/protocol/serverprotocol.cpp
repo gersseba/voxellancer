@@ -653,7 +653,7 @@ bool encodeContractStatus(const ContractStatus& status, ContractStatusPacket& pa
     if (phase < 1 || phase > 6 || status.players == 0 ||
         status.players > 16 || status.readyPlayers > status.players ||
         static_cast<std::uint8_t>(status.result) >
-            static_cast<std::uint8_t>(ContractResult::RunDefeated) ||
+            static_cast<std::uint8_t>(ContractResult::CheckpointFailed) ||
         status.offer == 0 || status.offer > ContractWeaponKinds ||
         status.mounts.size() > MaxContractMounts ||
         status.gunPrice == 0 || status.shieldPrice == 0 || status.run == 0 ||

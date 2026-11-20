@@ -12,6 +12,14 @@ loop; Resume is available after starting, and Start is then disabled to avoid
 resetting a live session. Esc opens the menu during gameplay or returns from
 Settings. The online simulation does not pause while the menu is open.
 
+Local solo contracts save automatically when you arrive at a base (including
+the starting station) and when you confirm travel out of it. You can quit
+anywhere. After relaunching, choose **Start** to return to the last saved base.
+A departure checkpoint keeps your purchases, repairs, loadout, and chosen
+destination; confirm travel again when ready. Changes after the latest
+checkpoint, including combat and salvage before the next base, are lost.
+Co-op runs do not use this checkpoint.
+
 Choose **Play Contracts with Local Server (macOS)** in VS Code to build and
 launch the menu. At a base, **Enter / M** opens the branching sector map.
 Click a connected node or use the arrow keys to select it, then **TRAVEL / Enter**

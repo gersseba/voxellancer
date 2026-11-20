@@ -264,7 +264,7 @@ void MainMenu::draw() {
         : m_state.sessionStarted() && !m_state.resumeEnabled()
             ? "Session unavailable. Start and Resume require a ready server."
         : m_state.sessionStarted() ? "Session active. Use Resume. Online simulation continues in the menu."
-        : "Start a solo or co-op contract. Resume becomes available after Start.";
+        : "Start opens the contract. Solo runs continue from the latest base checkpoint.";
     font->drawScreen(help, glm::vec2(0.5f, 0.81f), 0.017f,
         glm::vec4(0.65f, 0.75f, 0.82f, 1), FontAlign::CENTER, 0.85f);
     font->drawScreen("Arrow keys / Tab: select    Enter: confirm    Esc: menu / back",
