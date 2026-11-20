@@ -531,8 +531,8 @@ void StationOutfitter::drawRewards() {
         text(headings[i],{x+0.014f,0.30f},0.019f,Accent,0.24f);
     }
     text("+"+std::to_string(m_status.reward)+" CR",{0.09f,0.40f},0.039f,glm::vec3(1),0.23f);
-    text("SAVE FOR A STATION VISIT",{0.09f,0.50f},0.014f,Muted,0.24f);
-    text("BUY GUNS OR A SHIELD",{0.09f,0.54f},0.014f,Muted,0.24f);
+    text("BANK FOR A STATION VISIT",{0.09f,0.50f},0.014f,Muted,0.24f);
+    text("REPAIR HULL OR BUY EQUIPMENT",{0.09f,0.54f},0.014f,Muted,0.24f);
     if (m_status.rewardWeapon) {
         UiFont::instance()->drawWeaponIcon(m_status.rewardWeapon,{0.46f,0.35f,0.09f,0.12f});
         const auto weapon = catalogWeapon(m_status.rewardWeapon);
@@ -580,20 +580,28 @@ void StationOutfitter::drawSummary() {
         {0.09f,0.39f},0.019f,glm::vec3(1),0.7f);
     const auto seconds = m_status.elapsedTicks /
         static_cast<std::uint64_t>(SimulationTickRunner::TickRate);
+    const auto signals = std::count_if(m_status.route.begin(), m_status.route.end(),
+        [this](const auto& node) {
+            const auto index = &node - m_status.route.data();
+            return node.kind == RouteNodeKind::Encounter &&
+                (m_status.visitedNodes & (1u << index));
+        });
     const std::string left[]{
         "ATTACKS CLEARED  "+std::to_string(m_status.attacksCleared),
         "HOSTILES DEFEATED  "+std::to_string(m_status.enemiesDefeated),
         "BASES VISITED  "+std::to_string(m_status.basesVisited),
+        "SIGNALS INVESTIGATED  "+std::to_string(signals),
         "RUN TIME  "+std::to_string(seconds/60)+" M "+std::to_string(seconds%60)+" S"};
     const std::string right[]{
         "CREDITS EARNED  "+std::to_string(m_status.creditsEarned),
+        "CREDITS UNSPENT  "+std::to_string(m_status.credits),
         "WEAPONS SALVAGED  "+std::to_string(m_status.weaponsFound),
         "PAYLOAD / SHIELD UPGRADES  "+std::to_string(m_status.damageUpgrades)+" / "+
             std::to_string(m_status.shieldUpgrades),
         "RESTART READY  "+std::to_string(m_status.readyPlayers)+" / "+std::to_string(m_status.players)};
-    for (int i = 0; i < 4; ++i) {
-        text(left[i],{0.09f,0.48f+i*0.065f},0.018f,glm::vec3(1),0.39f);
-        text(right[i],{0.53f,0.48f+i*0.065f},0.018f,glm::vec3(1),0.38f);
+    for (int i = 0; i < 5; ++i) {
+        text(left[i],{0.09f,0.48f+i*0.057f},0.018f,glm::vec3(1),0.39f);
+        text(right[i],{0.53f,0.48f+i*0.057f},0.018f,glm::vec3(1),0.38f);
     }
     text("NEW RUN RESETS SHIPS, CREDITS, INVENTORY, UPGRADES AND THE MAP.",
         {0.065f,0.865f},0.013f,Muted,0.53f);
@@ -641,7 +649,8 @@ void StationOutfitter::drawFlightResources() {
     };
     const auto shield = catalogShield(m_status.shieldBuild);
     const bool broken = m_status.shieldHP <= 0;
-    const auto shieldDetail = m_status.shieldRechargeRemaining > 0
+    const auto shieldDetail = m_status.shieldCapacity <= 0 ? std::string("NO SHIELD FITTED") :
+        m_status.shieldRechargeRemaining > 0
         ? "WAIT "+number(m_status.shieldRechargeRemaining,1)+" S"
         : m_status.shieldHP < m_status.shieldCapacity
             ? "+"+number(m_status.shieldRegeneration)+" HP/S" : "FULL CHARGE";
@@ -656,6 +665,9 @@ void StationOutfitter::drawFlightResources() {
     bar(0.66f,low ? "ENERGY LOW / RELEASE FIRE" : "WEAPON ENERGY",
         m_status.weaponEnergy,m_status.weaponEnergyCapacity,energyDetail,
         low ? glm::vec3(1,0.72f,0.3f) : glm::vec3(0.65f,0.65f,1));
+    if (!low && m_status.run == 1 && m_status.attacksCleared == 0)
+        text("FIRE IN BURSTS / RELEASE TO RECHARGE",
+            {0.672f,0.916f},0.013f,Muted,0.275f);
 }
 
 void StationOutfitter::draw() {

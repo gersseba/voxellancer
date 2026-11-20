@@ -895,6 +895,11 @@ void GamePlayScene::drawRemoteContacts(const Camera& camera) const {
         const bool linedUp = remoteLeadTarget().has_value();
         font->drawScreen(linedUp ? "(+)" : "+", cueScreen - glm::vec2(0.0f, 0.012f),
             0.024f, glm::vec4(0.56f, 0.95f, 1.0f, 1.0f), FontAlign::CENTER);
+        if (contract && contract->run == 1 && contract->attacksCleared == 0) {
+            font->drawScreen(linedUp ? "LEAD ALIGNED - FIRE" : "LINE UP THE CYAN + TO LEAD",
+                glm::vec2(0.5f, 0.73f), 0.017f, glm::vec4(0.56f, 0.95f, 1.0f, 1.0f),
+                FontAlign::CENTER);
+        }
     }
 }
 

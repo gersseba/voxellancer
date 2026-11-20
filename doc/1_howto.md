@@ -87,7 +87,8 @@ these markers. Enemy marking identifies a contact; it does not auto-lock guns.
   Line up the lead marker before firing and each gun will lead the target
   independently. Standalone scenarios show the marker for your selected
   target; networked contracts show a cyan `+` for the enemy lead point
-  nearest the crosshair, changing to `(+)` when lined up.
+  nearest the crosshair, changing to `(+)` when lined up. The first run's
+  opening attack also shows a lead-alignment prompt and a burst-fire reminder.
 * Right Mouse - click to select target / hold to change direction
 * M - route map/back at a base; free mouse cursor during flight
 * Space - change to fight controls
