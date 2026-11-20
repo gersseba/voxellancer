@@ -33,6 +33,7 @@ private:
         voxellancer::protocol::EntityId actor;
         bool alive = true, protection = false, rewardClaimed = false;
         std::uint32_t credits = 0;
+        std::size_t originalHullBlocks = 0;
         bool gun = false;
         bool shield = false;
         bool ready = false;
@@ -69,6 +70,8 @@ private:
     void generateRoute();
     void chooseNext();
     void visitBase();
+    std::uint32_t repairPrice(const PlayerState& player) const;
+    voxellancer::protocol::ContractResult repair(PlayerState& player);
     void advanceRevision();
     voxellancer::protocol::ContractResult purchase(PlayerState& player, bool gun,
         std::uint8_t shield = 1);

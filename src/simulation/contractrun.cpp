@@ -88,7 +88,10 @@ ContractRun::ContractRun(World& world, const std::vector<EntityId>& players):
             throw std::invalid_argument("Contract ship has too many hardpoints.");
         refreshOffer(m_players.at(playerKey(actor)));
     }
-    for (std::uint8_t id = 1; id <= 3; ++id) contractLevel(id);
+    for (std::uint8_t id = 1; id <= 3; ++id) {
+        contractLevel(id);
+        contractSignal(id);
+    }
     for (std::uint8_t id = 0; id <= ShieldCatalogSize; ++id) catalogShield(id);
     generateRoute();
     m_startTick = m_world.simulationTickIndex();
@@ -171,12 +174,21 @@ ContractStatus ContractRun::status(EntityId player) const {
     state.gunPrice = catalogWeapon(personal.offer).price;
     state.shieldPrice = catalogShield(1).price;
     state.shieldBuild = personal.shieldBuild;
-    state.reward = m_phase == ContractPhase::Reward ? m_reward : m_selectedNode != NoRouteNode &&
-        m_route[m_selectedNode].kind == RouteNodeKind::Attack
-        ? contractLevel(m_route[m_selectedNode].level).reward : 0;
+    if (m_phase == ContractPhase::Reward || inMission()) {
+        state.reward = m_reward;
+    } else if (m_selectedNode != NoRouteNode) {
+        const auto& node = m_route[m_selectedNode];
+        if (node.kind == RouteNodeKind::Attack) state.reward = contractLevel(node.level).reward;
+        if (node.kind == RouteNodeKind::Encounter) state.reward = contractSignal(node.level).reward;
+    }
     auto* object = m_world.worldObject(personal.actor);
     state.invulnerable = personal.protection;
     if (object) {
+        const auto blocks = object->voxelMap().size();
+        if (personal.originalHullBlocks > blocks)
+            state.missingHullBlocks = static_cast<std::uint32_t>(personal.originalHullBlocks - blocks);
+        if (m_phase == ContractPhase::Station && state.alive)
+            state.repairPrice = repairPrice(personal);
         for (const auto& slot : object->components().shieldSlots()) if (slot->shield()) {
             state.shieldHP += slot->shield()->hp();
             state.shieldCapacity += slot->shield()->maxHP();
@@ -209,7 +221,8 @@ void ContractRun::act(EntityId actor, const ContractAction& action) {
         action.kind != ContractActionKind::EquipGun &&
         action.kind != ContractActionKind::SelectNode &&
         action.kind != ContractActionKind::ClaimReward &&
-        action.kind != ContractActionKind::NewRun) {
+        action.kind != ContractActionKind::NewRun &&
+        action.kind != ContractActionKind::RepairHull) {
         throw std::invalid_argument("Unknown contract action.");
     }
     auto& player = m_players.at(playerKey(actor));
@@ -262,8 +275,6 @@ void ContractRun::act(EntityId actor, const ContractAction& action) {
         if (action.node >= m_route.size() ||
             !(m_route[m_currentNode].links & (1u << action.node))) {
             player.result = ContractResult::InvalidRoute;
-        } else if (m_route[action.node].kind == RouteNodeKind::Encounter) {
-            player.result = ContractResult::EncounterUnavailable;
         } else {
             if (m_selectedNode != action.node) {
                 advanceRevision();
@@ -299,7 +310,8 @@ void ContractRun::act(EntityId actor, const ContractAction& action) {
             player.result = ContractResult::WrongPhase;
             return;
         }
-        player.result = action.kind == ContractActionKind::EquipGun
+        player.result = action.kind == ContractActionKind::RepairHull ? repair(player)
+            : action.kind == ContractActionKind::EquipGun
             ? equip(player, action)
             : purchase(player, action.kind == ContractActionKind::BuyGun, action.shield ? action.shield : 1);
         if (player.result == ContractResult::Accepted) {
@@ -317,6 +329,9 @@ void ContractRun::advanceRevision() {
 void ContractRun::generateRoute() {
     m_route.clear();
     m_route.push_back({RouteNodeKind::Base, 0, 0, 1, 0});
+    const auto firstSignal = std::uniform_int_distribution<int>(1, 3)(m_offerRandom);
+    const auto secondSignal = (firstSignal - 1 +
+        std::uniform_int_distribution<int>(1, 2)(m_offerRandom)) % 3 + 1;
     for (std::uint8_t row = 1; row <= 5; ++row) {
         const int baseLane = std::uniform_int_distribution<int>(0, 2)(m_offerRandom);
         for (std::uint8_t lane = 0; lane < 3; ++lane) {
@@ -325,7 +340,8 @@ void ContractRun::generateRoute() {
                 if (lane == baseLane) kind = RouteNodeKind::Base;
                 else if (lane == (baseLane + 1) % 3) kind = RouteNodeKind::Encounter;
             }
-            const auto level = kind != RouteNodeKind::Attack ? 0 : row == 1 ? lane + 1
+            const auto level = kind == RouteNodeKind::Base ? 0
+                : kind == RouteNodeKind::Encounter ? (row == 2 ? firstSignal : secondSignal) : row == 1 ? lane + 1
                 : std::uniform_int_distribution<int>(1, 3)(m_offerRandom);
             m_route.push_back({kind, static_cast<std::uint8_t>(level), row, lane, 0});
         }
@@ -346,11 +362,30 @@ void ContractRun::generateRoute() {
 void ContractRun::chooseNext() {
     m_selectedNode = NoRouteNode;
     for (std::size_t i = 0; i < m_route.size(); ++i)
-        if ((m_route[m_currentNode].links & (1u << i)) &&
-            m_route[i].kind != RouteNodeKind::Encounter) {
+        if (m_route[m_currentNode].links & (1u << i)) {
             m_selectedNode = static_cast<std::uint8_t>(i);
             break;
         }
+}
+
+std::uint32_t ContractRun::repairPrice(const PlayerState& player) const {
+    const auto* ship = m_world.worldObject(player.actor);
+    double missingHP = 0;
+    for (const auto& entry : ship->voxelMap()) {
+        const auto& voxel = *entry.second;
+        if (voxel.hp() > 0) missingHP += voxel.maxHP() - voxel.hp();
+    }
+    return missingHP > 0 ? static_cast<std::uint32_t>(std::ceil(missingHP / 100.0)) : 0;
+}
+
+ContractResult ContractRun::repair(PlayerState& player) {
+    const auto price = repairPrice(player);
+    if (price == 0) return ContractResult::HullIntact;
+    if (player.credits < price) return ContractResult::InsufficientCredits;
+    for (const auto& entry : m_world.worldObject(player.actor)->voxelMap())
+        entry.second->restoreHP();
+    player.credits -= price;
+    return ContractResult::Accepted;
 }
 
 void ContractRun::visitBase() {
@@ -414,6 +449,8 @@ ContractResult ContractRun::purchase(PlayerState& player, bool gun, std::uint8_t
 }
 
 void ContractRun::refreshOffer(PlayerState& player) {
+    if (player.originalHullBlocks == 0)
+        player.originalHullBlocks = m_world.worldObject(player.actor)->voxelMap().size();
     player.offer = static_cast<std::uint8_t>(
         std::uniform_int_distribution<int>(1, WeaponCatalogSize)(m_offerRandom));
     player.gun = false;
@@ -445,8 +482,13 @@ ContractResult ContractRun::equip(PlayerState& player, const ContractAction& act
 }
 
 void ContractRun::deploy() {
-    const auto level = contractLevel(m_route[m_selectedNode].level);
+    const auto& node = m_route[m_selectedNode];
+    const auto level = node.kind == RouteNodeKind::Encounter ? contractSignal(node.level) : contractLevel(node.level);
     m_reward = level.reward;
+    if (level.enemiesPerPlayer == 0) {
+        finishEncounter(true);
+        return;
+    }
     std::vector<Handle<WorldObject>> targets;
     for (auto& entry : m_players) {
         WorldObject* ship = m_world.worldObject(entry.second.actor);
@@ -523,8 +565,9 @@ void ContractRun::finishEncounter(bool success) {
         chooseNext();
     }
     m_phase = success ? ContractPhase::Reward : ContractPhase::Defeat;
-    if (success) ++m_attacksCleared;
-    else m_endTick = m_world.simulationTickIndex();
+    if (success) {
+        if (m_route[m_currentNode].kind == RouteNodeKind::Attack) ++m_attacksCleared;
+    } else m_endTick = m_world.simulationTickIndex();
     clearEncounter();
     std::size_t index = 0;
     for (auto& entry : m_players) {

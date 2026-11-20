@@ -594,7 +594,7 @@ DecodeError decodeEntityId(
 bool encodeContractAction(const ContractAction& action, ContractActionPacket& packet) {
     const auto kind = static_cast<std::uint8_t>(action.kind);
     const auto choice = static_cast<std::uint8_t>(action.choice);
-    if (action.sequence == 0 || kind < 1 || kind > 9 ||
+    if (action.sequence == 0 || kind < 1 || kind > 10 ||
         action.weapon > ContractWeaponKinds ||
         (kind == 6 ? action.weapon == 0 : action.weapon != 0) ||
         glm::any(glm::lessThan(action.cell, glm::ivec3(0))) ||
@@ -679,13 +679,12 @@ bool encodeContractStatus(const ContractStatus& status, ContractStatusPacket& pa
             !(status.visitedNodes & (1u << status.currentNode))) return false;
         if (status.selectedNode != NoRouteNode &&
             (status.selectedNode >= status.route.size() ||
-                !(status.route[status.currentNode].links & (1u << status.selectedNode)) ||
-                status.route[status.selectedNode].kind == RouteNodeKind::Encounter)) return false;
+                !(status.route[status.currentNode].links & (1u << status.selectedNode)))) return false;
         for (std::size_t i = 0; i < status.route.size(); ++i) {
             const auto& node = status.route[i];
             const auto kind = static_cast<std::uint8_t>(node.kind);
             if (kind < 1 || kind > 3 || node.row > 6 || node.lane > 2 ||
-                (node.kind == RouteNodeKind::Attack ? node.level < 1 || node.level > 3 : node.level != 0) ||
+                (node.kind == RouteNodeKind::Base ? node.level != 0 : node.level < 1 || node.level > 3) ||
                 (node.links & ~nodeMask)) return false;
             for (std::size_t j = 0; j < status.route.size(); ++j)
                 if ((node.links & (1u << j)) && status.route[j].row != node.row + 1)
@@ -771,6 +770,8 @@ bool encodeContractStatus(const ContractStatus& status, ContractStatusPacket& pa
     writeFloat(resources+21,status.weaponEnergyCapacity);
     writeFloat(resources+25,status.weaponEnergyRegeneration);
     writeFloat(resources+29,status.weaponEnergyRechargeRemaining);
+    writeU32(resources+33,status.repairPrice);
+    writeU32(resources+37,status.missingHullBlocks);
     return true;
 }
 
@@ -847,6 +848,8 @@ DecodeError decodeContractStatus(
     decoded.weaponEnergyCapacity = readFloat(resources+21);
     decoded.weaponEnergyRegeneration = readFloat(resources+25);
     decoded.weaponEnergyRechargeRemaining = readFloat(resources+29);
+    decoded.repairPrice = readU32(resources+33);
+    decoded.missingHullBlocks = readU32(resources+37);
     ContractStatusPacket check{};
     if (data[13] > 1 || data[14] > 1 || data[15] > 1 || data[39] > 1 ||
         run[36] > 1 || run[37] > 1 ||

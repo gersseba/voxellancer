@@ -578,15 +578,26 @@ go_bandit([]() {
             run.act(players[0],{5,state.mission,ContractActionKind::SelectNode,0,glm::ivec3(0),16});
             AssertThat(run.status(players[0]).result,Equals(ContractResult::InvalidRoute));
             run.act(players[0],{6,state.mission,ContractActionKind::SelectNode,0,glm::ivec3(0),encounter});
-            AssertThat(run.status(players[0]).result,Equals(ContractResult::EncounterUnavailable));
-            AssertThat(run.status(players[0]).mission,Equals(state.mission));
-            run.act(players[0],{7,state.mission,ContractActionKind::SelectNode,0,glm::ivec3(0),base});
+            AssertThat(run.status(players[0]).result,Equals(ContractResult::Accepted));
+            AssertThat(run.status(players[0]).selectedNode,Equals(encounter));
+            run.act(players[0],{7,run.status(players[0]).mission,ContractActionKind::SelectNode,0,glm::ivec3(0),base});
             const auto baseRevision = run.status(players[0]).mission;
             run.act(players[0],{8,baseRevision,ContractActionKind::Ready});
             run.act(players[1],{4,baseRevision,ContractActionKind::Ready});
             AssertThat(run.status(players[0]).phase,Equals(ContractPhase::Station));
             AssertThat(shield->hp(),Equals(shield->maxHP()));
             AssertThat(run.status(players[0]).credits,Equals(state.credits));
+            auto* ship = world.worldObject(players[0]);
+            auto* voxel = ship->voxelMap().begin()->second;
+            voxel->applyDamage(1);
+            const auto quote = run.status(players[0]);
+            AssertThat(quote.repairPrice,Equals(std::uint32_t(1)));
+            run.act(players[0],{9,quote.mission,ContractActionKind::RepairHull});
+            AssertThat(voxel->hp(),Equals(voxel->maxHP()));
+            AssertThat(run.status(players[0]).credits,Equals(state.credits-1));
+            run.act(players[0],{10,quote.mission,ContractActionKind::RepairHull});
+            AssertThat(run.status(players[0]).result,Equals(ContractResult::HullIntact));
+            AssertThat(run.status(players[0]).credits,Equals(state.credits-1));
         });
 
         it("keeps every contract route playable and completes a finite run without replay rewards", []() {
@@ -602,10 +613,9 @@ go_bandit([]() {
                 const auto graph = run.status(pilot).route;
                 std::uint32_t reachable = 1;
                 for (std::size_t i = 0; i < graph.size(); ++i) {
-                    if (graph[i].kind == RouteNodeKind::Encounter) continue;
                     std::uint32_t usable = 0;
                     for (std::size_t j = 0; j < graph.size(); ++j)
-                        if ((graph[i].links & (1u << j)) && graph[j].kind != RouteNodeKind::Encounter)
+                        if (graph[i].links & (1u << j))
                             usable |= 1u << j;
                     AssertThat(graph[i].row == 6 || usable != 0,IsTrue());
                     if (reachable & (1u << i)) reachable |= usable;
@@ -617,22 +627,25 @@ go_bandit([]() {
                     auto state = run.status(pilot);
                     int selected = -1;
                     for (std::size_t i = 0; i < graph.size(); ++i)
-                        if ((graph[state.currentNode].links & (1u << i)) &&
-                            graph[i].kind != RouteNodeKind::Encounter) {
-                            if (selected < 0 || graph[i].kind == RouteNodeKind::Base ||
-                                (graph[selected].kind != RouteNodeKind::Base && graph[i].lane == 1))
+                        if (graph[state.currentNode].links & (1u << i)) {
+                            if (selected < 0 ||
+                                (step == 1 ? graph[i].kind == RouteNodeKind::Encounter :
+                                    graph[i].lane == 1))
                                 selected = static_cast<int>(i);
                         }
                     AssertThat(selected >= 0,IsTrue());
+                    if (step == 1) AssertThat(graph[selected].kind,Equals(RouteNodeKind::Encounter));
                     run.act(pilot,{++sequence,state.mission,ContractActionKind::SelectNode,0,
                         glm::ivec3(0),static_cast<std::uint8_t>(selected)});
                     run.act(pilot,{++sequence,run.status(pilot).mission,ContractActionKind::Ready});
                     if (run.inMission()) {
-                        earned += run.status(pilot).reward;
                         for (auto* ship : world.ships())
                             if (world.entityId(ship) != pilot) world.god().scheduleRemoval(ship);
                         world.god().remove();
                         run.update();
+                    }
+                    if (run.status(pilot).phase == ContractPhase::Reward) {
+                        earned += run.status(pilot).reward;
                         run.act(pilot,{++sequence,run.status(pilot).mission,ContractActionKind::ClaimReward,
                             0,glm::ivec3(0),NoRouteNode,RewardChoice::Credits});
                     }

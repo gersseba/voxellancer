@@ -121,7 +121,7 @@ go_bandit([]() {
             state.gunPrice = state.shieldPrice = 100;
             state.phase = ContractPhase::Route;
             state.route = {{RouteNodeKind::Base,0,0,1,6},
-                {RouteNodeKind::Attack,2,1,0,0},{RouteNodeKind::Encounter,0,1,2,0}};
+                {RouteNodeKind::Attack,2,1,0,0},{RouteNodeKind::Encounter,1,1,2,0}};
             state.currentNode = 0;
             state.selectedNode = 1;
             state.visitedNodes = 1;
@@ -139,6 +139,8 @@ go_bandit([]() {
             AssertThat(encodeContractStatus(state,packet),IsFalse());
             state.route[1].links = 0;
             state.selectedNode = 2;
+            AssertThat(encodeContractStatus(state,packet),IsTrue());
+            state.route[2].level = 0;
             AssertThat(encodeContractStatus(state,packet),IsFalse());
             ContractAction action{9,3,ContractActionKind::SelectNode,0,glm::ivec3(0),16};
             ContractActionPacket request{};

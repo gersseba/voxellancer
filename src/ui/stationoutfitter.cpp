@@ -47,7 +47,7 @@ namespace {
         case ContractResult::InventoryFull: return "INVENTORY FULL - 64 STORED WEAPONS MAXIMUM";
         case ContractResult::InvalidSlot: return "MOUNT NO LONGER EXISTS - SELECT ANOTHER";
         case ContractResult::InvalidRoute: return "CHOOSE A CONNECTED DESTINATION";
-        case ContractResult::EncounterUnavailable: return "RANDOM ENCOUNTERS ARE NOT AVAILABLE YET";
+        case ContractResult::HullIntact: return "NO SURVIVING HULL BLOCKS NEED REPAIR";
         case ContractResult::RewardAlreadyClaimed: return "YOUR REWARD HAS ALREADY BEEN CLAIMED";
         case ContractResult::InvalidReward: return "THIS REWARD IS UNAVAILABLE - CHOOSE ANOTHER";
         case ContractResult::RunDefeated: return "ALL PILOTS LOST - RUN ENDED";
@@ -129,7 +129,8 @@ void StationOutfitter::layout() {
         if (m_status.selectedNode < m_status.route.size()) {
             const auto& node = m_status.route[m_status.selectedNode];
             destination = node.kind == RouteNodeKind::Base ? "TRAVEL - BASE" :
-                "TRAVEL - ATK "+std::to_string(node.level);
+                node.kind == RouteNodeKind::Encounter ? "INVESTIGATE - ENTER" :
+                    "TRAVEL - ATK "+std::to_string(node.level);
         }
         m_buttons.push_back({{0.69f,0.855f,0.24f,0.06f},
             m_status.phase == ContractPhase::Complete ? "ROUTE COMPLETE" :
@@ -144,10 +145,10 @@ void StationOutfitter::layout() {
             const bool reachable = m_status.currentNode < m_status.route.size() &&
                 (m_status.route[m_status.currentNode].links & (1u << i));
             const auto label = node.kind == RouteNodeKind::Attack ? "ATK "+std::to_string(node.level)
-                : node.kind == RouteNodeKind::Base ? "BASE" : "? SOON";
+                : node.kind == RouteNodeKind::Base ? "BASE" : "SIGNAL ?";
             m_buttons.push_back({{p.x-0.032f,p.y-0.028f,0.064f,0.056f},label,
                 300+static_cast<int>(i),idle && m_status.alive && reachable &&
-                    node.kind != RouteNodeKind::Encounter && m_status.phase != ContractPhase::Complete});
+                    m_status.phase != ContractPhase::Complete});
         }
     } else if (m_defense) {
         for (std::uint8_t id = 1; id <= ShieldCatalogSize; ++id)
@@ -167,6 +168,11 @@ void StationOutfitter::layout() {
         m_buttons.push_back({{0.085f,0.65f,0.32f,0.06f},"EQUIPMENT - E",2,true});
         m_buttons.push_back({{0.085f,0.73f,0.32f,0.055f},
             "SHIELDS / ENERGY - N",3,true});
+        m_buttons.push_back({{0.085f,0.56f,0.32f,0.06f},
+            m_status.repairPrice == 0 ? "NO REPAIR NEEDED" :
+                "REPAIR - H / "+std::to_string(m_status.repairPrice)+" CR",34,
+            idle && m_status.alive && !m_status.ready && m_status.repairPrice > 0 &&
+                m_status.credits >= m_status.repairPrice});
         m_buttons.push_back({{0.51f,0.68f,0.395f,0.065f},
             m_status.gun ? "SOLD - NEXT OFFER AT ANOTHER BASE" :
             "BUY - " + std::to_string(m_status.gunPrice) + " CR",4,
@@ -228,6 +234,7 @@ void StationOutfitter::activate(int id) {
     if (id >= 30 && id <= 32) m_shieldSelection = static_cast<std::uint8_t>(id-29);
     if (id == 33) request(ContractActionKind::BuyShield,0,glm::ivec3(0),
         NoRouteNode,RewardChoice::None,m_shieldSelection);
+    if (id == 34) request(ContractActionKind::RepairHull);
     if (id == 6) m_rotation -= 0.4f;
     if (id == 7) m_rotation += 0.4f;
     if (id >= 100 && id < 200) m_weapon = id - 99;
@@ -316,6 +323,7 @@ bool StationOutfitter::key(int key) {
     if (!m_equipment) {
         if (key == GLFW_KEY_ENTER) { m_map = true; m_visible = true; layout(); }
         if (key == GLFW_KEY_B) request(ContractActionKind::BuyGun);
+        if (key == GLFW_KEY_H) activate(34);
     } else {
         if (key == GLFW_KEY_Q) activate(6);
         if (key == GLFW_KEY_R) activate(7);
@@ -456,7 +464,7 @@ glm::vec2 StationOutfitter::nodePosition(const RouteNode& node) const {
 void StationOutfitter::drawRoute() {
     rectangle({0.065f,0.26f,0.57f,0.55f},Surface*0.65f);
     rectangle({0.66f,0.26f,0.275f,0.55f},Surface*0.65f);
-    text("1 PATROL / 2 CROSSFIRE / 3 BLOCKADE / BASE SHOP / ? LATER",
+    text("1 PATROL / 2 CROSSFIRE / 3 BLOCKADE / BASE SERVICES / SIGNAL ?",
         {0.085f,0.285f},0.013f,Muted,0.53f);
     for (int pass = 0; pass < 2; ++pass) {
         m_lines.clear();
@@ -481,26 +489,27 @@ void StationOutfitter::drawRoute() {
         text(nodeId == m_status.selectedNode ? "SELECTED DESTINATION" : "HOVER PREVIEW",
             {0.68f,0.275f},0.012f,Muted,0.23f);
         text(node.kind == RouteNodeKind::Attack ? contractLevel(node.level).name :
-            node.kind == RouteNodeKind::Base ? "STATION STOP" : "UNKNOWN SIGNAL",
+            node.kind == RouteNodeKind::Base ? "STATION STOP" : contractSignal(node.level).name,
             {0.68f,0.32f},0.022f,Accent,0.23f);
-        if (node.kind == RouteNodeKind::Attack) {
-            const auto level = contractLevel(node.level);
+        if (node.kind != RouteNodeKind::Base) {
+            const auto level = node.kind == RouteNodeKind::Attack ? contractLevel(node.level) : contractSignal(node.level);
             const auto split = level.description.find(' ',level.description.size()/2);
             text(level.description.substr(0,split),{0.68f,0.40f},0.016f,Muted,0.23f);
             if (split != std::string::npos)
                 text(level.description.substr(split+1),{0.68f,0.43f},0.016f,Muted,0.23f);
             text(std::to_string(level.reward)+" CR OR SALVAGE",
                 {0.68f,0.48f},0.017f,glm::vec3(1),0.23f);
-            text(std::to_string(level.enemiesPerPlayer)+
+            text(level.enemiesPerPlayer == 0 ? "NO HOSTILES" : std::to_string(level.enemiesPerPlayer)+
                 (level.enemiesPerPlayer == 1 ? " ENEMY PER PILOT" : " ENEMIES PER PILOT"),
                 {0.68f,0.54f},0.016f,Muted,0.23f);
-            text("DESTROY ALL HOSTILES",{0.68f,0.60f},0.015f,Muted,0.23f);
+            text(level.enemiesPerPlayer ? "DESTROY ALL HOSTILES" : "CHOOSE ONE SALVAGE REWARD",
+                {0.68f,0.60f},0.015f,Muted,0.23f);
         } else {
-            text(node.kind == RouteNodeKind::Base ? "ONE NEW PERSONAL GUN OFFER" : "NOT IMPLEMENTED YET",
+            text("ONE NEW PERSONAL GUN OFFER",
                 {0.68f,0.42f},0.015f,Muted,0.23f);
-            text(node.kind == RouteNodeKind::Base ? "SHIELDS RECHARGE" : "THIS NODE CANNOT BE ENTERED",
+            text("SHIELDS AND ENERGY REFILL",
                 {0.68f,0.49f},0.015f,Muted,0.23f);
-            text(node.kind == RouteNodeKind::Base ? "HULL DAMAGE PERSISTS" : "CHOOSE AN ATTACK OR BASE",
+            text("PAID REPAIRS / LOST BLOCKS STAY LOST",
                 {0.68f,0.56f},0.015f,Muted,0.23f);
         }
         text("PILOTS READY "+std::to_string(m_status.readyPlayers)+"/"+std::to_string(m_status.livingPlayers),
@@ -672,7 +681,7 @@ void StationOutfitter::draw() {
             std::to_string(m_status.shieldUpgrades)+" SHIELD",
             {0.65f,0.21f},0.012f,Accent,0.28f);
     text(summary ? "EVERY CONNECTED PILOT MUST CONFIRM A FRESH RUN." :
-        rewards ? "ATTACK COMPLETE. EACH SURVIVING PILOT CHOOSES ONE REWARD." :
+        rewards ? "EACH SURVIVING PILOT CHOOSES ONE REWARD." :
         !m_status.alive ? "SHIP LOST. SPECTATING THE SURVIVORS - NO REVIVES THIS RUN." :
         m_defense ? "BUY AND EQUIP A BUILD. REPLACES THE OLD SHIELD; NO REFUND. ENERGY IS SEPARATE." :
         m_map ? "CHOOSE A CONNECTED NODE. SURVIVING PILOTS CONFIRM BEFORE TRAVEL."
@@ -693,8 +702,8 @@ void StationOutfitter::draw() {
         text("CHOOSE YOUR NEXT STOP",{0.085f,0.35f},0.022f,glm::vec3(1),0.30f);
         text("ATTACK / BASE / UNKNOWN SIGNAL",{0.085f,0.40f},0.016f,Muted,0.32f);
         text("ENTER - OPEN THE ROUTE MAP",{0.085f,0.45f},0.018f,glm::vec3(1),0.31f);
-        text("PARTY READY  "+std::to_string(m_status.readyPlayers)+"/"+std::to_string(m_status.players),
-            {0.085f,0.51f},0.018f,Accent,0.3f);
+        text("SURVIVING BLOCKS ONLY / "+std::to_string(m_status.missingHullBlocks)+" LOST",
+            {0.085f,0.51f},0.014f,Muted,0.32f);
         text("ONE PERSONAL WEAPON OFFER PER VISIT",{0.51f,0.285f},0.016f,Accent,0.39f);
         UiFont::instance()->drawWeaponIcon(m_status.offer,{0.51f,0.325f,0.09f,0.14f});
         text(offer.name,{0.62f,0.34f},0.022f,glm::vec3(1),0.28f);

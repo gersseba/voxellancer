@@ -14,7 +14,7 @@
 namespace voxellancer {
 namespace protocol {
 
-constexpr std::uint8_t ProtocolVersion = 27;
+constexpr std::uint8_t ProtocolVersion = 28;
 constexpr std::size_t ContractActionPacketSize = 22;
 constexpr std::size_t MaxContractMounts = 32;
 constexpr std::size_t ContractWeaponKinds = 6;
@@ -24,7 +24,7 @@ constexpr std::uint8_t NoRouteNode = 255;
 constexpr std::size_t ContractRouteOffset = 55 + MaxContractMounts * 4;
 constexpr std::size_t ContractRunOffset = ContractRouteOffset + 7 + MaxRouteNodes * 8;
 constexpr std::size_t ContractResourceOffset = ContractRunOffset + 40;
-constexpr std::size_t ContractStatusPacketSize = ContractResourceOffset + 33;
+constexpr std::size_t ContractStatusPacketSize = ContractResourceOffset + 41;
 constexpr std::uint8_t ContractShieldKinds = 3;
 constexpr std::uint8_t MaxRunUpgradeStacks = 6;
 constexpr std::size_t EntityIdPacketSize = 10;
@@ -76,12 +76,12 @@ enum class RewardChoice : std::uint8_t { None, Credits, Weapon, Upgrade };
 enum class ContractActionKind : std::uint8_t {
     Ready = 1, BuyGun = 2, BuyShield = 3,
     EnableInvulnerability = 4, DisableInvulnerability = 5, EquipGun = 6, SelectNode = 7,
-    ClaimReward = 8, NewRun = 9
+    ClaimReward = 8, NewRun = 9, RepairHull = 10
 };
 enum class ContractResult : std::uint8_t {
     None, Accepted, WrongPhase, InsufficientCredits, AlreadyOwned,
     Incompatible, StaleRequest, Unavailable, MissionCompleted, MissionAborted,
-    InventoryFull, InvalidSlot, InvalidRoute, EncounterUnavailable,
+    InventoryFull, InvalidSlot, InvalidRoute, HullIntact,
     RewardAlreadyClaimed, InvalidReward, RunDefeated
 };
 
@@ -97,6 +97,7 @@ struct ContractAction {
 };
 
 enum class RouteNodeKind : std::uint8_t { Attack = 1, Base = 2, Encounter = 3 };
+enum class SignalKind : std::uint8_t { Derelict = 1, Distress, Decoy };
 struct RouteNode {
     RouteNodeKind kind = RouteNodeKind::Attack;
     std::uint8_t level = 1, row = 0, lane = 0;
@@ -143,6 +144,7 @@ struct ContractStatus {
     float shieldHP = 0, shieldCapacity = 0, shieldRegeneration = 0, shieldRechargeRemaining = 0;
     float weaponEnergy = 0, weaponEnergyCapacity = 0, weaponEnergyRegeneration = 0;
     float weaponEnergyRechargeRemaining = 0;
+    std::uint32_t repairPrice = 0, missingHullBlocks = 0;
 };
 
 struct EntitySnapshot {

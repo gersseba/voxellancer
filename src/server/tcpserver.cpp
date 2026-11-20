@@ -393,6 +393,14 @@ bool TcpServer::processInputFrames(Connection& connection) {
                 return false;
             }
             m_contracts->act(connection.actor, action);
+            if (action.kind == voxellancer::protocol::ContractActionKind::RepairHull &&
+                m_contracts->status(connection.actor).result == voxellancer::protocol::ContractResult::Accepted) {
+                const auto actor = m_contracts->controlledActor(connection.actor);
+                for (auto& peer : m_connections) {
+                    if (std::find(peer.contentRefresh.begin(), peer.contentRefresh.end(), actor) ==
+                        peer.contentRefresh.end()) peer.contentRefresh.push_back(actor);
+                }
+            }
         } else if (packet[1] == 5) {
             if (voxellancer::protocol::decodeSnapshotResyncRequest(
                     packet, packetSize) !=
@@ -628,6 +636,13 @@ bool TcpServer::sendSnapshot(
         if (!sendEntityContent(connection, entity)) {
             return false;
         }
+        for (const auto entity : connection.contentRefresh) {
+            if (std::find(newEntities.begin(), newEntities.end(), entity) == newEntities.end() &&
+                std::any_of(current.begin(), current.end(),
+                    [entity](const auto& snapshot) { return snapshot.id == entity; }) &&
+                !sendEntityContent(connection, entity)) return false;
+        }
+        connection.contentRefresh.clear();
     }
     if (!voxellancer::protocol::applySnapshotFrame(
             frame, connection.snapshotSequence, connection.snapshotBaseline)) {

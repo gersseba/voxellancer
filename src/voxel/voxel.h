@@ -33,6 +33,7 @@ public:
     float hp() const;
     float maxHP() const;
     void applyDamage(float deltaHp);
+    void restoreHP();
 
     virtual float damageForwardingDestructionDamage();
 

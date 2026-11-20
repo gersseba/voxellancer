@@ -26,9 +26,11 @@ upgrade. Click a card's **CLAIM** button, use **1 / 2 / 3**, or select with
 **Left/Right** and press **Enter**. Upgrades add 15% gun damage or 20% shield
 capacity per stack against base values, including later refits. Capacity
 upgrades retain the current charge fraction. All survivors must choose before
-returning to the **map**. Base nodes open the shop and fully refill shields;
-hull damage persists. **?** nodes are future random encounters and cannot yet
-be entered. Follow the links toward the final attack; visited nodes cannot be
+returning to the **map**. Base nodes offer a shop, free shield and energy refills,
+and paid hull repair (**H** or the repair button). Repair restores HP on surviving
+blocks only; lost blocks and mounts stay lost. **?** nodes offer derelict salvage
+or an optional fight. The map previews the signal, known opposition, and reward.
+Follow the links toward the final attack; visited nodes cannot be
 replayed. Clearing the final attack and choosing salvage opens the victory
 debrief. Solo death or a party wipe opens the defeat debrief. **NEW RUN / Enter**
 resets ships, credits, inventory, equipment, upgrades, statistics, and the map
@@ -63,7 +65,7 @@ right, including recharge countdowns. Contract guns share 100 energy, recovering
 release fire to refill. Scatter spends once for the whole volley. Shields
 recharge independently after their build's hit delay, including after depletion.
 Bulwark favors capacity, Flux favors recovery, and Balanced sits between them.
-Bases refill both reserves, but do not repair hull damage. These meters follow
+Bases refill both reserves for free; hull repair is a separate purchase. These meters follow
 the HUD visibility setting and are hidden for dead spectators. Prototype
 invulnerability must be turned off in Settings to take shield or hull damage.
 

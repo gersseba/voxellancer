@@ -123,7 +123,7 @@ simulation and network polling on the same thread.
 The transport is an SFML TCP stream. TCP provides reliable, ordered delivery;
 there is no separate unreliable snapshot channel. Each application frame has a
 four-byte little-endian payload length followed by a packet with protocol
-version 27 and a message-type byte. There is no version negotiation: peers with
+version 28 and a message-type byte. There is no version negotiation: peers with
 different protocol versions reject each other's packets.
 
 On connection, the server assigns a generation-protected entity ID for a ship,
@@ -313,7 +313,7 @@ It never changes authoritative equipment optimistically.
 
 `ContractRun` generates a 17-node forward-only graph: a starting base, five
 three-lane rows, and a final attack. Intermediate attack variants and the
-base/placeholder lanes vary per run. Adjacent-lane connections branch and merge;
+base/signal lanes vary per run. Adjacent-lane connections branch and merge;
 each usable node retains a playable continuation despite disabled encounters.
 All pilots share the graph, destination, and visited mask.
 
@@ -342,7 +342,10 @@ acknowledged, full inventories cannot claim guns, and a claimed reward cannot
 be paid again. Only after every living pilot chooses does the party enter Route,
 or Complete after the terminal attack. It does not reroll
 the shop or fully refill shields. Entering a Base node does both and opens
-station services; hull damage persists. Payload upgrades scale each newly fired
+station services; paid repair restores HP on surviving blocks without restoring
+destroyed hardware. The server quotes and charges one credit per 100 missing HP,
+rounded up, and refreshes the repaired ship's replicated voxel content.
+Payload upgrades scale each newly fired
 projectile's finite impact budget; shields derive upgraded capacity from their
 authored base HP without compounding, retaining their current charge fraction.
 The two upgrade offers alternate after a random first offer. Bonuses are personal,
@@ -364,7 +367,7 @@ with new entity generations, inventory, economy, bonuses, stats, and graph,
 preserving only connections, protection preferences, and monotonically
 increasing action sequences/route revisions. Camera ownership changes clear
 pending client prediction state; spectators never predict another pilot's inputs.
-The map displays future random encounters explicitly but rejects entry. There
+Signal nodes offer safe salvage or an authored combat encounter. There
 is no event resolver or cross-restart save system yet.
 
 ## Remaining boundaries and validation

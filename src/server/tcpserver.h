@@ -68,6 +68,7 @@ private:
         bool hasResynced = false;
         std::optional<voxellancer::protocol::ContractStatusPacket> contractStatus;
         std::vector<voxellancer::protocol::EntitySnapshot> snapshotBaseline;
+        std::vector<voxellancer::protocol::EntityId> contentRefresh;
         std::unordered_map<
             std::uint64_t,
             std::vector<voxellancer::protocol::EntityEquipmentState>

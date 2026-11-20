@@ -10,3 +10,4 @@ struct ContractLevel {
 };
 
 ContractLevel contractLevel(std::uint8_t id);
+ContractLevel contractSignal(std::uint8_t id);

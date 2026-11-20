@@ -123,7 +123,7 @@ paths, randomized intermediate node types/attack variants, and a final blockade 
 | Attack 2: Debris Crossfire | Autocannon/scatter ambush with destructible barriers; 150-credit option. |
 | Attack 3: Fortified Blockade | Shielded pulse/plasma defenders and more barriers; 200-credit option. |
 | Base | Shop, equipment fitting, and a full shield refill. |
-| ? Encounter | Visible future-content placeholder; disabled for now. |
+| ? Encounter | Investigate signals for derelict salvage, a distress call, or a decoy ambush. |
 
 Enemy counts scale with surviving pilots. Clear every hostile to open
 **Salvage**: each surviving pilot chooses exactly one personal reward using
@@ -202,7 +202,8 @@ the repository root after building both executables:
 
 Contracts support one to four pilots with personal credits/upgrades and shared
 objectives. The station is currently a safe service menu, not a physical docking
-location. Bases refill shields; hull damage persists. **There are no revives**:
+location. Bases refill shields and energy and offer paid repairs for surviving
+hull blocks. Destroyed blocks stay lost. **There are no revives**:
 a destroyed pilot stays connected and spectates a surviving teammate for the
 rest of the run, including base visits and later attacks. Only surviving
 pilots choose rewards and confirm travel. A disconnect does not abort the

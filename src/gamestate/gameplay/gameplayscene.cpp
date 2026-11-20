@@ -940,7 +940,7 @@ void GamePlayScene::updateRemoteInfoOverlay() {
         case ContractResult::InventoryFull: result = "INVENTORY FULL"; break;
         case ContractResult::InvalidSlot: result = "MOUNT NO LONGER AVAILABLE"; break;
         case ContractResult::InvalidRoute: result = "CHOOSE A CONNECTED DESTINATION"; break;
-        case ContractResult::EncounterUnavailable: result = "ENCOUNTERS COMING LATER"; break;
+        case ContractResult::HullIntact: result = "NO SURVIVING HULL BLOCKS NEED REPAIR"; break;
         }
         lines.push_back(result);
         lines.push_back("TAB - HIDE / SHOW PANEL   ESC - MENU");
