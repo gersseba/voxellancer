@@ -30,5 +30,8 @@ struct CatalogWeapon {
 };
 
 constexpr std::uint8_t WeaponCatalogSize = 6;
+constexpr float PayloadRegenBonusPerStack = 0.15f;
+constexpr float ShieldedEnergyDiscountPerStack = 0.10f;
+constexpr float MaxShieldedEnergyDiscount = 0.40f;
 CatalogWeapon catalogWeapon(std::uint8_t id);
 std::uint8_t catalogWeaponId(const std::string& key);

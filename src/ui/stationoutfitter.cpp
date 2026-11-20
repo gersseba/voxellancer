@@ -546,9 +546,21 @@ void StationOutfitter::drawRewards() {
         {0.67f,0.38f},0.021f,glm::vec3(1),0.24f);
     text("+"+std::to_string(percent)+(damage ? "% GUN DAMAGE" : "% SHIELD CAPACITY"),
         {0.67f,0.45f},0.020f,Accent,0.24f);
-    text(damage ? "ALL GUNS, INCLUDING REFITS" : "RETAINS CURRENT CHARGE RATIO",
-        {0.67f,0.52f},0.012f,Muted,0.24f);
-    text("STACKS FOR THIS RUN ONLY",{0.67f,0.57f},0.014f,Muted,0.24f);
+    if (damage) {
+        const auto rate = m_status.weaponEnergyRegeneration;
+        const auto next = rate * (1 + PayloadRegenBonusPerStack /
+            (1 + m_status.damageUpgrades * PayloadRegenBonusPerStack));
+        text(number(rate)+" > "+number(next)+" ENERGY/S AFTER PAUSE",
+            {0.67f,0.52f},0.012f,Muted,0.24f);
+    } else {
+        const auto current = std::min(MaxShieldedEnergyDiscount,
+            m_status.shieldUpgrades * ShieldedEnergyDiscountPerStack);
+        const auto next = std::min(MaxShieldedEnergyDiscount, current + ShieldedEnergyDiscountPerStack);
+        text(number(100*current)+" > "+number(100*next)+"% LESS GUN ENERGY",
+            {0.67f,0.52f},0.012f,Muted,0.24f);
+    }
+    text(damage ? "REACTOR RECHARGES FASTER BETWEEN BURSTS" : "ACTIVE AT 90% SHIELDS OR HIGHER",
+        {0.67f,0.57f},0.012f,Muted,0.24f);
     text("ACTIVE: "+std::to_string(m_status.damageUpgrades)+" PAYLOAD / "+
         std::to_string(m_status.shieldUpgrades)+" SHIELD",{0.67f,0.63f},0.013f,Muted,0.24f);
     text(!m_status.alive ? "SHIP LOST - WAITING FOR SURVIVORS. NO REVIVES THIS RUN." :

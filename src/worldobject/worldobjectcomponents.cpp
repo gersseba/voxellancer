@@ -144,7 +144,27 @@ void WorldObjectComponents::configureWeaponEnergy(float capacity, float regenera
 
 float WorldObjectComponents::weaponEnergy() const { return m_weaponEnergy; }
 float WorldObjectComponents::weaponEnergyCapacity() const { return m_weaponEnergyCapacity; }
-float WorldObjectComponents::weaponEnergyRegeneration() const { return m_weaponEnergyRegeneration; }
+float WorldObjectComponents::weaponEnergyRegeneration() const {
+    return m_weaponEnergyRegeneration * m_energyRegenerationMultiplier;
+}
+
+void WorldObjectComponents::setWeaponEnergyUpgradeBonuses(float regenerationMultiplier, float shieldedDiscount) {
+    if (!std::isfinite(regenerationMultiplier) || regenerationMultiplier < 1 ||
+        !std::isfinite(shieldedDiscount) || shieldedDiscount < 0 || shieldedDiscount >= 1)
+        throw std::invalid_argument("Invalid weapon energy upgrade bonus.");
+    m_energyRegenerationMultiplier = regenerationMultiplier;
+    m_shieldedEnergyDiscount = shieldedDiscount;
+}
+
+float WorldObjectComponents::effectiveGunEnergyCost(float amount) const {
+    if (m_shieldedEnergyDiscount == 0) return amount;
+    float hp = 0, capacity = 0;
+    for (const auto& slot : m_shieldSlots) if (const auto shield = slot->shield()) {
+        hp += shield->hp();
+        capacity += shield->maxHP();
+    }
+    return capacity > 0 && hp >= 0.9f * capacity ? amount * (1 - m_shieldedEnergyDiscount) : amount;
+}
 float WorldObjectComponents::weaponEnergyRechargeRemaining() const { return m_weaponEnergyRechargeRemaining; }
 
 bool WorldObjectComponents::consumeWeaponEnergy(float amount) {
@@ -203,7 +223,7 @@ void WorldObjectComponents::update(float deltaSec) {
     const float blocked = std::min(deltaSec, m_weaponEnergyRechargeRemaining);
     m_weaponEnergyRechargeRemaining -= blocked;
     m_weaponEnergy = std::min(m_weaponEnergyCapacity,
-        m_weaponEnergy + (deltaSec-blocked)*m_weaponEnergyRegeneration);
+        m_weaponEnergy + (deltaSec-blocked)*weaponEnergyRegeneration());
     for (std::shared_ptr<Hardpoint>& hardpoint : m_hardpoints) {
         hardpoint->update(deltaSec);
     }

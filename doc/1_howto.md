@@ -26,7 +26,10 @@ upgrade. Click a card's **CLAIM** button, use **1 / 2 / 3**, or select with
 **Left/Right** and press **Enter**. Upgrades add 15% gun damage or 20% shield
 capacity per stack against base values, including later refits. Capacity
 upgrades retain the current charge fraction. All survivors must choose before
-returning to the **map**. Base nodes offer a shop, free shield and energy refills,
+returning to the **map**. Payload stacks also add 15% reactor regeneration
+after the normal pause; shield stacks reduce gun energy cost by 10% each
+(up to 40%) while shields are at least 90% charged.
+Base nodes offer a shop, free shield and energy refills,
 and paid hull repair (**H** or the repair button). Repair restores HP on surviving
 blocks only; lost blocks and mounts stay lost. **?** nodes offer derelict salvage
 or an optional fight. The map previews the signal, known opposition, and reward.

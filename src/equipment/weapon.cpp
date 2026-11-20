@@ -65,8 +65,9 @@ bool Weapon::canFire() {
     if (m_cooldown > 0) return false;
     if (!m_hardpoint || !m_hardpoint->components()) return true;
     const auto& components = *m_hardpoint->components();
+    const float cost = m_type == WeaponType::Gun ? components.effectiveGunEnergyCost(m_energyCost) : m_energyCost;
     return components.weaponEnergyCapacity() == 0 ||
-        components.weaponEnergy() + 0.00001f >= m_energyCost;
+        components.weaponEnergy() + 0.00001f >= cost;
 }
 
 float Weapon::energyCost() const { return m_energyCost; }
@@ -82,8 +83,12 @@ void Weapon::onFired() {
         ? m_hardpoint->components()->worldObject()
         : nullptr;
     World* world = owner ? owner->world() : nullptr;
-    if (owner && !owner->components().consumeWeaponEnergy(m_energyCost))
-        throw std::logic_error("Weapon fired without its required energy.");
+    if (owner) {
+        auto& components = owner->components();
+        const float cost = m_type == WeaponType::Gun ? components.effectiveGunEnergyCost(m_energyCost) : m_energyCost;
+        if (!components.consumeWeaponEnergy(cost))
+            throw std::logic_error("Weapon fired without its required energy.");
+    }
     m_cooldown += cooldownTime();
     if (world != nullptr && m_hardpoint->voxel() != nullptr) {
         world->worldLogic().recordWeaponFired(

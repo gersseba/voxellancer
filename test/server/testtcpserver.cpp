@@ -1034,6 +1034,7 @@ go_bandit([]() {
             auto state = run.status(players[0]);
             AssertThat(state.damageUpgrades,Equals(std::uint8_t(1)));
             AssertThat(state.shieldUpgrades,Equals(std::uint8_t(1)));
+            AssertThat(state.weaponEnergyRegeneration,EqualsWithDelta(40.25f,0.001f));
             AssertThat(std::abs(shield->maxHP() - initialCapacity*1.2f) < 0.01f,IsTrue());
             AssertThat(std::abs(shield->hp()/shield->maxHP()-0.25f) < 0.0001f,IsTrue());
             auto* ship = world.worldObject(players[0]);
@@ -1042,7 +1043,15 @@ go_bandit([]() {
             target->updateTransformAndGeode(target->position()+slot->voxel()->position()+
                 glm::vec3(0,0,-80)-target->voxel(glm::ivec3(10,10,20))->position(),glm::quat(1,0,0,0));
             auto* gun = static_cast<Gun*>(slot->weapon().get());
+            auto& components = ship->components();
+            AssertThat(components.effectiveGunEnergyCost(gun->energyCost()),Equals(gun->energyCost()));
+            shield->refill();
+            AssertThat(components.effectiveGunEnergyCost(gun->energyCost()),
+                EqualsWithDelta(gun->energyCost()*0.9f,0.001f));
+            const float energyBeforeShot = components.weaponEnergy();
             gun->fireAtPoint(slot->voxel()->position()+glm::vec3(0,0,-100),false);
+            AssertThat(components.weaponEnergy(),
+                EqualsWithDelta(energyBeforeShot-gun->energyCost()*0.9f,0.001f));
             world.god().spawn();
             int projectiles = 0;
             for (auto* object : world.worldObjects()) {

@@ -612,6 +612,9 @@ void ContractRun::applyUpgrades(PlayerState& player) {
     auto* ship = m_world.worldObject(player.actor);
     if (!ship) throw std::logic_error("Cannot upgrade a missing contract ship.");
     ship->info().setWeaponDamageMultiplier(1.0f + player.damageUpgrades * m_damageBonus);
+    ship->components().setWeaponEnergyUpgradeBonuses(
+        1.0f + player.damageUpgrades * PayloadRegenBonusPerStack,
+        std::min(MaxShieldedEnergyDiscount, player.shieldUpgrades * ShieldedEnergyDiscountPerStack));
     for (auto& slot : ship->components().shieldSlots()) {
         auto shield = slot->shield();
         if (!shield) continue;

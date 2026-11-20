@@ -88,6 +88,8 @@ public:
     float weaponEnergyRegeneration() const;
     float weaponEnergyRechargeRemaining() const;
     bool consumeWeaponEnergy(float amount);
+    float effectiveGunEnergyCost(float amount) const;
+    void setWeaponEnergyUpgradeBonuses(float regenerationMultiplier, float shieldedDiscount);
     void refillWeaponEnergy();
 
     /**
@@ -125,6 +127,7 @@ protected:
     EngineState m_engineState;
     float m_weaponEnergy = 0, m_weaponEnergyCapacity = 0, m_weaponEnergyRegeneration = 0;
     float m_weaponEnergyDelay = 0, m_weaponEnergyRechargeRemaining = 0;
+    float m_energyRegenerationMultiplier = 1, m_shieldedEnergyDiscount = 0;
     std::size_t m_fireOffset = 0;
 
 
