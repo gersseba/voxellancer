@@ -364,7 +364,7 @@ ContractStatus ContractRun::statusForPlayer(const PlayerState& personal) const {
     state.shieldPrice = catalogShield(1).price;
     state.shieldBuild = personal.shieldBuild;
     if (m_phase == ContractPhase::Reward || inMission()) {
-        state.reward = m_reward;
+        state.reward = encounterReward();
     } else if (m_selectedNode != NoRouteNode) {
         const auto& node = m_route[m_selectedNode];
         if (node.kind == RouteNodeKind::Attack) state.reward = contractLevel(node.level).reward;
@@ -523,9 +523,12 @@ void ContractRun::advanceRevision() {
 void ContractRun::generateRoute() {
     m_route.clear();
     m_route.push_back({RouteNodeKind::Base, 0, 0, 1, 0});
-    const auto firstSignal = std::uniform_int_distribution<int>(1, 3)(m_offerRandom);
-    const auto secondSignal = (firstSignal - 1 +
-        std::uniform_int_distribution<int>(1, 2)(m_offerRandom)) % 3 + 1;
+    const auto distress = static_cast<int>(SignalKind::Distress);
+    const auto otherSignal = static_cast<int>(std::bernoulli_distribution{}(m_offerRandom)
+        ? SignalKind::Derelict : SignalKind::Decoy);
+    const bool distressFirst = std::bernoulli_distribution{}(m_offerRandom);
+    const auto firstSignal = distressFirst ? distress : otherSignal;
+    const auto secondSignal = distressFirst ? otherSignal : distress;
     for (std::uint8_t row = 1; row <= 5; ++row) {
         const int baseLane = std::uniform_int_distribution<int>(0, 2)(m_offerRandom);
         for (std::uint8_t lane = 0; lane < 3; ++lane) {
@@ -693,6 +696,13 @@ void ContractRun::deploy() {
     }
     const bool finale = node.kind == RouteNodeKind::Attack && node.level == FlagshipLevel;
     const std::size_t count = finale ? 1 + targets.size() : targets.size() * level.enemiesPerPlayer;
+    Ship* wingman = nullptr;
+    if (level.rescueBonus) {
+        wingman = WorldObjectBuilder(DistressWingmanDefinition, m_world).buildShip();
+        wingman->transform().setPosition(glm::vec3(-110.0f, 0.0f, -90.0f));
+        m_world.god().scheduleSpawn(wingman);
+        targets.push_back(wingman->handle<WorldObject>());
+    }
     std::vector<Ship*> enemies;
     for (std::size_t index = 0; index < count; ++index) {
         const bool flagship = finale && index == 0;
@@ -727,6 +737,16 @@ void ContractRun::deploy() {
         m_world.god().scheduleSpawn(barrier);
     }
     m_world.god().spawn();
+    if (wingman) {
+        const auto id = m_world.entityId(wingman);
+        if (!id) throw std::runtime_error("Could not spawn the distress wingman.");
+        m_wingman = *id;
+        m_rescueBonus = level.rescueBonus;
+        std::vector<Handle<WorldObject>> hostiles;
+        for (auto* enemy : enemies) hostiles.push_back(enemy->handle<WorldObject>());
+        wingman->character()->setTask(std::make_shared<FightTask>(wingman->boardComputer(),
+            hostiles, AiArchetype::Interceptor, ShootingSkill{0.65f,0.55f,0.55f}));
+    }
     m_enemies.clear();
     for (Ship* enemy : enemies) {
         const auto id = m_world.entityId(enemy);
@@ -745,6 +765,10 @@ void ContractRun::deploy() {
     }
     m_phase = ContractPhase::Mission;
     m_remainingEnemies = m_enemies.size();
+}
+
+std::uint32_t ContractRun::encounterReward() const {
+    return m_reward + (m_wingman.valid() && m_world.worldObject(m_wingman) ? m_rescueBonus : 0);
 }
 
 void ContractRun::update() {
@@ -779,6 +803,7 @@ void ContractRun::update() {
 void ContractRun::finishEncounter(bool success) {
     advanceRevision();
     if (success) {
+        m_reward = encounterReward();
         m_currentNode = m_selectedNode;
         m_visitedNodes |= 1u << m_currentNode;
         chooseNext();
@@ -815,6 +840,8 @@ void ContractRun::finishEncounter(bool success) {
 
 void ContractRun::clearEncounter(bool removePlayers) {
     m_enemies.clear();
+    m_wingman = {};
+    m_rescueBonus = 0;
     m_projectors.clear();
     m_world.god().spawn();
     for (WorldObject* object : m_world.worldObjects()) {

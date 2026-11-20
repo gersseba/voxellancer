@@ -811,6 +811,92 @@ go_bandit([]() {
             }
         });
 
+        it("pays the contract rescue bonus only for a surviving wingman", []() {
+            using namespace voxellancer::protocol;
+            loadSimulationData();
+            const auto distress = contractSignal(static_cast<std::uint8_t>(SignalKind::Distress));
+            for (const bool saveWingman : {true, false}) {
+                World::reset(false);
+                WorldResetGuard resetGuard;
+                auto& world = *World::instance(World::Mode::Server);
+                const auto players = ContractRun::createPlayers(world, saveWingman ? 1 : 2);
+                const auto pilot = players.front();
+                ContractRun run(world, players);
+                const auto route = run.status(pilot).route;
+                const auto signal = std::find_if(route.begin(), route.end(), [](const auto& node) {
+                    return node.kind == RouteNodeKind::Encounter &&
+                        node.level == static_cast<std::uint8_t>(SignalKind::Distress);
+                });
+                AssertThat(signal != route.end(), IsTrue());
+                const auto destination = static_cast<std::uint8_t>(signal - route.begin());
+                std::uint32_t leadsToRescue = 1u << destination;
+                for (std::size_t i = destination; i-- > 0;)
+                    if (route[i].links & leadsToRescue) leadsToRescue |= 1u << i;
+                std::uint64_t sequence = 0;
+                const auto removeHostiles = [&] {
+                    for (auto* ship : world.ships())
+                        if (run.isEnemy(world.entityId(ship).value())) world.god().scheduleRemoval(ship);
+                    world.god().remove();
+                    run.update();
+                };
+                const auto claim = [&](RewardChoice choice) {
+                    for (const auto player : players)
+                        run.act(player, {++sequence, run.status(player).mission, ContractActionKind::ClaimReward,
+                            0, glm::ivec3(0), NoRouteNode, choice});
+                };
+                for (int step = 0; step < signal->row; ++step) {
+                    const auto state = run.status(pilot);
+                    const auto choices = route[state.currentNode].links & leadsToRescue;
+                    AssertThat(choices != 0, IsTrue());
+                    std::uint8_t next = 0;
+                    while (!(choices & (1u << next))) ++next;
+                    run.act(pilot, {++sequence, state.mission, ContractActionKind::SelectNode,
+                        0, glm::ivec3(0), next});
+                    for (const auto player : players)
+                        run.act(player, {++sequence, run.status(player).mission, ContractActionKind::Ready});
+                    if (next == destination) break;
+                    if (run.inMission()) removeHostiles();
+                    if (run.status(pilot).phase == ContractPhase::Reward) claim(RewardChoice::Weapon);
+                }
+                AssertThat(run.inMission(), IsTrue());
+                Ship* wingman = nullptr;
+                for (auto* ship : world.ships())
+                    if (ship->info().definitionKey() == DistressWingmanDefinition) wingman = ship;
+                AssertThat(wingman != nullptr, IsTrue());
+                const auto allyId = world.entityId(wingman).value();
+                AssertThat(run.isEnemy(allyId), IsFalse());
+                const auto task = std::dynamic_pointer_cast<FightTask>(wingman->character()->task());
+                AssertThat(task != nullptr, IsTrue());
+                AssertThat(task->targets().size(), Equals(players.size()));
+                for (const auto& target : task->targets())
+                    AssertThat(run.isEnemy(world.entityId(target.get()).value()), IsTrue());
+                for (auto* ship : world.ships()) {
+                    if (!run.isEnemy(world.entityId(ship).value())) continue;
+                    const auto raider = std::dynamic_pointer_cast<FightTask>(ship->character()->task());
+                    AssertThat(raider != nullptr, IsTrue());
+                    AssertThat(std::any_of(raider->targets().begin(), raider->targets().end(),
+                        [wingman](const auto& target) { return target.get() == wingman; }), IsTrue());
+                }
+                AssertThat(run.status(pilot).remaining, Equals(static_cast<std::uint16_t>(players.size())));
+                AssertThat(run.status(pilot).reward, Equals(distress.reward + distress.rescueBonus));
+                if (!saveWingman) {
+                    world.god().scheduleRemoval(wingman);
+                    world.god().remove();
+                    run.update();
+                    AssertThat(run.inMission(), IsTrue());
+                    AssertThat(run.status(pilot).reward, Equals(distress.reward));
+                }
+                removeHostiles();
+                const auto reward = distress.reward + (saveWingman ? distress.rescueBonus : 0);
+                AssertThat(run.status(pilot).phase, Equals(ContractPhase::Reward));
+                AssertThat(run.status(pilot).reward, Equals(reward));
+                AssertThat(world.worldObject(allyId) == nullptr, IsTrue());
+                claim(RewardChoice::Credits);
+                for (const auto player : players)
+                    AssertThat(run.status(player).credits, Equals(reward));
+            }
+        });
+
         it("plays the contract station reward and upgrade loop for a solo pilot", []() {
             using namespace voxellancer::protocol;
             loadSimulationData();

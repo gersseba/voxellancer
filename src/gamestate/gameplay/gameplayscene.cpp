@@ -42,6 +42,7 @@
 #include "ui/hud/hud.h"
 #include "ui/hud/crosshair.h"
 #ifndef VOXELLANCER_HEADLESS_SERVER
+#include "simulation/contractlevel.h"
 #include "ui/hud/hudoverlay.h"
 #include "ui/contactmarker.h"
 #include "ui/stationoutfitter.h"
@@ -818,6 +819,23 @@ void GamePlayScene::drawRemoteContacts(const Camera& camera) const {
     const auto& contents = m_gamePlay.running().remoteEntityContents();
     using SlotKind = voxellancer::protocol::EquipmentSlotKind;
     for (const auto& contact : m_gamePlay.running().remoteReplicaSnapshots()) {
+        if (!contact.hostile && contract &&
+            contract->phase == voxellancer::protocol::ContractPhase::Mission &&
+            contact.kind == voxellancer::protocol::EntitySnapshot::Kind::Ship) {
+            const auto ally = std::find_if(contents.begin(), contents.end(), [&contact](const auto& entry) {
+                return entry.id == contact.id && entry.definitionKey == DistressWingmanDefinition;
+            });
+            if (ally != contents.end()) {
+                const auto marker = projectContactMarker(
+                    camera.viewProjection() * glm::vec4(contact.position, 1.0f));
+                const glm::vec4 allyColor(0.42f, 1.0f, 0.72f, 1.0f);
+                font->drawScreen("+", marker.position - glm::vec2(0,0.018f),
+                    0.024f, allyColor, FontAlign::CENTER);
+                font->drawScreen(marker.behind ? "WINGMAN BEHIND" : "WINGMAN",
+                    {glm::clamp(marker.position.x, 0.15f, 0.85f), marker.position.y + 0.02f},
+                    0.017f, allyColor, FontAlign::CENTER);
+            }
+        }
         if (!contact.hostile || contact.id == actor->id ||
             contact.kind != voxellancer::protocol::EntitySnapshot::Kind::Ship) {
             continue;

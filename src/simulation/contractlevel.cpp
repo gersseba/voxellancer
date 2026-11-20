@@ -26,6 +26,13 @@ ContractLevel contractLevel(std::uint8_t id) {
 
 ContractLevel contractSignal(std::uint8_t id) {
     if (id < 1 || id > 3) throw std::invalid_argument("Unknown contract signal.");
-    return loadLevel("contractsignal" + std::to_string(id) + ".",
+    const auto key = "contractsignal" + std::to_string(id) + ".";
+    auto level = loadLevel(key,
         id == static_cast<std::uint8_t>(voxellancer::protocol::SignalKind::Derelict));
+    if (id == static_cast<std::uint8_t>(voxellancer::protocol::SignalKind::Distress)) {
+        const int bonus = Property<int>(key + "rescueBonus");
+        if (bonus <= 0) throw std::invalid_argument("Invalid distress rescue bonus: " + key);
+        level.rescueBonus = static_cast<std::uint32_t>(bonus);
+    }
+    return level;
 }

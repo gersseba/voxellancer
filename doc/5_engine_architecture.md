@@ -344,6 +344,13 @@ light pulse ships; crossfire uses autocannon/scatter ships; blockades use
 shielded pulse/plasma ships. Destructible voxel barriers use the normal world
 damage/replication lifecycle. Only enemy IDs count toward victory.
 
+New routes include one Distress Call and one other signal. Distress deployment
+adds one mission-local wingman to the raiders' target list; the wingman targets
+only the raiders and never counts as a player or hostile. The server includes
+the rescue bonus in the credit offer only while the wingman survives and fixes
+the final amount at victory. Normal encounter cleanup removes the wingman;
+checkpoints and the wire format do not change.
+
 Winning removes encounter entities, marks the selected node visited, and enters
 Reward. Each living pilot claims exactly one personal credit, gun, or run-upgrade
 offer; unchosen options are forfeited. Offers stay fixed, rejected requests are

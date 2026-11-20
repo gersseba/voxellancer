@@ -7,7 +7,10 @@ struct ContractLevel {
     std::string name, description, enemy;
     std::uint32_t reward;
     int enemiesPerPlayer, layout, cover;
+    std::uint32_t rescueBonus = 0;
 };
+
+inline constexpr char DistressWingmanDefinition[] = "contractwingman";
 
 ContractLevel contractLevel(std::uint8_t id);
 ContractLevel contractSignal(std::uint8_t id);

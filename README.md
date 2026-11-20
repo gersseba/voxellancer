@@ -123,7 +123,7 @@ paths, randomized intermediate node types/attack variants, and a final blockade 
 | Attack 2: Debris Crossfire | Autocannon/scatter ambush with destructible barriers; 150-credit option. |
 | Attack 3: Fortified Blockade | Shielded pulse/plasma defenders and more barriers; 200-credit option. |
 | Base | Shop, equipment fitting, and a full shield refill. |
-| ? Encounter | Investigate signals for derelict salvage, a distress call, or a decoy ambush. |
+| ? Encounter | Investigate a derelict cache, a distress call, or a decoy ambush. Save the friendly wingman during Distress Call for +75 CR on the credit choice. |
 
 Enemy counts scale with surviving pilots. Clear every hostile to open
 **Salvage**: each surviving pilot chooses exactly one personal reward using

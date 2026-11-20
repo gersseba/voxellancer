@@ -41,6 +41,10 @@ Base nodes offer a shop, free shield and energy refills,
 and paid hull repair (**H** or the repair button). Repair restores HP on surviving
 blocks only; lost blocks and mounts stay lost. **?** nodes offer derelict salvage
 or an optional fight. The map previews the signal, known opposition, and reward.
+In **Distress Call**, a friendly **WINGMAN** fights alongside you. Clear the
+raiders to finish; if the wingman survives, the credit choice pays **200 CR**
+instead of **125 CR**. Losing the wingman forfeits only that bonus. The wingman
+leaves after the fight and never replaces or revives a player.
 Follow the links toward the final attack; visited nodes cannot be
 replayed. In Fortified Blockade and the Iron Regent finale, **P** marks the
 shield projector and **o** marks a gun mount. Weaken the shield, then aim

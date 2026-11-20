@@ -508,6 +508,9 @@ void StationOutfitter::drawRoute() {
                 {0.68f,0.54f},0.016f,Muted,0.23f);
             text(level.enemiesPerPlayer ? "DESTROY ALL HOSTILES" : "CHOOSE ONE SALVAGE REWARD",
                 {0.68f,0.60f},0.015f,Muted,0.23f);
+            if (level.rescueBonus)
+                text("SAVE WINGMAN: +"+std::to_string(level.rescueBonus)+" CR",
+                    {0.68f,0.64f},0.015f,Accent,0.23f);
         } else {
             text("ONE NEW PERSONAL GUN OFFER",
                 {0.68f,0.42f},0.015f,Muted,0.23f);
@@ -533,7 +536,15 @@ void StationOutfitter::drawRewards() {
     }
     text("+"+std::to_string(m_status.reward)+" CR",{0.09f,0.40f},0.039f,glm::vec3(1),0.23f);
     text("BANK FOR A STATION VISIT",{0.09f,0.50f},0.014f,Muted,0.24f);
-    text("REPAIR HULL OR BUY EQUIPMENT",{0.09f,0.54f},0.014f,Muted,0.24f);
+    if (m_status.currentNode < m_status.route.size() &&
+        m_status.route[m_status.currentNode].kind == RouteNodeKind::Encounter &&
+        m_status.route[m_status.currentNode].level == static_cast<std::uint8_t>(SignalKind::Distress)) {
+        const auto distress = contractSignal(static_cast<std::uint8_t>(SignalKind::Distress));
+        text(m_status.reward > distress.reward ? "WINGMAN SAVED / BONUS INCLUDED" :
+            "WINGMAN LOST / NO RESCUE BONUS",{0.09f,0.54f},0.014f,Muted,0.24f);
+    } else {
+        text("REPAIR HULL OR BUY EQUIPMENT",{0.09f,0.54f},0.014f,Muted,0.24f);
+    }
     if (m_status.rewardWeapon) {
         UiFont::instance()->drawWeaponIcon(m_status.rewardWeapon,{0.46f,0.35f,0.09f,0.12f});
         const auto weapon = catalogWeapon(m_status.rewardWeapon);
@@ -637,6 +648,16 @@ void StationOutfitter::drawDefense() {
 }
 
 void StationOutfitter::drawFlightResources() {
+    if (m_status.selectedNode < m_status.route.size() &&
+        m_status.route[m_status.selectedNode].kind == RouteNodeKind::Encounter &&
+        m_status.route[m_status.selectedNode].level == static_cast<std::uint8_t>(SignalKind::Distress)) {
+        const auto distress = contractSignal(static_cast<std::uint8_t>(SignalKind::Distress));
+        const bool alive = m_status.reward > distress.reward;
+        rectangle({0.33f,0.055f,0.34f,0.039f},Panel);
+        text(alive ? "PROTECT WINGMAN / +"+std::to_string(distress.rescueBonus)+" CR" :
+            "WINGMAN LOST / CLEAR HOSTILES",{0.345f,0.065f},0.015f,
+            alive ? Accent : glm::vec3(1,0.55f,0.3f),0.31f);
+    }
     const auto bar = [&](float x, const std::string& title, float value, float maximum,
             const std::string& detail, glm::vec3 color) {
         rectangle({x,0.79f,0.30f,0.115f},Panel);
