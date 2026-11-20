@@ -42,10 +42,11 @@ cmake --build build --config Release --target voxellancer
 ```
 
 Run `.\tools\agent-check.ps1` to build and test. In VS Code, **Terminal: Run
-Task** contains four runtime tasks:
+Task** contains these Windows runtime tasks:
 
-- **Start Server** — start a battle server on port 27801.
+- **Start Server** — start a two-pilot contracts lobby on port 27801.
 - **Start Client** — start a graphical multiplayer client.
+- **Start Shield Showcase Scenario** — start the shield demonstration.
 - **Start Local Client with Integrated Server (Large Combat Benchmark)** —
   run one graphical client with an integrated authoritative benchmark server.
 - **Start Server and Two Clients (Large Combat Benchmark)** — run the
@@ -69,6 +70,37 @@ summaries. Timings can be nested and overlap; do not sum them. Server tick time
 excludes rendering and is not directly comparable to client frame time.
 
 Use `.\tools\agent-check.ps1 -Mode Test` to build and execute `all_tests`.
+
+## macOS
+
+Install the Xcode Command Line Tools, CMake, an OpenMP-capable C++17 toolchain,
+and a bootstrapped vcpkg checkout. Apple's default Clang needs additional
+OpenMP support; use a toolchain configured for OpenMP (for example Homebrew
+LLVM and `libomp`). Install the tools with
+`brew install cmake vcpkg llvm libomp pkg-config`, clone vcpkg into `~/vcpkg`, and run its
+`bootstrap-vcpkg.sh`. Initialize the `glow` submodule as described above. The
+client requests an OpenGL 4.1 core-profile context on macOS.
+
+In **Terminal: Run Task**, choose **Start Client with Local Server (macOS)**.
+This task runs `tools/run-local-macos.sh` using Bash rather than PowerShell.
+The helper defaults `VCPKG_ROOT` to `~/vcpkg`, locates Homebrew in its standard
+Apple Silicon or Intel installation, and uses Homebrew LLVM and OpenMP without
+requiring VS Code to inherit terminal exports. Existing `VCPKG_ROOT`, `CC`,
+and `CXX` values override the defaults; existing `CMAKE_PREFIX_PATH` entries
+are retained.
+It configures a Release Makefiles
+build in `build/macos`, builds both `voxellancer` and `voxellancer-server`,
+and launches `voxellancer -fullscreen -local-singleplayer` from the repository
+root.
+On macOS, the game requests focus once loading finishes. Fullscreen windows
+remain visible rather than automatically minimizing when focus changes.
+The client starts its matching server on an available loopback port and stops
+it on exit. Both macOS local-server tasks now open the contracts main menu,
+not the large-combat benchmark.
+Configuration or build errors stop the task before launch.
+Choose **Play Contracts with Local Server (macOS)** instead to launch the
+station/mission/shop progression slice. The helper also accepts
+`-scenario contracts` when invoked directly with Bash.
 
 ## Linux
 

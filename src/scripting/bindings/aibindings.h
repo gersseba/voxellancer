@@ -28,6 +28,7 @@ protected:
         apikey ship,
         const std::string& archetype);
     int apiAddFightTaskTarget(apikey flyToTask, apikey worldObject);
+    int apiSetFightTaskShootingSkill(apikey task, float lead, float tracking, float accuracy);
 
     apikey apiTaskExecutor(apikey aiTask);
 };

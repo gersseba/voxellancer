@@ -17,7 +17,8 @@ public:
         const std::filesystem::path& clientExecutable,
         std::uint16_t port,
         bool largeCombatBenchmark = false,
-        const std::string& runId = {});
+        const std::string& runId = {},
+        bool contracts = false);
     bool isRunning();
     bool waitForExit(std::chrono::milliseconds timeout);
     void stop();

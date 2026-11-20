@@ -180,7 +180,7 @@ if ($Scenario -eq 'ShieldShowcase') {
 
 if ($Benchmark -eq 'StartServer') {
     $serverExecutable = Get-ExecutablePath 'voxellancer-server'
-    & $serverExecutable --scenario battle --listen-port 27801
+    & $serverExecutable --scenario contracts --listen-port 27801 --target-players 2
     exit $LASTEXITCODE
 }
 if ($Benchmark -eq 'StartClient') {

@@ -1,5 +1,8 @@
 #include "hardpointaimhelper.h"
 
+#include <algorithm>
+#include <cmath>
+#include <limits>
 
 #include "equipment/weapon.h"
 #include "equipment/hardpoint.h"
@@ -12,9 +15,11 @@
 #include "voxel/specialvoxels/hardpointvoxel.h"
 
 #include "worldobject/worldobject.h"
+#include "worldobject/worldobjectcomponents.h"
 
 
-HardpointAimHelper::HardpointAimHelper(Hardpoint* hardpoint, WorldObject* targetObject):
+HardpointAimHelper::HardpointAimHelper(Hardpoint* hardpoint, WorldObject* targetObject,
+    bool accountForSpawnOffset):
     m_hardpoint(hardpoint),
     m_targetObject(targetObject),
     m_bulletSpeed(0.0f),
@@ -30,37 +35,49 @@ HardpointAimHelper::HardpointAimHelper(Hardpoint* hardpoint, WorldObject* target
 
     m_targetPosition = m_targetObject->transform().position();
     m_targetSpeed = m_targetObject->physics().speed().directional();
+    if (gun.profile().enabled)
+        m_targetSpeed -= m_hardpoint->components()->worldObject()->physics().speed().directional();
     m_bulletSpeed = gun.bulletSpeed();
-    m_bulletLifetime = Property<float>::get(gun.projectileName() + ".general.lifetime");
+    m_bulletLifetime = gun.bulletLifetime();
+    m_bulletRange = gun.profile().enabled ? gun.profile().range :
+        m_bulletSpeed*m_bulletLifetime;
+    m_spawnOffset = accountForSpawnOffset ? gun.bulletSpawnOffset() : 0.0f;
 }
 
 void HardpointAimHelper::aim() {
-    float offset;
-    int iterations = 0;
-
-    m_point = m_targetPosition;
-
-    do {
-        float travelTime = bulletTravelTime(m_point);
-        if(travelTime > m_bulletLifetime) {
-            m_hitable = false;
-            return;
-        }
-
-        offset = glm::length(targetPositionIn(travelTime) - m_point);
-        m_point = targetPositionIn(travelTime);
-
-        iterations++;
-        if(iterations > 20) {
-            m_hitable = false;
-            return;
-        }
-    } while(offset > 0.1f);
-
-    m_hitable = true;
-    m_direction = safeNormalize(m_point - m_hardpointPosition, glm::vec3(0.0f, 0.0f, -1.0f));
-
     m_aimed = true;
+    const auto point = interceptPoint(m_hardpointPosition, m_targetPosition, m_targetSpeed,
+        m_bulletSpeed, m_bulletLifetime, m_bulletRange, m_spawnOffset);
+    m_hitable = point.has_value();
+    if (!point) return;
+    m_point = *point;
+    m_direction = safeNormalize(m_point - m_hardpointPosition, glm::vec3(0.0f, 0.0f, -1.0f));
+}
+
+std::optional<glm::vec3> HardpointAimHelper::interceptPoint(const glm::vec3& muzzle,
+    const glm::vec3& targetPosition, const glm::vec3& relativeVelocity,
+    float speed, float lifetime, float range, float spawnOffset) {
+    if (speed <= 0) return std::nullopt;
+    const glm::dvec3 offset = glm::dvec3(targetPosition)-glm::dvec3(muzzle);
+    const glm::dvec3 velocity(relativeVelocity);
+    const double a = glm::dot(velocity,velocity)-double(speed)*speed;
+    // At impact the target's relative distance is spawnOffset + speed * time.
+    const double b = 2*(glm::dot(offset,velocity)-double(spawnOffset)*speed);
+    const double c = glm::dot(offset,offset)-double(spawnOffset)*spawnOffset;
+    double time = std::numeric_limits<double>::infinity();
+    if (c < 0.000001) return std::nullopt;
+    if (std::abs(a) < 0.000001) {
+        if (std::abs(b) >= 0.000001 && -c/b > 0) time = -c/b;
+    } else {
+        const double discriminant = b*b-4*a*c;
+        if (discriminant >= 0) {
+            const double root = std::sqrt(discriminant);
+            for (double candidate : {(-b-root)/(2*a),(-b+root)/(2*a)})
+                if (candidate > 0) time = std::min(time,candidate);
+        }
+    }
+    if (!std::isfinite(time) || time > lifetime || time*speed > range) return std::nullopt;
+    return targetPosition + relativeVelocity * static_cast<float>(time);
 }
 
 bool HardpointAimHelper::isHittable() {
@@ -90,6 +107,6 @@ float HardpointAimHelper::bulletTravelTime(const glm::vec3& point) {
 }
 
 glm::vec3 HardpointAimHelper::targetPositionIn(float deltaSec) {
-    return m_targetObject->transform().position() + m_targetObject->physics().speed().directional() * deltaSec;
+    return m_targetPosition + m_targetSpeed * deltaSec;
 }
 

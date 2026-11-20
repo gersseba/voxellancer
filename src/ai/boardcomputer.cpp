@@ -74,6 +74,11 @@ const EngineState& BoardComputer::engineState() const {
     return m_engineState;
 }
 
+void BoardComputer::setEngineState(const EngineState& state) {
+    m_engineState = state;
+    m_overwriteEngineState = true;
+}
+
 void BoardComputer::moveTo(const glm::vec3& position, bool decelerate) {
     glm::vec3 projectedPosition = m_worldObject->physics().projectedTransformIn(1.0f).position();
     glm::vec3 delta = position - projectedPosition;

@@ -30,6 +30,8 @@ public:
 
     float cooldownTime() const;
     void setCooldownTime(float cooldownTime);
+    float energyCost() const;
+    void setEnergyCost(float cost);
 
     const Visuals& visuals() const;
     void setVisuals(const Visuals& visuals);
@@ -51,6 +53,7 @@ protected:
 
     float m_cooldown;
     float m_cooldownTime;
+    float m_energyCost = 0;
     Visuals m_visuals;
     std::string m_projectileName;
 

@@ -37,6 +37,8 @@ public:
     virtual float damageForwardingDestructionDamage();
 
     float density() const;
+    bool armored() const { return m_armored; }
+    void setArmored(bool armored) { m_armored = armored; }
 
     // These hooks apply only for WorldObjects and do not need to be called by pure VoxelClusters
     virtual void onRemoval();
@@ -51,6 +53,7 @@ protected:
     float m_hp;
     float m_maxHp;
     float m_density;
+    bool m_armored = false;
 
     static Property<float>* s_defaultDensity;
     static Property<float>* s_defaultHp;

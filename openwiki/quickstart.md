@@ -8,24 +8,18 @@ sources:
     resource: repo://.vscode/tasks.json
   - id: openwiki-source-d44494ef3e497fea81240ef8
     resource: repo://CMakeLists.txt
-  - id: openwiki-source-65ddf3f0d6898783c85c7e24
-    resource: repo://doc/3_buildinstructions.md
-  - id: openwiki-source-66c49fbcead44f8e72629e23
-    resource: repo://doc/5_engine_architecture.md
   - id: openwiki-source-23775c3de52f3ab95a13cb8b
     resource: repo://README.md
-  - id: openwiki-source-d364d949938a433276255c32
-    resource: repo://src/main.cpp
   - id: openwiki-source-4b8e7dce368774e92d99ea30
     resource: repo://test/CMakeLists.txt
   - id: openwiki-source-2c1d10bd52d032cd62ce51a3
     resource: repo://tools/agent-check.ps1
   - id: openwiki-source-2d91624eff54e273af6563a8
     resource: repo://vcpkg.json
-generated: { by: "copilot", at: "2026-11-05T22:43:09.174Z" }
+generated: { by: "copilot", at: "2026-11-19T09:46:20.407Z" }
 verified:
   - by: openwiki/0.7.2
-    at: 2026-11-05T22:43:09.174Z
+    at: 2026-11-19T09:46:20.407Z
 ---
 
 # Voxellancer quickstart
@@ -59,28 +53,27 @@ relative to the repository root.
 ## Build, test, or run
 
 Install the C++ build prerequisites, bootstrap vcpkg, and set `VCPKG_ROOT` to
-that checkout. The root `vcpkg.json` manifest declares runtime libraries and
-pins a registry baseline; Bandit remains a separate bundled test dependency.
-See [build and test](development/build-and-test.md) for platform setup.
+that checkout. The root `vcpkg.json` manifest pins a registry baseline; Bandit
+is a separate bundled test dependency. See
+[build and test](development/build-and-test.md) for platform setup.
 
-From the repository root, initialize the `glow` submodule and run the test
-harness:
+On Windows, from the repository root, initialize the `glow` submodule and run
+the test harness:
 
 ```powershell
 git submodule update --init
 .\tools\agent-check.ps1 -Mode Test
 ```
 
-Test mode builds `all_tests` and the graphical game, then executes the test
-program. To launch the graphical game instead, use
-`.\tools\agent-check.ps1 -Mode Run`. For local singleplayer, launch the built
-`voxellancer.exe -local-singleplayer`; it starts the sibling server process
-before initializing the client. The default configuration is Release; pass
-`-Configuration Debug` for Debug builds.
+Test mode builds and executes `all_tests`; it does not separately build the
+graphical game. The harness defaults to Release; pass `-Configuration Debug`
+for Debug builds. `-Mode Run` starts the multiplayer client by default and
+accepts selectors for server/client startup, the shield showcase, and local or
+multiplayer large-combat runs.
 
-In VS Code, choose **Build and Test** or **Build and Run Game** from
-**Terminal: Run Task**; **Ctrl+Shift+B** runs the default test task. Dedicated
-client rendering, combat, and large-fleet VSync benchmarks plus a server
-large-combat benchmark are also available. See
-[build and test](development/build-and-test.md) for standalone server, protocol,
-and server-test targets and benchmark commands.
+VS Code provides five Windows runtime tasks: **Start Server**, **Start
+Client**, **Start Shield Showcase Scenario**, **Start Local Client with
+Integrated Server (Large Combat Benchmark)**, and **Start Server and Two
+Clients (Large Combat Benchmark)**. These are runtime tasks, not build/test
+tasks. See [build and test](development/build-and-test.md) for manual target
+commands, headless builds, and benchmark details.

@@ -37,6 +37,9 @@ void Damager::applyDamages(std::list<DamageImpact> &damageImpacts) {
     m_deadVoxels.clear();
 
     for(DamageImpact &damageImpact : damageImpacts) {
+        if (damageImpact.worldObject()->info().invulnerable()) {
+            continue;
+        }
 #ifndef VOXELLANCER_HEADLESS_SERVER
         if (m_playerShipUndestroyable && m_world.hasPresentation() &&
             m_world.player().ship() == damageImpact.worldObject()) {
@@ -45,7 +48,7 @@ void Damager::applyDamages(std::list<DamageImpact> &damageImpacts) {
 #endif
 
         const float incomingDamage = damageImpact.damage();
-        applyShields(damageImpact);
+        if (!damageImpact.resolvedProjectile()) applyShields(damageImpact);
         const float absorbedDamage = incomingDamage - damageImpact.damage();
         if (m_shieldHitEventReplicationEnabled && absorbedDamage > 0.0f) {
             const auto entity = m_world.entityId(damageImpact.worldObject());

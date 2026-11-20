@@ -2,7 +2,7 @@
 
 #include <vector>
 
-#include "ui/voxelfont.h"
+#include "ui/uifont.h"
 #include "ui/letter.h"
 #include "textfieldhudget.h"
 #include "hud.h"
@@ -14,14 +14,14 @@
 
 TextFieldHudgetVoxels::TextFieldHudgetVoxels(TextFieldHudget* textFieldHudget, const glm::vec3& direction, float scale, const std::string& text, FontSize fontSize) :
     m_textFieldHudget(textFieldHudget),
-    m_voxelFont(VoxelFont::instance()),
+    m_font(UiFont::instance()),
     m_text(text),
     m_direction(direction),
     m_scale(scale),
     m_fontSize(fontSize)
 {
-    m_width = m_voxelFont->letterWidth(fontSize) * m_scale;
-    m_height = m_voxelFont->letterWidth(fontSize) * m_scale;
+    m_width = m_font->letterWidth(fontSize) * m_scale;
+    m_height = m_font->letterHeight(fontSize) * m_scale;
     m_offset = -1.f * ((m_text.length() - 1) / 2.0f) * m_width;
 }
 
@@ -35,7 +35,7 @@ void TextFieldHudgetVoxels::setDirection(const glm::vec3& direction) {
 }
 
 void TextFieldHudgetVoxels::draw() {
-    m_voxelFont->drawString(m_text, m_textFieldHudget->worldPosition(m_direction), m_textFieldHudget->worldOrientation(m_direction), m_fontSize, m_scale, FontAlign::CENTER);
+    m_font->drawString(m_text, m_textFieldHudget->worldPosition(m_direction), m_textFieldHudget->worldOrientation(m_direction), m_fontSize, m_scale, FontAlign::CENTER);
 }
 
 const glm::vec3 TextFieldHudgetVoxels::upperLeft() const {

@@ -21,6 +21,7 @@ class Weapon;
  *  The BoardComputer abstracts the Ship's systems to a level usable to AiTask, Character and Player
  */
 class BoardComputer {
+    friend class ShootingController;
 public:
     explicit BoardComputer(WorldObject* worldObject);
     BoardComputer(WorldObject* worldObject, World& world);
@@ -30,6 +31,7 @@ public:
     float randomFloat(float from, float to);
 
     const EngineState& engineState() const;
+    void setEngineState(const EngineState& state);
 
     void moveTo(const glm::vec3& position, bool decelerate = true);
     void rotateTo(const glm::vec3& position, const glm::vec3& up = glm::vec3(0, 0, 0));

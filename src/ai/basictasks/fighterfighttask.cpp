@@ -43,9 +43,6 @@ void FighterFightTask::update(float deltaSec) {
                 boardComputer()->moveTo(primaryTarget->transform().position());
             }
 
-            if (targetDistance() < componentsInfo().maxBulletRange()) {
-                boardComputer()->shootBullet(m_primaryTarget);
-            }
             break;
         case State::ENGAGE:
             if (angleToTarget(primaryTarget) > 45.0f) {
@@ -54,13 +51,6 @@ void FighterFightTask::update(float deltaSec) {
             } else {
                 boardComputer()->rotateTo(primaryTarget->transform().position());
                 boardComputer()->moveTo(primaryTarget->transform().position());
-                if (angleToTarget(primaryTarget) < 15.0f && targetDistance() < componentsInfo().maxRocketRange()) {
-                    boardComputer()->shootRockets(primaryTarget);
-                }
-            }
-
-            if (targetDistance() < componentsInfo().maxBulletRange()) {
-                boardComputer()->shootBullet(m_primaryTarget);
             }
             break;
         case State::EVADE:
@@ -73,6 +63,16 @@ void FighterFightTask::update(float deltaSec) {
 
 bool FighterFightTask::isFinished() {
     return m_state == State::IDLE;
+}
+
+bool FighterFightTask::gunsEnabled() const {
+    return m_state != State::EVADE;
+}
+
+WorldObject* FighterFightTask::rocketTarget() {
+    auto* target = m_primaryTarget.get();
+    return target && m_state == State::ENGAGE && angleToTarget(target) < 15.0f &&
+        targetDistance() < componentsInfo().maxRocketRange() ? target : nullptr;
 }
 
 void FighterFightTask::selectPrimaryTarget() {

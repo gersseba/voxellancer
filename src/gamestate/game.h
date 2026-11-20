@@ -9,6 +9,7 @@
 class GamePlay;
 class Intro;
 class Viewer;
+class MainMenu;
 
 /**
  * Mainstate of the Game, entered once when libraries and context are setup
@@ -27,6 +28,11 @@ public:
     virtual InputHandler& inputHandler() override;
 
     Viewer& viewer();
+    void enableMainMenu();
+    bool mainMenuEnabled() const;
+    bool mainMenuVisible() const;
+    void toggleMainMenu();
+    void setConnectionError(const std::string& error);
 
     virtual void update(float deltaSec) override;
     void draw();
@@ -39,4 +45,6 @@ protected:
     Intro* m_intro;
     std::chrono::steady_clock::time_point m_lastDrawTime;
     float m_smoothedFps;
+    std::unique_ptr<MainMenu> m_mainMenu;
+    std::string m_connectionError;
 };

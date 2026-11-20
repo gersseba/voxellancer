@@ -233,6 +233,7 @@ list(APPEND SERVER_SOURCE_FILES
     "${SRC_DIR}/scenarios/basescenario.cpp"
     "${SRC_DIR}/scenarios/battlescenario.cpp"
     "${SRC_DIR}/scenarios/largecombatscenario.cpp"
+    "${SRC_DIR}/scenarios/aicomparisonscenario.cpp"
     "${SRC_DIR}/sound/soundproperties.cpp"
 )
 if(WIN32)
@@ -415,7 +416,11 @@ endif()
 set(INSTALL_BIN           ".")
 set(INSTALL_SHARED        ".")
 set(INSTALL_LIB           "lib")
-set(OPTION_BUILD_STATIC   OFF)
+if(APPLE)
+    set(OPTION_BUILD_STATIC ON)
+else()
+    set(OPTION_BUILD_STATIC OFF)
+endif()
 option(OPTION_ERRORS_AS_EXCEPTION "Throw exceptions" OFF)
 
 if(VOXELLANCER_BUILD_CLIENT)

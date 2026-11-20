@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <array>
 #include <utility>
+#include <limits>
 
 #include <SFML/System/Time.hpp>
 
@@ -68,6 +69,27 @@ bool TcpClient::sendInput(const voxellancer::protocol::InputCommand& command) {
         return fail("Input command is invalid for this protocol version.");
     }
     return queuePacket(packet.data(), packet.size());
+}
+
+bool TcpClient::sendContractAction(voxellancer::protocol::ContractActionKind action,
+    std::uint8_t weapon, glm::ivec3 cell, std::uint8_t node,
+    voxellancer::protocol::RewardChoice choice, std::uint8_t shield) {
+    if (!m_connected || !m_actor || !m_contractStatus ||
+        m_contractActionSequence == std::numeric_limits<std::uint64_t>::max()) {
+        return fail("Cannot send a station action without an active contract session.");
+    }
+    voxellancer::protocol::ContractActionPacket packet{};
+    if (!voxellancer::protocol::encodeContractAction(
+            {m_contractActionSequence + 1, m_contractStatus->mission, action, weapon, cell, node, choice, shield}, packet) ||
+        !queuePacket(packet.data(), packet.size())) {
+        return fail("Could not queue the station action.");
+    }
+    ++m_contractActionSequence;
+    return true;
+}
+
+std::optional<voxellancer::protocol::ContractStatus> TcpClient::contractStatus() const {
+    return m_contractStatus;
 }
 
 bool TcpClient::requestSnapshotResync() {
@@ -256,6 +278,15 @@ bool TcpClient::processFrames() {
             continue;
         }
         switch (packet[1]) {
+        case 15: {
+            voxellancer::protocol::ContractStatus status;
+            if (!m_actor || voxellancer::protocol::decodeContractStatus(
+                    packet, packetSize, status) != voxellancer::protocol::DecodeError::None) {
+                return fail("Server sent an invalid contract status.");
+            }
+            m_contractStatus = status;
+            break;
+        }
         case 13: {
             voxellancer::protocol::LobbyStatus status;
             if (voxellancer::protocol::decodeLobbyStatus(

@@ -22,6 +22,8 @@ public:
     virtual void update(float deltaSec) override;
 
     virtual bool isFinished() override;
+    bool gunsEnabled() const override;
+    WorldObject* rocketTarget() override;
 
 protected:
     enum class State {

@@ -75,18 +75,20 @@ HUD& Player::hud() {
 
 void Player::fire() {
     if (ship()) {
-        glm::vec3 targetPoint;
-
-        if(m_hud->aimHelper().hovered()) {
-            targetPoint = m_hud->aimHelper().targetPoint();
-        } else {
-            glm::vec3 shootDirection(safeNormalize(m_hud->crossHair().worldPosition() - cameraHead().position(), glm::vec3(0.0f, 0.0f, -1.0f)));
-            Ray ray(m_hud->crossHair().worldPosition(), shootDirection);
-            targetPoint = m_aimer->aim(ray);
-        }
-
-        m_ship->components().fireAtPoint(targetPoint, false);
+        auto* target = m_ship->targetObject();
+        const Ray crosshair = Ray::fromTo(cameraHead().position(), m_hud->crossHair().worldPosition());
+        if (target && Property<bool>("vfx.drawhud") && m_hud->aimHelper().isLinedUp(crosshair, *target))
+            m_ship->components().fireGunsWithLead(*target, false);
+        else
+            m_ship->components().fireAtPoint(aimPoint(), false);
     }
+}
+
+glm::vec3 Player::aimPoint() {
+    const glm::vec3 direction = safeNormalize(
+        m_hud->crossHair().worldPosition() - cameraHead().position(),
+        cameraHead().orientation() * glm::vec3(0.0f, 0.0f, -1.0f));
+    return m_aimer->aim(Ray(m_hud->crossHair().worldPosition(), direction));
 }
 
 void Player::move(const glm::vec3& vec) {

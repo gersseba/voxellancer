@@ -5,6 +5,7 @@
 
 #include "ai/aitask.h"
 #include "ai/basictasks/fighttaskimplementation.h"
+#include "ai/shootingcontroller.h"
 
 #include "utils/handle/handle.h"
 
@@ -14,7 +15,8 @@ class WorldObject;
 
 enum class AiArchetype {
     Fighter,
-    Cruiser
+    Cruiser,
+    Interceptor
 };
 
 class FightTask : public AiTask {
@@ -23,11 +25,14 @@ public:
     FightTask(
         BoardComputer* boardComputer,
         const std::vector<Handle<WorldObject>>& targets,
-        AiArchetype archetype);
+        AiArchetype archetype,
+        const ShootingSkill& skill = ShootingSkill::defaults());
 
     virtual void update(float deltaSec) override;
 
     AiArchetype archetype() const;
+    ShootingController& shooting() { return m_shooting; }
+    const ShootingController& shooting() const { return m_shooting; }
     WorldObject* primaryTarget();
     std::vector<Handle<WorldObject>>& targets();
     virtual void addTarget(const Handle<WorldObject>& targets);
@@ -38,4 +43,5 @@ public:
 protected:
     std::unique_ptr<FightTaskImplementation> m_task;
     AiArchetype m_archetype;
+    ShootingController m_shooting;
 };

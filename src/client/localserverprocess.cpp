@@ -43,8 +43,13 @@ bool LocalServerProcess::start(
     const std::filesystem::path& clientExecutable,
     std::uint16_t port,
     bool largeCombatBenchmark,
-    const std::string& runId)
+    const std::string& runId,
+    bool contracts)
 {
+    if (contracts && largeCombatBenchmark) {
+        m_lastError = "Contracts cannot run as a large-combat benchmark.";
+        return false;
+    }
     if (isRunning()) {
         m_lastError = "A local simulation server is already running.";
         return false;
@@ -81,7 +86,7 @@ bool LocalServerProcess::start(
             safeRunId;
         commandLine += L" --benchmark-client-id integrated-client";
     } else {
-        commandLine += L" --scenario battle";
+        commandLine += contracts ? L" --scenario contracts" : L" --scenario battle";
     }
     STARTUPINFOW startupInfo{};
     startupInfo.cb = sizeof(startupInfo);
@@ -154,7 +159,7 @@ bool LocalServerProcess::start(
                 "--listen-port",
                 portArgument.c_str(),
                 "--scenario",
-                "battle",
+                contracts ? "contracts" : "battle",
                 static_cast<char*>(nullptr));
         }
         _exit(127);

@@ -1,6 +1,9 @@
 #include "worldobjectcomponents.h"
 
 #include <algorithm>
+#include <cmath>
+#include <iterator>
+#include <stdexcept>
 
 #include "equipment/engineslot.h"
 #include "equipment/engine.h"
@@ -11,6 +14,9 @@
 #include "equipment/weapons/gun.h"
 #include "equipment/weapons/rocketlauncher.h"
 #include "worldobject/helper/componentsinfo.h"
+#include "worldobject/helper/hardpointaimhelper.h"
+#include "worldobject/worldobject.h"
+#include "worldobject/worldobjectinfo.h"
 
 
 WorldObjectComponents::WorldObjectComponents(WorldObject* worldObject):
@@ -95,12 +101,65 @@ std::list<std::shared_ptr<Hardpoint>>& WorldObjectComponents::hardpoints() {
 }
 
 void WorldObjectComponents::fireAtPoint(const glm::vec3& point, bool checkFriendlyFire) {
-    for (std::shared_ptr<Hardpoint> hardpoint : m_hardpoints) {
+    fireGuns(point, nullptr, checkFriendlyFire);
+}
+
+void WorldObjectComponents::fireGunsWithLead(WorldObject& target, bool checkFriendlyFire) {
+    if (&target != m_worldObject && target.info().canLockOn())
+        fireGuns(glm::vec3(0), &target, checkFriendlyFire);
+}
+
+void WorldObjectComponents::fireGuns(const glm::vec3& point, WorldObject* leadTarget, bool checkFriendlyFire) {
+    if (m_hardpoints.empty()) return;
+    // Rotate after spending, not empty attempts, so recharge timing cannot starve the same mount.
+    const float energyBefore = m_weaponEnergy;
+    auto next = std::next(m_hardpoints.begin(), m_fireOffset % m_hardpoints.size());
+    for (std::size_t i = 0; i < m_hardpoints.size(); ++i) {
+        const auto hardpoint = *next;
+        if (++next == m_hardpoints.end()) next = m_hardpoints.begin();
         if (hardpoint->weapon() && hardpoint->weapon()->type() == WeaponType::Gun) {
             Gun& gun = dynamic_cast<Gun&>(*hardpoint->weapon().get());
-            gun.fireAtPoint(point, checkFriendlyFire);
+            if (leadTarget) {
+                HardpointAimHelper aim(hardpoint.get(), leadTarget, true);
+                if (aim.isHittable()) gun.fireAtPoint(aim.point(), checkFriendlyFire);
+            } else {
+                gun.fireAtPoint(point, checkFriendlyFire);
+            }
         }
     }
+    if (m_weaponEnergy < energyBefore) m_fireOffset = (m_fireOffset+1) % m_hardpoints.size();
+}
+
+void WorldObjectComponents::configureWeaponEnergy(float capacity, float regeneration, float delay) {
+    if (!std::isfinite(capacity) || !std::isfinite(regeneration) || !std::isfinite(delay) ||
+        capacity < 0 || regeneration < 0 || delay < 0 ||
+        (capacity > 0 ? regeneration <= 0 : regeneration != 0 || delay != 0))
+        throw std::invalid_argument("Invalid weapon energy configuration.");
+    m_weaponEnergyCapacity = capacity;
+    m_weaponEnergyRegeneration = regeneration;
+    m_weaponEnergyDelay = delay;
+    m_fireOffset = 0;
+    refillWeaponEnergy();
+}
+
+float WorldObjectComponents::weaponEnergy() const { return m_weaponEnergy; }
+float WorldObjectComponents::weaponEnergyCapacity() const { return m_weaponEnergyCapacity; }
+float WorldObjectComponents::weaponEnergyRegeneration() const { return m_weaponEnergyRegeneration; }
+float WorldObjectComponents::weaponEnergyRechargeRemaining() const { return m_weaponEnergyRechargeRemaining; }
+
+bool WorldObjectComponents::consumeWeaponEnergy(float amount) {
+    if (!std::isfinite(amount) || amount < 0)
+        throw std::invalid_argument("Weapon energy cost must be finite and nonnegative.");
+    if (m_weaponEnergyCapacity == 0 || amount == 0) return true;
+    if (amount > m_weaponEnergy + 0.00001f) return false;
+    m_weaponEnergy = std::max(0.0f, m_weaponEnergy - amount);
+    m_weaponEnergyRechargeRemaining = m_weaponEnergyDelay;
+    return true;
+}
+
+void WorldObjectComponents::refillWeaponEnergy() {
+    m_weaponEnergy = m_weaponEnergyCapacity;
+    m_weaponEnergyRechargeRemaining = 0;
 }
 
 void WorldObjectComponents::fireAtObject(WorldObject* worldObject) {
@@ -141,6 +200,10 @@ float WorldObjectComponents::compensateDamage(float damage) {
 }
 
 void WorldObjectComponents::update(float deltaSec) {
+    const float blocked = std::min(deltaSec, m_weaponEnergyRechargeRemaining);
+    m_weaponEnergyRechargeRemaining -= blocked;
+    m_weaponEnergy = std::min(m_weaponEnergyCapacity,
+        m_weaponEnergy + (deltaSec-blocked)*m_weaponEnergyRegeneration);
     for (std::shared_ptr<Hardpoint>& hardpoint : m_hardpoints) {
         hardpoint->update(deltaSec);
     }

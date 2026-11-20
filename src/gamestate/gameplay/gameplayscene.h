@@ -2,6 +2,7 @@
 
 #include <cstdint>
 #include <memory>
+#include <optional>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
@@ -26,7 +27,9 @@ class Starfield;
 class VoxelCluster;
 class WorldTreeRenderer;
 #ifndef VOXELLANCER_HEADLESS_SERVER
+#include "protocol/serverprotocol.h"
 class HudOverlay;
+class StationOutfitter;
 #endif
 
 class GamePlayScene: public Scene {
@@ -41,6 +44,10 @@ public:
     void setFps(float fps);
 #ifndef VOXELLANCER_HEADLESS_SERVER
     HudOverlay& hudOverlay();
+    bool stationKey(int key);
+    bool stationMouse(int button, int action, glm::vec2 pointer);
+    bool closeEquipment();
+    std::optional<voxellancer::protocol::EntityId> remoteLeadTarget() const;
 #endif
 
 
@@ -57,12 +64,21 @@ protected:
     float m_fps;
 #ifndef VOXELLANCER_HEADLESS_SERVER
     mutable std::unique_ptr<HudOverlay> m_hudOverlay;
+    mutable std::unique_ptr<StationOutfitter> m_outfitter;
     struct RemoteVoxelProxy;
     std::vector<std::unique_ptr<RemoteVoxelProxy>> m_remoteVoxelProxies;
     std::unordered_map<std::uint64_t, RemoteVoxelProxy*> m_remoteVoxelProxyIndex;
     std::unordered_set<std::uint64_t> m_pendingRemoteContentKeys;
     bool m_remotePreviewWasActive = false;
     bool m_remoteContentSyncNeeded = true;
+    bool m_contractOverlayActive = false;
+    bool m_contractWasStation = false;
+    struct RemoteLeadCue {
+        voxellancer::protocol::EntityId actor;
+        voxellancer::protocol::EntityId target;
+        glm::vec3 point;
+    };
+    mutable std::optional<RemoteLeadCue> m_remoteLeadCue;
     float m_shieldShimmerAccumulator = 0.0f;
     float m_shieldPulseTime = 0.0f;
     std::uint32_t m_shieldShimmerRandomState = 0xA341316Cu;
@@ -81,6 +97,7 @@ protected:
         m_shieldSurfaceCache;
     void updateRemoteVoxelProxies();
     void updateRemoteInfoOverlay();
+    void drawRemoteContacts(const Camera& camera) const;
     void updateShieldShimmer(float deltaSec);
     float nextShieldShimmerRandom();
 #endif

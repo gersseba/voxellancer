@@ -1,4 +1,5 @@
 #include "scriptengine.h"
+#include "scriptable.h"
 
 #include <stdexcept>
 

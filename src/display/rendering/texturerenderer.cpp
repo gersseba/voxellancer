@@ -14,7 +14,7 @@
 
 #include "resource/ddstexture.h"
 #include "voxel/voxelrenderer.h"
-#include "ui/voxelfont.h"
+#include "ui/uifont.h"
 #include "etc/contextprovider.h"
 
 
@@ -42,8 +42,9 @@ void TextureRenderer::display(const std::string& status) {
     draw();
     m_voxelRenderer->prepareDraw(*m_camera.get(), false);
     m_voxelRenderer->program()->getUniform<glm::vec3>("lightdir")->set(glm::vec3(0, 0, 1));
-    VoxelFont::instance()->drawString("Voxellancer", glm::vec3(0, 0.5f, -1) * 40.f, glm::quat(), FontSize::SIZE5x7, 0.4f, FontAlign::CENTER);
-    VoxelFont::instance()->drawString(status, glm::vec3(-0.85f, -0.5f, -1) * 40.f, glm::quat(), FontSize::SIZE5x7, 0.15f, FontAlign::LEFT);
+    UiFont::instance()->setCamera(*m_camera);
+    UiFont::instance()->drawString("Voxellancer", glm::vec3(0, 0.5f, -1) * 40.f, glm::quat(), FontSize::SIZE5x7, 0.4f, FontAlign::CENTER);
+    UiFont::instance()->drawString(status, glm::vec3(-0.85f, -0.5f, -1) * 40.f, glm::quat(), FontSize::SIZE5x7, 0.15f, FontAlign::LEFT);
     m_voxelRenderer->afterDraw();
     glfwSwapBuffers(glfwGetCurrentContext());
 }

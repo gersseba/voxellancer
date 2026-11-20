@@ -1,4 +1,6 @@
 #include "propertyconverter.h"
+#include <sstream>
+#include <stdexcept>
 
 #include "propertyregex.h"
 
@@ -48,18 +50,15 @@ glm::vec4 PropertyConverter::vec4Converter(const std::string& s) {
 }
 
 std::list<std::string> PropertyConverter::listConverter(const std::string& s) {
-    regexns::smatch matches;
-    regexns::regex_match(s, matches, list_regex());
+    if (!regexns::regex_match(s, list_regex()))
+        throw std::invalid_argument("Invalid list property: " + s);
     std::list<std::string> result;
-
-    for(int i = 1; i <= matches.size(); i += 2) {
-        std::string listEntry = matches[i];
-
-         if(!listEntry.empty()) {
-            result.push_back(matches[i]);
-        }
+    std::istringstream stream(s);
+    std::string entry;
+    while (std::getline(stream, entry, ',')) {
+        entry.erase(0, entry.find_first_not_of(' '));
+        result.push_back(entry);
     }
-
     return result;
 }
 

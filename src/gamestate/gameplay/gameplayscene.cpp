@@ -1,4 +1,5 @@
 #include "gameplayscene.h"
+#include "scenarios/aicomparisonscenario.h"
 
 #include <sstream>
 #include <iomanip>
@@ -27,6 +28,7 @@
 #include "equipment/shield.h"
 #include "equipment/shieldslot.h"
 #include "equipment/shieldtype.h"
+#include "equipment/weaponcatalog.h"
 #include "gamestate/gameplay/gameplay.h"
 #ifndef VOXELLANCER_HEADLESS_SERVER
 #include "gamestate/gameplay/running/gameplayrunning.h"
@@ -38,10 +40,13 @@
 #include "sound/soundmanager.h"
 
 #include "ui/hud/hud.h"
+#include "ui/hud/crosshair.h"
 #ifndef VOXELLANCER_HEADLESS_SERVER
 #include "ui/hud/hudoverlay.h"
+#include "ui/contactmarker.h"
+#include "ui/stationoutfitter.h"
 #endif
-#include "ui/voxelfont.h"
+#include "ui/uifont.h"
 #include "ui/voxelfontconstants.h"
 
 #include "voxel/voxelrenderer.h"
@@ -58,6 +63,7 @@
 #include "worldobject/ship.h"
 #include "worldobject/worldobject.h"
 #include "worldobject/worldobjectcomponents.h"
+#include "worldobject/helper/hardpointaimhelper.h"
 
 #include "player.h"
 
@@ -94,6 +100,11 @@ GamePlayScene::GamePlayScene(GamePlay& gamePlay):
     m_hudOverlay->setVisible(true);
     m_hudOverlay->setFocusChangedCallback(
         [this]() { m_gamePlay.refreshMouseCursorMode(); });
+    m_outfitter = std::make_unique<StationOutfitter>(
+        [this](auto kind, auto weapon, auto cell, auto node, auto choice, auto shield) -> std::optional<std::uint64_t> {
+            if (!m_gamePlay.running().submitContractAction(kind, weapon, cell, node, choice, shield)) return {};
+            return m_gamePlay.running().contractActionSequence();
+        });
 #endif
     addRenderPass(m_starField, 0);
 }
@@ -105,11 +116,40 @@ void GamePlayScene::update(float deltaSec) {
 #ifndef VOXELLANCER_HEADLESS_SERVER
     updateRemoteVoxelProxies();
     updateRemoteInfoOverlay();
+    const auto actor = m_gamePlay.running().remotePreviewSnapshot();
+    const auto& contents = m_gamePlay.running().remoteEntityContents();
+    const auto content = std::find_if(contents.begin(), contents.end(),
+        [&](const auto& entry) { return actor && entry.id == actor->id; });
+    const auto contract = m_gamePlay.running().contractStatus();
+    const bool servicesWereVisible = m_outfitter->visible();
+    m_outfitter->update(contract, content == contents.end() ? nullptr : &*content, deltaSec);
+    if (contract && contract->phase != voxellancer::protocol::ContractPhase::Mission) {
+        m_hudOverlay->setVisible(false);
+        m_gamePlay.setMouseCursorFree(m_outfitter->visible());
+    } else if (servicesWereVisible) {
+        m_gamePlay.setMouseCursorFree(false);
+    }
     updateShieldShimmer(deltaSec);
 #endif
 }
 
 #ifndef VOXELLANCER_HEADLESS_SERVER
+bool GamePlayScene::stationKey(int key) {
+    const bool captured = m_outfitter->key(key);
+    if (captured) m_gamePlay.setMouseCursorFree(m_outfitter->visible());
+    return captured;
+}
+
+bool GamePlayScene::stationMouse(int button, int action, glm::vec2 pointer) {
+    const bool captured = m_outfitter->mouse(button, action, pointer);
+    if (captured) m_gamePlay.setMouseCursorFree(m_outfitter->visible());
+    return captured;
+}
+
+bool GamePlayScene::closeEquipment() {
+    return m_outfitter->closeEquipment();
+}
+
 void GamePlayScene::updateRemoteVoxelProxies() {
     BenchmarkCpuScope updateScope(BenchmarkMetric::ClientReplicaUpdate);
     GamePlayRunning& running = m_gamePlay.running();
@@ -708,7 +748,207 @@ float GamePlayScene::nextShieldShimmerRandom() {
         16777216.0f;
 }
 
+std::optional<voxellancer::protocol::EntityId> GamePlayScene::remoteLeadTarget() const {
+    const auto& actor = m_gamePlay.running().remotePreviewSnapshot();
+    if (!actor || !m_remoteLeadCue || m_remoteLeadCue->actor != actor->id ||
+        m_gamePlay.freecamActive() || !Property<bool>("vfx.drawhud")) {
+        return std::nullopt;
+    }
+    auto& player = World::instance()->player();
+    // Both the cue and the crosshair are tested as viewing directions.
+    const glm::vec3 origin = player.cameraHead().position();
+    const glm::vec3 cue = m_remoteLeadCue->point - origin;
+    const glm::vec3 crosshair = player.hud().crossHair().worldPosition() - origin;
+    const float alignment = glm::dot(cue, crosshair);
+    constexpr float cosTolerance = 0.9997f; // About 1.4 degrees.
+    if (alignment > 0 && alignment * alignment >=
+        cosTolerance * cosTolerance * glm::dot(cue, cue) * glm::dot(crosshair, crosshair)) {
+        return m_remoteLeadCue->target;
+    }
+    return std::nullopt;
+}
+
+void GamePlayScene::drawRemoteContacts(const Camera& camera) const {
+    m_remoteLeadCue.reset();
+    if (!Property<bool>("vfx.drawhud")) {
+        return;
+    }
+    const auto actor = m_gamePlay.running().remotePreviewSnapshot();
+    if (!actor) {
+        return;
+    }
+    auto* font = UiFont::instance();
+    const glm::vec4 color(1.0f, 0.32f, 0.22f, 1.0f);
+    const auto contract = m_gamePlay.running().contractStatus();
+    const bool showLead = !m_gamePlay.freecamActive() &&
+        (!contract || (contract->alive &&
+            contract->phase == voxellancer::protocol::ContractPhase::Mission));
+    struct GunCue {
+        glm::vec3 muzzle;
+        float speed;
+        float lifetime;
+        float range;
+        bool inheritsVelocity;
+    };
+    std::vector<GunCue> guns;
+    if (showLead) {
+        const auto& contents = m_gamePlay.running().remoteEntityContents();
+        const auto content = std::find_if(contents.begin(), contents.end(),
+            [&actor](const auto& entry) { return entry.id == actor->id; });
+        if (content != contents.end()) {
+            for (const auto& slot : content->equipment) {
+                if (slot.kind != voxellancer::protocol::EquipmentSlotKind::Weapon ||
+                    Property<std::string>::get(slot.equipmentKey + ".general.type") != "gun") {
+                    continue;
+                }
+                const std::string bullet = Property<std::string>(slot.equipmentKey + ".general.bullet");
+                const float speed = Property<float>(bullet + ".general.speed");
+                const float lifetime = Property<float>(bullet + ".general.lifetime");
+                const auto profile = WeaponProfile::load(bullet);
+                guns.push_back({actor->position + actor->orientation * (glm::vec3(slot.cell) * actor->scale),
+                    speed, lifetime, profile.enabled ? profile.range : speed * lifetime, profile.enabled});
+            }
+        }
+    }
+    float nearestLead = std::numeric_limits<float>::infinity();
+    glm::vec2 cueScreen(0.0f);
+    auto& player = World::instance()->player();
+    const glm::vec3 origin = player.cameraHead().position();
+    const glm::vec3 crosshairRay = glm::normalize(player.hud().crossHair().worldPosition() - origin);
+    for (const auto& contact : m_gamePlay.running().remoteReplicaSnapshots()) {
+        if (!contact.hostile || contact.id == actor->id ||
+            contact.kind != voxellancer::protocol::EntitySnapshot::Kind::Ship) {
+            continue;
+        }
+        const auto marker = projectContactMarker(
+            camera.viewProjection() * glm::vec4(contact.position, 1.0f));
+        if (marker.onScreen) {
+            font->drawScreen("(", marker.position + glm::vec2(-0.02f, -0.014f),
+                0.028f, color, FontAlign::CENTER);
+            font->drawScreen(")", marker.position + glm::vec2(0.02f, -0.014f),
+                0.028f, color, FontAlign::CENTER);
+        } else {
+            font->drawScreen("!", marker.position - glm::vec2(0.0f, 0.018f),
+                0.028f, color, FontAlign::CENTER);
+        }
+        const auto distance = std::lround(glm::distance(actor->position, contact.position));
+        const std::string label = std::string(marker.behind ? "ENEMY BEHIND - " : "ENEMY - ") +
+            std::to_string(distance) + " U";
+        font->drawScreen(label,
+            glm::vec2(glm::clamp(marker.position.x, 0.15f, 0.85f),
+                marker.position.y + 0.02f),
+            0.017f, color, FontAlign::CENTER, 0.28f);
+
+        glm::vec3 sum(0.0f);
+        int solutions = 0;
+        for (const auto& gun : guns) {
+            const auto point = HardpointAimHelper::interceptPoint(gun.muzzle,
+                contact.position, contact.directionalVelocity -
+                    (gun.inheritsVelocity ? actor->directionalVelocity : glm::vec3(0.0f)),
+                gun.speed, gun.lifetime, gun.range);
+            if (point) {
+                sum += *point;
+                ++solutions;
+            }
+        }
+        if (solutions == 0) continue;
+        const glm::vec3 point = sum / static_cast<float>(solutions);
+        const auto lead = projectContactMarker(camera.viewProjection() * glm::vec4(point, 1.0f));
+        if (!lead.onScreen) continue;
+        const glm::vec3 direction = glm::normalize(point - origin);
+        const float leadDistance = 1.0f - glm::dot(direction, crosshairRay);
+        if (leadDistance < nearestLead) {
+            nearestLead = leadDistance;
+            cueScreen = lead.position;
+            m_remoteLeadCue = RemoteLeadCue{actor->id, contact.id, point};
+        }
+    }
+    if (m_remoteLeadCue) {
+        const bool linedUp = remoteLeadTarget().has_value();
+        font->drawScreen(linedUp ? "(+)" : "+", cueScreen - glm::vec2(0.0f, 0.012f),
+            0.024f, glm::vec4(0.56f, 0.95f, 1.0f, 1.0f), FontAlign::CENTER);
+    }
+}
+
 void GamePlayScene::updateRemoteInfoOverlay() {
+    if (m_gamePlay.running().contractSessionEnded()) {
+        m_hudOverlay->setPrimaryAction("", false, {});
+        m_hudOverlay->setVisible(true);
+        m_hudOverlay->setMinimized(false);
+        m_hudOverlay->setTextLines({
+            "CONTRACT SESSION ENDED",
+            "YOUR SHIP WAS LOST OR THE SERVER DISCONNECTED",
+            "CLOSE THE GAME AND START A NEW SESSION"
+        });
+        return;
+    }
+    const auto contract = m_gamePlay.running().contractStatus();
+    if (contract) {
+        using namespace voxellancer::protocol;
+        const bool station = contract->phase == ContractPhase::Station;
+        if (!m_contractOverlayActive || m_contractWasStation != station) {
+            m_hudOverlay->setVisible(station);
+            m_hudOverlay->setMinimized(false);
+            m_gamePlay.setMouseCursorFree(station);
+            m_hudOverlay->setBounds(station
+                ? glm::vec4(0.025f, 0.42f, 0.68f, 0.55f)
+                : glm::vec4(0.025f, 0.69f, 0.38f, 0.28f));
+        }
+        m_contractOverlayActive = true;
+        m_contractWasStation = station;
+        m_hudOverlay->setPrimaryAction(station
+            ? contract->ready ? "WAITING FOR PARTY" : "LAUNCH - ENTER" : "",
+            station && !contract->ready, [this]() {
+                m_gamePlay.running().submitContractAction(ContractActionKind::Ready);
+            });
+        std::vector<std::string> lines;
+        lines.push_back(station ? "STATION - CONTRACT BOARD AND OUTFITTER" : "ATTACK - CLEAR HOSTILES");
+        lines.push_back("CREDITS " + std::to_string(contract->credits) +
+            "   ROUTE STEP " + std::to_string(contract->selectedNode < contract->route.size()
+                ? contract->route[contract->selectedNode].row : 0));
+        lines.push_back(contract->invulnerable
+            ? "INVULNERABILITY ON - CHANGE IN ESC / SETTINGS"
+            : "INVULNERABILITY OFF - CHANGE IN ESC / SETTINGS");
+        if (station) {
+            lines.push_back("CLEAR RAIDERS - REWARD " + std::to_string(contract->reward) + " EACH");
+            lines.push_back("B - RANDOM WEAPON OFFER  " +
+                (contract->gun ? std::string("SOLD") : std::to_string(contract->gunPrice) + " CREDITS"));
+            lines.push_back("E - EQUIPMENT AND STORED WEAPONS");
+            lines.push_back("N - SHIELD MK2  " +
+                (contract->shield ? std::string("OWNED") : std::to_string(contract->shieldPrice) + " CREDITS") +
+                " / 1.5X CAPACITY + REGEN");
+            lines.push_back(contract->ready ? "READY - WAITING FOR YOUR PARTY" : "ENTER - READY AND DEPLOY");
+            lines.push_back("PARTY READY " + std::to_string(contract->readyPlayers) +
+                "/" + std::to_string(contract->players));
+        } else {
+            lines.push_back("HOSTILES REMAINING " + std::to_string(contract->remaining));
+            lines.push_back("REWARD " + std::to_string(contract->reward) + " CREDITS PER PILOT");
+            lines.push_back("CLEAR ALL HOSTILES TO RETURN TO THE MAP");
+        }
+        const char* result = "";
+        switch (contract->result) {
+        case ContractResult::None: break;
+        case ContractResult::Accepted: result = "REQUEST ACCEPTED"; break;
+        case ContractResult::WrongPhase: result = "SHOP AVAILABLE ONLY AT STATION"; break;
+        case ContractResult::InsufficientCredits: result = "NOT ENOUGH CREDITS - COMPLETE A CONTRACT"; break;
+        case ContractResult::AlreadyOwned: result = "UPGRADE ALREADY OWNED"; break;
+        case ContractResult::Incompatible: result = "NO COMPATIBLE EQUIPMENT SLOTS"; break;
+        case ContractResult::StaleRequest: result = "SESSION CHANGED - PLEASE TRY AGAIN"; break;
+        case ContractResult::Unavailable: result = "PLAYER UNAVAILABLE"; break;
+        case ContractResult::MissionCompleted: result = "CONTRACT COMPLETE - CREDITS AWARDED"; break;
+        case ContractResult::MissionAborted: result = "CONTRACT ABORTED - NO REWARD"; break;
+        case ContractResult::InventoryFull: result = "INVENTORY FULL"; break;
+        case ContractResult::InvalidSlot: result = "MOUNT NO LONGER AVAILABLE"; break;
+        case ContractResult::InvalidRoute: result = "CHOOSE A CONNECTED DESTINATION"; break;
+        case ContractResult::EncounterUnavailable: result = "ENCOUNTERS COMING LATER"; break;
+        }
+        lines.push_back(result);
+        lines.push_back("TAB - HIDE / SHOW PANEL   ESC - MENU");
+        m_hudOverlay->setTextLines(lines);
+        return;
+    }
+    m_contractOverlayActive = false;
+    m_hudOverlay->setPrimaryAction("", false, {});
     const auto& remoteSnapshot = m_gamePlay.running().remotePreviewSnapshot();
     if (!remoteSnapshot) {
         m_hudOverlay->setTextLines({});
@@ -815,6 +1055,7 @@ void GamePlayScene::drawImpl(const Camera& camera) const {
         BenchmarkCpuScope cpuScope(BenchmarkMetric::WorldObjectDraw);
         BenchmarkGpuScope gpuScope(BenchmarkMetric::WorldObjectDraw);
         m_voxelRenderer->prepareDraw(camera);
+        UiFont::instance()->setCamera(camera);
         if (!m_gamePlay.running().remotePreviewActive()) {
             for (WorldObject* worldObject : World::instance()->worldObjects()) {
                 VoxelRenderer::instance()->draw(*worldObject);
@@ -839,17 +1080,9 @@ void GamePlayScene::drawImpl(const Camera& camera) const {
         const bool waitingForRemoteWorld = false;
 #endif
         constexpr float overlayDistance = 8.0f;
-        const glm::mat4 projection = camera.projection();
-        const float halfWidth = overlayDistance / projection[0][0];
-        const float halfHeight = overlayDistance / projection[1][1];
-        const glm::vec3 overlayPosition = camera.eye() + camera.orientation() *
-            glm::vec3(-halfWidth + 0.3f, halfHeight - 0.9f, -overlayDistance);
         std::ostringstream fpsText;
         const GLboolean depthTestEnabled = glIsEnabled(GL_DEPTH_TEST);
         glDisable(GL_DEPTH_TEST);
-#ifndef VOXELLANCER_HEADLESS_SERVER
-        m_hudOverlay->drawBackground();
-#endif
         m_voxelRenderer->prepareDraw(camera);
         if (depthTestEnabled) {
             glEnable(GL_DEPTH_TEST);
@@ -857,22 +1090,126 @@ void GamePlayScene::drawImpl(const Camera& camera) const {
             glDisable(GL_DEPTH_TEST);
         }
         if (!waitingForRemoteWorld) {
-            World::instance()->player().hud().draw();
+#ifndef VOXELLANCER_HEADLESS_SERVER
+            const auto contract = m_gamePlay.running().contractStatus();
+            if (!m_gamePlay.aiComparison() && !m_outfitter->visible() &&
+                (!contract || contract->alive))
+#endif
+                World::instance()->player().hud().draw();
             fpsText << "FPS: " << std::fixed << std::setprecision(1) << m_fps;
         }
+        m_voxelRenderer->afterDraw();
         glDisable(GL_DEPTH_TEST);
         if (!waitingForRemoteWorld) {
-            VoxelFont::instance()->drawString(
-                fpsText.str(), overlayPosition, camera.orientation(),
-                FontSize::SIZE5x7, 0.12f, FontAlign::LEFT);
+            UiFont::instance()->drawScreen(
+                fpsText.str(), glm::vec2(0.025f, 0.025f), 0.0225f);
         }
 #ifndef VOXELLANCER_HEADLESS_SERVER
+        if (!waitingForRemoteWorld) {
+            drawRemoteContacts(camera);
+        } else {
+            m_remoteLeadCue.reset();
+        }
+        m_hudOverlay->drawBackground();
         m_hudOverlay->drawText(camera);
+        if (const auto contract = m_gamePlay.running().contractStatus()) {
+            if ((!m_hudOverlay->visible() || m_hudOverlay->minimized()) && !m_outfitter->visible()) {
+                const bool station = contract->phase !=
+                    voxellancer::protocol::ContractPhase::Mission;
+                const bool summary = contract->phase == voxellancer::protocol::ContractPhase::Complete ||
+                    contract->phase == voxellancer::protocol::ContractPhase::Defeat;
+                const std::string prompt = summary ? "RUN ENDED / TAB DEBRIEF / ENTER NEW RUN / ESC MENU" :
+                    !contract->alive ? "SHIP LOST - SPECTATING / NO REVIVES THIS RUN / TAB SERVICES" :
+                    contract->phase == voxellancer::protocol::ContractPhase::Reward ?
+                        "CHOOSE YOUR REWARD / TAB SALVAGE / 1 CREDITS / 2 WEAPON / 3 UPGRADE" : station
+                    ? contract->ready
+                        ? "READY - WAITING FOR PARTY / TAB ROUTE"
+                        : "ENTER - ROUTE / TRAVEL / TAB SERVICES"
+                    : "HOSTILES " + std::to_string(contract->remaining) +
+                        " / TAB OBJECTIVES / ESC MENU";
+                UiFont::instance()->drawScreen(prompt,
+                    glm::vec2(0.5f, 0.08f), 0.02f,
+                    glm::vec4(1.0f), FontAlign::CENTER, 0.9f);
+            }
+        }
+        m_outfitter->draw();
+        if (const auto* comparison = m_gamePlay.aiComparison()) {
+            std::array<int,5> counts{};
+            for (const auto& duel : comparison->duels())
+                ++counts[static_cast<std::size_t>(duel.result)];
+            const glm::vec4 cyan(0.25f,0.85f,0.95f,1);
+            const auto& watched = comparison->duels()[comparison->watchedPair()];
+            for (int side = 0; side < 2; ++side) {
+                const auto* ship = watched.ships[side].get();
+                if (!ship) continue;
+                const auto marker = projectContactMarker(
+                    camera.viewProjection()*glm::vec4(ship->position(),1));
+                const glm::vec4 color = side == 0 ? glm::vec4(1,0.65f,0.25f,1) : cyan;
+                UiFont::instance()->drawScreen(marker.onScreen ? "+" : "!",
+                    marker.position,0.025f,color,FontAlign::CENTER);
+                UiFont::instance()->drawScreen(
+                    std::string(side == 0 ? "A " : "B ")+
+                    AiComparisonScenario::behaviourName(watched.behaviours[side])+
+                    (marker.behind ? " BEHIND" : "")+" / "+
+                    std::to_string(std::lround(glm::distance(camera.eye(),ship->position())))+" U",
+                    {glm::clamp(marker.position.x,0.16f,0.84f),marker.position.y+0.03f},
+                    0.015f,color,FontAlign::CENTER,0.30f);
+            }
+            UiFont::instance()->drawScreen("AI LAB / 16 CONTROLLED PAIRS",
+                {0.025f,0.11f},0.020f,cyan,FontAlign::LEFT,0.47f);
+            UiFont::instance()->drawScreen("WINS  A "+std::to_string(counts[1])+
+                " / B "+std::to_string(counts[2])+" / "+
+                std::to_string(static_cast<std::uint64_t>(
+                    comparison->elapsedTicks()/SimulationTickRunner::TickRate))+" S / VIEW "+
+                std::to_string(comparison->watchedPair()+1),
+                {0.025f,0.15f},0.015f,glm::vec4(1),FontAlign::LEFT,0.47f);
+            for (std::size_t index = 0; index < comparison->duels().size(); ++index) {
+                const auto& duel = comparison->duels()[index];
+                const std::string row = std::to_string(index+1)+" "+
+                    AiComparisonScenario::experimentName(duel.experiment)+" A "+
+                    std::to_string(static_cast<int>(std::lround(duel.hull[0]*100)))+
+                    "% B "+std::to_string(static_cast<int>(std::lround(duel.hull[1]*100)))+
+                    "% / "+AiComparisonScenario::resultName(duel.result);
+                UiFont::instance()->drawScreen(row,{0.025f,0.195f+float(index)*0.022f},
+                    0.013f,index == comparison->watchedPair() ? cyan : glm::vec4(1),
+                    FontAlign::LEFT,0.47f);
+            }
+            UiFont::instance()->drawScreen(comparison->finished() ?
+                "FINISHED / TIMEOUTS ARE NOT WINS" : "120 S LIMIT / MATCHED HULLS AND GUNS",
+                {0.025f,0.64f},0.014f,cyan,FontAlign::LEFT,0.47f);
+            UiFont::instance()->drawScreen("1-9 / 0 FIRST 10 / COMMA PERIOD ALL / F CAMERA",
+                {0.025f,0.68f},0.013f,glm::vec4(1),FontAlign::LEFT,0.47f);
+            UiFont::instance()->drawScreen(
+                std::string(AiComparisonScenario::experimentName(watched.experiment))+
+                " / LEAD - TRACK - ACCURACY",
+                {0.56f,0.11f},0.016f,cyan,FontAlign::LEFT,0.41f);
+            for (int side = 0; side < 2; ++side) {
+                const auto& skill = watched.skills[side];
+                const auto& fire = watched.fire[side];
+                const std::string label = std::string(side == 0 ? "A " : "B ")+
+                    AiComparisonScenario::behaviourName(watched.behaviours[side]);
+                const auto percent = [](float value) { return std::to_string(std::lround(value*100)); };
+                UiFont::instance()->drawScreen(label+" / "+
+                    percent(skill.lead)+" - "+percent(skill.tracking)+" - "+percent(skill.accuracy)+"%",
+                    {0.56f,0.15f+side*0.075f},0.015f,glm::vec4(1),FontAlign::LEFT,0.41f);
+                UiFont::instance()->drawScreen("SHOTS "+std::to_string(fire.shots)+" / HITS "+
+                    std::to_string(fire.hits)+" / "+(fire.shots ?
+                        std::to_string(std::lround(double(fire.hits)*100/fire.shots))+"%" : "NO SHOTS"),
+                    {0.56f,0.18f+side*0.075f},0.014f,glm::vec4(1),FontAlign::LEFT,0.41f);
+            }
+        }
         if (waitingForRemoteWorld) {
             const glm::vec3 waitingPosition = camera.eye() +
                 camera.orientation() * glm::vec3(0.0f, 0.0f, -overlayDistance);
-            VoxelFont::instance()->drawString(
-                "WAITING",
+            const auto lobby = m_gamePlay.running().remoteLobbyStatus();
+            const char* waitingText =
+                m_gamePlay.running().contractSessionEnded()
+                    ? "SESSION ENDED"
+                    : lobby && !lobby->worldStarted
+                        ? "WAITING FOR PLAYERS"
+                        : "CONNECTING";
+            UiFont::instance()->drawString(
+                waitingText,
                 waitingPosition,
                 camera.orientation(),
                 FontSize::SIZE5x7,
@@ -881,7 +1218,6 @@ void GamePlayScene::drawImpl(const Camera& camera) const {
             );
         }
 #endif
-        m_voxelRenderer->afterDraw();
         if (depthTestEnabled) {
             glEnable(GL_DEPTH_TEST);
         }

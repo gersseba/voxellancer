@@ -19,6 +19,13 @@ public:
     void disconnect();
     bool poll();
     bool sendInput(const voxellancer::protocol::InputCommand& command);
+    bool sendContractAction(voxellancer::protocol::ContractActionKind action,
+        std::uint8_t weapon = 0, glm::ivec3 cell = glm::ivec3(0),
+        std::uint8_t node = voxellancer::protocol::NoRouteNode,
+        voxellancer::protocol::RewardChoice choice = voxellancer::protocol::RewardChoice::None,
+        std::uint8_t shield = 0);
+    std::optional<voxellancer::protocol::ContractStatus> contractStatus() const;
+    std::uint64_t contractActionSequence() const { return m_contractActionSequence; }
     bool requestSnapshotResync();
 
     std::optional<voxellancer::protocol::EntityId> actor() const;
@@ -65,6 +72,8 @@ private:
     bool m_resyncPending = false;
     std::optional<voxellancer::protocol::EntityId> m_actor;
     std::optional<voxellancer::protocol::LobbyStatus> m_lobbyStatus;
+    std::optional<voxellancer::protocol::ContractStatus> m_contractStatus;
+    std::uint64_t m_contractActionSequence = 0;
     std::uint64_t m_snapshotSequence = 0;
     std::uint64_t m_snapshotTick = 0;
     std::vector<voxellancer::protocol::EntitySnapshot> m_replicaState;

@@ -1,72 +1,156 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:dcf6093de720fccdebc0727433b3ab7b310fbfd2f35b673b7d9019e91b9a9b93",
+  "pageVersion": "sha256:0bd5dd81fbd96301d3299a19b5f5d5375d69757779fd8ef6a73c9ea629ffe05f",
   "claims": [
     {
       "id": "claim_bb4a65120cd24ba2a35b80b1d4d39203",
-      "statement": "VoxelCluster owns voxels keyed by cell coordinate and updates bounds and render data on each insertion or removal; removal deletes the voxel after erasing it from the cluster.",
+      "statement": "VoxelCluster owns voxels keyed by cell coordinate; insertion/removal updates bounds and invalidates render data when present, and removal erases and deletes the voxel.",
       "evidence": [
         {
-          "resource": "repo://src/voxel/voxelcluster.cpp",
-          "version": "repo-file-v1:sha256:925b9585a09944c648fe0d0f0f3fdf315fa42c36b35c44ab6e8c41198a339f0c"
+          "resource": "repo://src/voxel/voxelcluster.cpp#L71-L96",
+          "version": "repo-lines-v1:sha256:ad17c338b69c8441f1f126ca9d65bde1f1347176ad3bf62a712664c0f2344714:eyJzZWxlY3RlZExpbmVDb3VudCI6MjYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImFhMDlkOGVmN2MxZDQ5Yjc0OTc5OTJhZjk2ODg4ZmJjMTE2NDIxYWRhMTJkNWY5Yzc5NTYyYTQ3NDljNWZhOGUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQzNjJjMTdlMzFlZDhhZGJmNjMyNWI0NGMwYzEyZmVhOTQ2YzQyNjVmMTlhODc0OWM0OTJkMTIxOWZmMjg2MTUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImFjOWU4ZjJkZWMzMDdmZjRhZDlkMjQyMTVmZmU4ZWJhMzA2MDc0NmQyNDc1OWM1NDNhZjYzY2NkMTkyMjE1MGIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjViNTlkZTZkNmY5ZTYzYzZmZGQ3NjRjZDY3YjhlZDA5MTE2YzUwYmZiMGQ1YWIzMzI4ZTU3MmI5OGUzYzgwNmEifQ"
         }
       ]
     },
     {
       "id": "claim_ff1f36848cb244e2bc2ce77f31eb2792",
-      "statement": "Damager applies component damage compensation, records dead voxels and their WorldObject modifications, and bypasses damage for the current player ship only when the world has presentation; headless and server-mode worlds do not use that client-player guard.",
+      "statement": "Damager applies the presentation-enabled player-ship invulnerability guard before shield compensation or hull damage; headless and server-mode worlds do not use that client-player guard.",
       "evidence": [
         {
-          "resource": "repo://src/world/handler/damager.cpp#L26-L67",
-          "version": "repo-lines-v1:sha256:bfb63cb19a9ab1d30f3093f72254b98d0913f04ea5ff1fc71b4ff7954faf69a9:eyJzZWxlY3RlZExpbmVDb3VudCI6NDIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImZmYWE4MmI1MTZjMTA5NWY1NzQzZWZlNGYwNGI5NmM4MTQxZGE0MTMyM2RlZWM4ZjgwMTQ4ZGJkZjlmY2JhNWMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImE0ZDA2Nzg0NWU2MzdkYWU5ZDVjM2MyOWFkNzUyYjgzMWJlOTBkODQ1NjliYmUyYjE4NzE4OWEzMTZlZjY0NjEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjY4Y2VmYzgzYzExZjFmYTA1ZWM2N2NkNGQ3MTM0NGU2MzUwNWM5N2M0MTM1ODEyY2IwNTI3NWM2ODQwOWY5NTkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjNjZjBkNzM0NzU1MzI2YjA5MjlmYTZjMTdmY2ExMDg0ZjY2MjRkYjUwNTlmMDY3NzA3ZTQxZmM2ODI1ODlmMTYifQ"
+          "resource": "repo://src/world/handler/damager.cpp#L34-L50",
+          "version": "repo-lines-v1:sha256:a82b8c3cdc97e9f938297af7357e7ec4ad221fa048e8a6dbd440f3404dea840b:eyJzZWxlY3RlZExpbmVDb3VudCI6MTcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjU1NzhiMzRmZWQwZTRjOGRlZmQ4MzQ0MjhkMDJhYjIwZTQ3MTI0NTE4NTllOTc5M2M0OGRhMWNiZDZlM2M1NDciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImZhMzRjYjFhODMyODgyNWUxZGI0N2ZjZWZjNDEwYWM4ODlkY2ZmYmZiNGM2MTIwYWJkNTExMDBmOGJhNzEwZmUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjYwNTM2YTNjZTJjN2Q2NWZlNmM2ODJhNWRhYmMyMjlhY2I1NTk3ZGNkYTY5MTM4MTUxYWM0ODJkZDBmMTU3YmEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImRhOWQyMjUzZTY5YjE4NjM0NWQyZjcyNjE3NTVmZjBlYzEyYzgwNTZjZmFjN2I4NDQ1YjVmNGE0N2JkNDFjZjAifQ"
         },
         {
-          "resource": "repo://src/world/world.cpp#L86-L105",
-          "version": "repo-lines-v1:sha256:9c161ba29663c738f13572a04cd1c0c3a68a652fc3ecb6509b32e9507a278bbb:eyJzZWxlY3RlZExpbmVDb3VudCI6MjAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImMwYmY2NTQxZDQ4NDkxNmYyNzg4ZjgxMjhlYzg2MjY2YWFjYTQ2ODVlZjdlNDNhZDNjMmE5MzczMGI5Mjk4MDYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjgzYzFiYjlhNTc5NTU0OGQzOGQ4MGM1MTAxMmM3OTRkMzhmZjdkZTE2OTZiNzYwYmFjMmQxYWRhNDMyMTIzZDQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImU3NWI4NjFlNGU4NDkxYTAzMjNlM2IwZGY5YWRjMzg0ZDQzOGU1MTNhYzZhNjIyN2NiYjdmMTFkNWM2MGFmMjEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjRlZjQzMzU0MmEyNDE4ZmRkMWE3NzZhMjVjMjlkZjYwYjk0ZmVjODhkMjMzZDE4YWRhODIxZjBhM2IzM2ZjMGYifQ"
+          "resource": "repo://src/world/world.cpp#L86-L103",
+          "version": "repo-lines-v1:sha256:0ab3dd26a5b689bc9b81367cc00ada6ed428327774dc4745e20e4aea00cbb52b:eyJzZWxlY3RlZExpbmVDb3VudCI6MTgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjJlZTQxZDI4MWM0ODE0NDczMjVlN2Q2ODgwNDJkMTQwOTg3N2VjYjMxNTkwZjAyMjA3NjIwMTkyZGM3MDVhYjkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjllN2RkZjczYjQ1NzJlMTUyOGUwYTZlMGU0ZWIzMGQ0ZjM3MjJhNzkyN2MzNTE4YjYwMjgzMmNiYTMwNDY1NTgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjZlYjQyYmJhZjdiOTdhMTMxNDE1OWIzODgzMGQ4MjkwYmJkMWEyNTM3MzJiNThkNTRlYmRjZDdiNDllYzA5ZTQifQ"
         }
       ]
     },
     {
       "id": "claim_5113925c1fc54070a9494496ed1e5e1b",
-      "statement": "SplitDetector flood-fills occupied voxel groups after modifications, retaining the group with the crucial voxel or otherwise the largest group, and emits all other groups as split data.",
+      "statement": "SplitDetector flood-fills occupied voxels of modified objects with more than one voxel using face-and-edge (18-connected) adjacency, retaining the group with the crucial voxel or otherwise the largest group and emitting the others as split data.",
       "evidence": [
         {
-          "resource": "repo://src/world/handler/splitdetector.cpp",
-          "version": "repo-file-v1:sha256:200cd1e9c133027153f0243b1cb8069e6984170fbaa5bb00761e4544dd2ae0f3"
+          "resource": "repo://src/world/handler/splitdetector.cpp#L26-L52",
+          "version": "repo-lines-v1:sha256:e1422cd6949e0197fd644e826990127f15f05e4be6be253ae4ee76af83937188:eyJzZWxlY3RlZExpbmVDb3VudCI6MjcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjhlYjk1YTdkMTcyMjVkNDFmM2EyYmEzOTdiYjAxZmVlNDZiZmExYzRlM2M5YzI2NjdjMTQ0NmQ0NzYxMGMyODMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU3NjFlZDIwOWEwYjQyNzA3NDJlMWMwY2VkYTQ1MGQ0YjJjN2E1NjhhOGM3ZWI0ZmUyZjcwYTA1YTcxMGE0MWEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjA5ZjkzMDgzYzE5NzEyMWI5ODI3MDBiYThhZmFiZDE3MjJjZjFkM2U3NDA0NTA5ZTgwZWZhMjcyNDdmNjJmMDciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImNjOWY0MWUzMmQwZmVjM2NkOTBlNzQ1MzU5YTZhMmRjMzdjYjQ2OTljMDcxZTM0ZDE5M2JjYTU5NjgxNjJlODUifQ"
+        },
+        {
+          "resource": "repo://src/world/handler/splitdetector.cpp#L75-L165",
+          "version": "repo-lines-v1:sha256:155bfb10d971581ae4a328f97e8a9161142001e6cb724c5c2844ea2da0cd549a:eyJzZWxlY3RlZExpbmVDb3VudCI6OTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjA1N2M0MjY2ZjRiOWVkYjA0NDhhYmQ5NDMzYzViNGMyZTFjMjA2OGQzZWZiZmYxYzgyZDI2YzJjYThiZGUwNDUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImFjOGQyNGNkMDE1MDhmZDIyMDVkZmQ4NzBlNjEwYmJkNWNhYWJlODljODQ4NDUwM2E5MTI1ZDVkOTcwZWYxYTUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImJlMWM4YTFmYzZiOWUyZTQ5YjUwOTllMDAwYjJlYzY1ZGEyMDJhZThlZmEyMDIxNDU5YzA5MDlhZDEyY2YwZWMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImYzMzcyZmVkOTNlOTNmZGQ1N2QzYWRjMWY0MzYyYjA1ODljMGJkZWZlODg4MmQzM2NiMzM0ZjE5YTYzNzkxYmMifQ"
         }
       ]
     },
     {
       "id": "claim_077144ce56854821b0632b0f5a926e42",
-      "statement": "Splitter creates a new WorldObject with cloned voxels for each split-off and removes the extracted source voxels.",
+      "statement": "Splitter creates a new WorldObject for each split-off, clones its voxels, and removes the extracted source voxels.",
       "evidence": [
         {
           "resource": "repo://src/world/handler/splitter.cpp",
-          "version": "repo-file-v1:sha256:100cfbd8efd78a62962feb37599b7a4ce200bd11d077073f8c862653fd47fc69"
+          "version": "repo-file-v1:sha256:d5d88c4e9633d1e773ac18ae71cee7cc97d7ef5747ebc6cbb947e42740b13db6"
         }
       ]
     },
     {
       "id": "claim_696aafe3b43b497fa5e5342879c93c27",
-      "statement": "SimulationSession collects voxel damage and removal events after authoritative world updates, and TcpServer sends those typed events to connected clients.",
+      "statement": "SimulationSession collects voxel damage and removal events after authoritative world updates and coalesces repeated damage for the same entity and cell to the latest HP; TcpServer sends these events only to connections whose snapshot baseline contains the entity.",
       "evidence": [
         {
-          "resource": "repo://src/server/tcpserver.cpp#L204-L210",
-          "version": "repo-lines-v1:sha256:62398d1e7c83d2bbd13e1eca5ee8b731e1c925d0b78c05461653eb3899824587:eyJzZWxlY3RlZExpbmVDb3VudCI6NywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZmQyMDZkODk4NjVhOTQyYzE3NDBmYjlmMDNhZWRiMzFjNjczYjg0Y2FlZWY5NjYxNTNjMmJhYzVmYzcxMjViNyIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNjZlOTUyZDNhYmMxNGRjMmUwNDE5MzEyZDRhODY0NzEwZDM1MDQ2Nzc3MjdhNGUzMjQwZDVhMmI4OWQ1NzNhNiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNjIzZTIxN2E0ZTVlZWYwOWM5NGMxZWE0MmEzNDZmYWZhZmYxZWM4ZTY5MGM4MDIxYTlmNGExYjBiNGFlNTc5ZiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiOGMyMGJkNWNhMTlkMjBkYTRmNjEyNTYyY2YxOTM3Y2QwYWVjMzJiZTVkYmE5NGZiZTExZDlhNGMyMjI5NjNlYSJ9"
+          "resource": "repo://src/server/tcpserver.cpp#L263-L280",
+          "version": "repo-lines-v1:sha256:9190a47412e4ccb296f782ba8b5d3894c42bdb457bb3183ebf94e97082ca1eca:eyJzZWxlY3RlZExpbmVDb3VudCI6MTgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjZhNWUxNDY5MmVmOGZjM2I2NTlkYjljNjJlNjA5MDQxYWIxYmFkOTQ2NmE5MzA4MWYzOGU1MjcyNTM5NWM1MjIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjZlMDgzYzFiNWFhZDg3MTBkYmExM2VlMDdkNjhjN2FhMWIzZmFjNTRmYmM2YWJiZWY5ZGRmY2RmYTJmZTkxMjEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjcxYWExOTYwZjgyNGQzNGQ4NmUwOTliOWI3MjRmZjU4YTAzOWJkNWEyOGQyM2VhNTM3NDI2Y2QwOGUzOGJlMzEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImZiYmY4YzMwYjAzMjcwYTA0N2FmMDdjNDYyNTY4MmY2MDUxZGI0N2UzMWNmOThjNWI0ZTZiZmRiYzRkMTlhY2IifQ"
         },
         {
-          "resource": "repo://src/server/tcpserver.cpp#L511-L570",
-          "version": "repo-lines-v1:sha256:911b82ea89dd57f7c5e10c8cc6771f35ec42c7c53b071d60b63a4c372d3bfe05:eyJzZWxlY3RlZExpbmVDb3VudCI6NjAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjU2YTJhYTRkNzhhNDM0MGE5MmEyNjRjZmRiZTJhY2Q3NDQ2YzVlMmRjM2NjYmM2Y2YyNTJjNDYzYWU1Yzc3OWUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjgyNTFiZmFiY2ZiNmQ4OWZkOWY0ZTNiN2JjNGExNzRmZDkwYzk5ODE4NmU0ZmRlMmM4ZmEzNGU2ZDVjMjkzYWEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjQ3ODNjODdjMmNjNTczODdlMjdkYmI4YjhlMWM4ZGI3NzRjN2M5YWFjM2JiYWRiNDllZGE4NDdlYmIyZDRkZGEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjAyNGYzODk2ZGY1NGQ4OTZiNWNlMjg1YmJjNzE2NDZjOTUzZjJiOTM1YTdjOGFiODJhMTg4OTE3ZjUyYmVjNTcifQ"
+          "resource": "repo://src/server/tcpserver.cpp#L626-L692",
+          "version": "repo-lines-v1:sha256:b3d3e80252a08c834fd298227cb60c095eb0d8e0dc7a7ade7e63907711cca7b4:eyJzZWxlY3RlZExpbmVDb3VudCI6NjcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImRkODRkYmUzNjRhMjAwNGZkMGZjZDc1YzMyNjAwMzMzN2QwM2NiYzA0ODEwODY4ZWJjMGNmYjQyYzlhNTg2NmQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjExYmQwODA0NDhlMzU4NGE5ODM2OWQ2YzE5M2JlYjUxM2VkNThkMWM4MTZkYmE4OWNkZmViMmQ5NmFjYmRmYzciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImNiZTBjYmM1MjdlNDhlZTEwNzllYjU2OGVmYTBiNjY0Mzc5ZmU5ZGJiNTU3NmFlN2QyNWMzZWZkMTk2NDBkNmEifQ"
         },
         {
           "resource": "repo://src/simulation/simulationsession.cpp#L92-L114",
-          "version": "repo-lines-v1:sha256:3c91cf9464ecdf35de94d20b8b0f3ef84648a0d022b38e0a97e87ab2788c7608:eyJzZWxlY3RlZExpbmVDb3VudCI6MjMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImJmZWIwZjZmNWI5ZjkzYmQ2Yzg5Y2Y3YzlhMDJlMTlkYzRlM2U1ZjdiODBiNmI5ODMyMzBiOTc5YTdhMmNjYTYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjZjNGQyYWYwYjE3NzIxNDQzNWRlNGI4YWU2NTU1MmI0ZTRhYzMzNWMwYzliYzRkMWYwMDQwM2ZkOTg2NGI2YzAiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjBhZWVmNmM4ZmQwMmQ0YjBmYmVhZWU0YjFmYmQzMmQ3ZTA4ZDE2ZTE2MDgxYzY5YmRlMzg4ZmRjNDc5MzBmNmYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjI0MWU0MGFkMDExNTlkOTg2MDY1YjU0ZDY0YmJlODAwMGMyNDE5NmRhOWU0ZjE0MmZjNjJmYWMxZjYwNDI3NmUifQ"
+          "version": "repo-lines-v1:sha256:fb5a92c2c8de473a32c5df39f21c33b9d2ebc7c202826474b5fc9c55b6cef680:eyJzZWxlY3RlZExpbmVDb3VudCI6MjMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQyNmNmODg2YjZmYTE4YjQwZjY3MDRmYjM5ZWQyYmMxNDZhNDFjZTM1NjlhODBjYjA4OGFmMDRjNzA5ZGRmZjIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjMzOTNlN2RmMmQzNWU1MzQyMjhiZDcxNDJlYmM0ZTZhNzRjYzgzMmI2NjY1YWZlYTVjYzM1M2YzNTI3YTU3ZDgiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjYwNTM2YTNjZTJjN2Q2NWZlNmM2ODJhNWRhYmMyMjlhY2I1NTk3ZGNkYTY5MTM4MTUxYWM0ODJkZDBmMTU3YmEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjQwODQxYjBlMzdkNzYxZWRjYzYzM2QwMjliNTI0ZThhMjM1ZDY1Y2VjOTU4Yzg4YjljYmYwNGQ1YzJmNmUxMDUifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_371c52412c574a17b90255c4e083fd90",
+      "statement": "WorldObjectBuilder requires ship definitions to use `ship_type=fighter|cruiser` and `shield_type=HULL|SPHERE|NONE`, and rejects unknown values; the selected shield type controls projectile interception geometry.",
+      "evidence": [
+        {
+          "resource": "repo://data/worldobjects/basicship.ini#L1-L8",
+          "version": "repo-lines-v1:sha256:5e35b1372946b23fbe85980755176cd6e125fb7f2cd8f1f904556074469a6e85:eyJzZWxlY3RlZExpbmVDb3VudCI6OCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiODdmODkyYzMwOWQ1NWMyZjM3NDZlN2JjNjQ1ZjIzYzRjODgwZjVjOTJhNTNhYmU3OWYwYWNmNDYyOTczYjAzOCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiYjNhMWFmOGU5YzhhNjIwYWQxYmI2YzdkZTlmYWI1NDdlZWIzZmVlNzNiZDhlNTY4MjgzM2YzMGMzMDZiNTZhZiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjAsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZTNiMGM0NDI5OGZjMWMxNDlhZmJmNGM4OTk2ZmI5MjQyN2FlNDFlNDY0OWI5MzRjYTQ5NTk5MWI3ODUyYjg1NSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNzBjZTQzYjdjYWFkYWY0MzY1MDQ1NzQ0NjE2Zjc3ZWRiNzVkMmNhNDE1NTE4NGExZGVjOTUwZDFmOGI4OTExYyJ9"
+        },
+        {
+          "resource": "repo://src/equipment/shield.cpp#L158-L270",
+          "version": "repo-lines-v1:sha256:62ed7f3b63312216c1ca25814dae05229ca100c6f1912074901570931ebe6d04:eyJzZWxlY3RlZExpbmVDb3VudCI6MTEzLCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiI3ZTFiNTdhNDUyNzY5YmZkOGFhOWRiZWViZjE1YjgwZWM3N2M3OGQwN2ZiMWVhMzdjM2Q1ZTllZmE5MTNjNWUxIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiI0MTJjYTM0NWNjZjc1YmY5YzA4MDZiY2U2OTViZThkZTgwOGI3OTk4NDI1MWE3YTU0ZDIwMmNmNjEwMWRkNDUxIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiIxMWJkMDgwNDQ4ZTM1ODRhOTgzNjlkNmMxOTNiZWI1MTNlZDU4ZDFjODE2ZGJhODljZGZlYjJkOTZhY2JkZmM3IiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiI2NTVjY2JmYzk1MTcyZTMxNDk1MjA3NmYxNmZlNjJjMDUyZjYzZmQ4MGE0NWQ1ZmFjY2Q0NDAyMzdjMmQ2OThlIn0"
+        },
+        {
+          "resource": "repo://src/resource/worldobjectbuilder.cpp#L105-L135",
+          "version": "repo-lines-v1:sha256:82d6ad3ed8a7b8d0041989a6d26ca1163b526e173c5682e08c879520ee7db841:eyJzZWxlY3RlZExpbmVDb3VudCI6MzEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjM0YjQzMzJmOTcyYWYyNzRhYzZiOWRhODk0MzNiZDZkY2VlNmJkNTExNTZlZWJkZGFkMjg1YTJjY2I3YjhiZWUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjNjNzYyM2RmMzQ3Yjg2ZmIzMzg4YWZmNDNjNDZmYmM3MTA1ZTRiMDg3ZDdhODhjMWM5NDdkZWRmMWExMThjZmUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUxYWNmYjQxNzkyNDcyZGQ5MjkzYmM5NjBiNGUwMGE1MjgzMmM4ZmYyNzAyMzI5NzRmZTY4OGM1MGIzNDI4ZWMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjRkZmUyYjdjNjMyNzRlNWE4MDlhMzY4Yzg1MjQ3MmYxNDA4ZDY5YjE4YmFkOWM3OTlhNTM4MDhlMWUxNjUxZWYifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_878ecf9d08e34c1a92cbbf1bdaefeef5",
+      "statement": "Projectile shield interception tests hull shields against exposed voxels and sphere shields against the ship's expanded bounding sphere; intercepted projectiles are removed before their collision is applied to hull voxels.",
+      "evidence": [
+        {
+          "resource": "repo://src/equipment/shield.cpp#L158-L270",
+          "version": "repo-lines-v1:sha256:62ed7f3b63312216c1ca25814dae05229ca100c6f1912074901570931ebe6d04:eyJzZWxlY3RlZExpbmVDb3VudCI6MTEzLCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiI3ZTFiNTdhNDUyNzY5YmZkOGFhOWRiZWViZjE1YjgwZWM3N2M3OGQwN2ZiMWVhMzdjM2Q1ZTllZmE5MTNjNWUxIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiI0MTJjYTM0NWNjZjc1YmY5YzA4MDZiY2U2OTViZThkZTgwOGI3OTk4NDI1MWE3YTU0ZDIwMmNmNjEwMWRkNDUxIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiIxMWJkMDgwNDQ4ZTM1ODRhOTgzNjlkNmMxOTNiZWI1MTNlZDU4ZDFjODE2ZGJhODljZGZlYjJkOTZhY2JkZmM3IiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiI2NTVjY2JmYzk1MTcyZTMxNDk1MjA3NmYxNmZlNjJjMDUyZjYzZmQ4MGE0NWQ1ZmFjY2Q0NDAyMzdjMmQ2OThlIn0"
+        },
+        {
+          "resource": "repo://src/world/handler/mover.cpp#L136-L205",
+          "version": "repo-lines-v1:sha256:b1b86100b5168df4ea4cd79ad76b90048dd2fd320dcd52356c3b46251e9aff65:eyJzZWxlY3RlZExpbmVDb3VudCI6NzAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImI3NWY1MjU5NGFhYzMxOGNmZWEwZDE5ZDc3Y2RkNGNlOWJhZDNmZTdlYWU1YzYxODIwYmU1YTNmZTdmNjJlNzQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY0ZjAwMzc4YmMwOTcyYjQ5MjUxNTU4M2IzMzM2MzJmYzEzNTdhM2RkM2ZmYzNkYzc2NmUzNjZmNDBiZDk2ZDciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjA1MDFiNGQ4N2M0YWI2ZWMxNTJmOGFkZWIzNGVmYzIwNWYxOTFmY2IxY2Y2ZDA1NTI4OWExZjUyOTc5ZjU2NTQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImM1N2JkYzVmMDY3YjdlMGI2NjM0MThiMDVmNjY1YTA3ZGFkOWEyNzRiM2ZiZjc3YTJjYjM3OTUxMDgzNzE3MWUifQ"
+        },
+        {
+          "resource": "repo://test/equipment/testshield.cpp#L63-L128",
+          "version": "repo-lines-v1:sha256:b88245ee3fda972c1b6002f0887149a438bbf46a51b661b0f13528d97c1a0f97:eyJzZWxlY3RlZExpbmVDb3VudCI6NjYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjVmNGVlNDcxZmEwODdkNDBmZTNmNGQwYjM5Y2RmNmNjMGMxNTdlN2Q4MWY3MGViMjE0MDFmMzFmYTlmOTg4MzMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjU1MjJjNDJjZDE5YzZkMDNkODA4YzQ1MjcyMDU1MjgyNWI3ZWExYzViNDkxYjIxODUxMWNhYzc0MTVjZjlkOWIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjFhMjM3NjFkMzIyN2U4ODQzMTgzZjNiMWQyY2RiY2VkMGQ4YmMyNzExZmRkNDRiNTdiNWNjZWVmYWQ0Y2Q2NDciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjJmMDFkYWYwZjY3NmFlZDdlOTBkZGJkYzJiNjg4MTE4MjQ3YTA2Zjc2YTEyZjc3YTAxNWY3MjI2YjIyNzBlMDIifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_d968a2ff076e4de0be9fc1763d8ecb62",
+      "statement": "A Shield defaults to five discrete projectile hits; each registered hit consumes an equal share of maximum HP, and reaching the hit limit permanently depletes it, while the shield showcase overrides that capacity to 100.",
+      "evidence": [
+        {
+          "resource": "repo://src/equipment/shield.cpp#L285-L294",
+          "version": "repo-lines-v1:sha256:78b801c01943a6c17d81f3af84941b91bd287a836c4341195ce6adf58c730069:eyJzZWxlY3RlZExpbmVDb3VudCI6MTAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImI3YzIxMzVhNTc2M2Q0ZDE4YTVkZDliY2M5ZTZkNmY0ZGI3ZjJmYzkzYmY2MGI1NWI3NWQ3ODBmMGM4MDM1MzgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjgwMzk2OTRlMDc4ZDAwNDA0YTE5NTEyMWYxZDQ0NWEzOWMxYzNmNmNkZjFmYTk2NzY4NWUwZDk2NzM2MjBjOTciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjUwOTAxOTkzNzIyYmEyODg1MTBlZjg4NzQwOTA0N2Q4NjdjZmY0MTI2ZDdmNjQyNWQ0ZmM3ZmVlNTIxNTE1NmYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjoyLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjgwNGY4OWZjMGVjOThjOTgyNDE4M2U3OTVkM2VkZDE5ZTkzMGY3YmM0NzFmOTAxMmFhM2Q1MDNiZTJmODk3NGIifQ"
+        },
+        {
+          "resource": "repo://src/equipment/shield.cpp#L84-L155",
+          "version": "repo-lines-v1:sha256:a9eb5d4690d38ffc05b8e6800e6e591a3b4059c4415b7b92bfbb5eb356e9fdee:eyJzZWxlY3RlZExpbmVDb3VudCI6NzIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImRmYWM0ZTQzNjMwYWJmNjhjM2E0YTc1NzNmZDRjNDMwMDhiYTc5OGRkNzZjMzc1OWVlZWY1M2U2Y2ZmOGQyZTUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjE5ZTc2MzU1Y2YxMTk5NDgwYzNmOTk4MzZiMTQ4NmM4NDFkODkxZmFhZDkwNGM2MDhlMDkzMDIyZDM3NTdhZWUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjZmMGZkNzg0Zjg4Y2UxODk5NjA5ZDJjYWI0YWIwMjEzZjhmYTZkYWI5NGRlZTUxYTAyMzgzNzU5YjE5MTdkN2MifQ"
+        },
+        {
+          "resource": "repo://src/scenarios/shieldshowcasescenario.cpp#L20-L28",
+          "version": "repo-lines-v1:sha256:1ffdf3115202a989be7dd4e8717a54fa91249c63e1fc929b48e88070bc6ba567:eyJzZWxlY3RlZExpbmVDb3VudCI6OSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiOTA5N2IxNTNhZDgwNDA4YTAxODI1M2M5YTI3MzM0OGIwZTY0NDkxMjc4YmU1NmQyOTdlNGIzZTQ1NzU3NzYzYyIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiZGQ0NTAwNGY1YzY3NTczMmVkMzRhZjc0MjQ4Mzc0MTdhM2I3ZjU0MjNhZjFlY2I2ZWRkNzk1MTlhNmU3MWYzZSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiM2RlMTc3ODNkNzgyYzk4NmEwMzAxNTQ4MDA0MGFiYWVkZmM4NGY2ZjY0NGI2YmQ5YTk4YzFjNDJiMjQ1OTdlOCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMjE0MzhmZDczM2JlYzRlMGUwOGJkZWY3YTZkZDlmY2MyNzgxMGI2YTM4OGQxNTQ2ZjIxNDA0MDI5OTkyNTEwYSJ9"
+        },
+        {
+          "resource": "repo://test/equipment/testshield.cpp#L26-L61",
+          "version": "repo-lines-v1:sha256:133b4a5a3fa11bef10237c0f64df064f8f8c2bdb32a0583621dc7fdd159d13cf:eyJzZWxlY3RlZExpbmVDb3VudCI6MzYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImFjZTk5MzliMmZkZmY2MWRiZDQ2MjNjM2IzYzIyMDQwMTA5MjA3ZDFkZDRmMTk5OGMyZjJiZTIzYzM3YWQwYTQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjU5YzEzNTkwNjY1NjMyM2QxYzVlYTQxNjU0ZWU2NmFmYjU4NWFjZGNmYWVhY2ExMjFkNWUzMGJmMTkzZWVkZDciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjUxNzhjZTgwZTFkYjQzNTcwM2M3ZjI4YmY1ZThkY2RkNmE2NDE0YjMwYzFiYzUzZWMyMDM4YTM5OGVkOGVmMjIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjllNDdiYjFiY2Y4OGEyNjc3ZDNjMmZiMGRmYzNlODRiNTAyM2MyYTNlZTg3NGExNzcwMmQzY2RjMDc0MTY3OGEifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_7afaad7da37f4674a4d0d5c41f346954",
+      "statement": "Damage compensation passes incoming damage through equipped shields before applying the remainder to voxel HP; shield HP can regenerate while the discrete hit limit has not been reached.",
+      "evidence": [
+        {
+          "resource": "repo://src/equipment/shield.cpp#L272-L294",
+          "version": "repo-lines-v1:sha256:891569a78024c10ad2be31e408d91066d900b2740902e244c6befa335aac5627:eyJzZWxlY3RlZExpbmVDb3VudCI6MjMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQwMjNhOWE3YjQ5YjkwNTFmNzJkY2Y3NWQxNTkxZDJmYmYyMTAxMjUwMDdjY2Y0MWNjYTIxMDU4ZDQxZTMzYTAiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjgwMzk2OTRlMDc4ZDAwNDA0YTE5NTEyMWYxZDQ0NWEzOWMxYzNmNmNkZjFmYTk2NzY4NWUwZDk2NzM2MjBjOTciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjA3OTRkYjAwZWY5NzFlYzg2OGU5N2JhN2ExNTU5NzA4OTUwNGZmNThhODgyMmIwOWNiYjY3MGZjYjc5ZjVmZWYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjoyLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjgwNGY4OWZjMGVjOThjOTgyNDE4M2U3OTVkM2VkZDE5ZTkzMGY3YmM0NzFmOTAxMmFhM2Q1MDNiZTJmODk3NGIifQ"
+        },
+        {
+          "resource": "repo://src/world/handler/damager.cpp#L34-L105",
+          "version": "repo-lines-v1:sha256:cae0d93a268e83b694faf4e07c31ecf9676012a4ae9b4e92921989b8596fc135:eyJzZWxlY3RlZExpbmVDb3VudCI6NzIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjU1NzhiMzRmZWQwZTRjOGRlZmQ4MzQ0MjhkMDJhYjIwZTQ3MTI0NTE4NTllOTc5M2M0OGRhMWNiZDZlM2M1NDciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjFhMWYyYjY0YWZlOWI5ZTM2MzRmZGRjMzU2YjcwMGM1OWMzZWQzMzU1OGJhOWM5NWUyOTQxMjU2ZTVjYjNhYzEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjYwNTM2YTNjZTJjN2Q2NWZlNmM2ODJhNWRhYmMyMjlhY2I1NTk3ZGNkYTY5MTM4MTUxYWM0ODJkZDBmMTU3YmEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjYwYmYxZjdmNDY1YmU1NGY1MmRkZWRiMjhkNjA4NjViYjgzMTUyYTg3NzM3NjY3MDBhNzFhYzFhYjY0NDNmYzMifQ"
+        },
+        {
+          "resource": "repo://src/worldobject/worldobjectcomponents.cpp#L130-L153",
+          "version": "repo-lines-v1:sha256:418458b7a4831923e764cdc5a9f7dcefe48cd807fa2daac03348e5080a5c836e:eyJzZWxlY3RlZExpbmVDb3VudCI6MjQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjFjYWQ1NGY3ZDYyOWQ2MzNjM2YyZjE1Y2E1ZmFmZmJlODA0ODQ1ZWZlNWU2NGJiYzJiNDdiNGJhYmMwNzNkMGEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImI5ZDZjYTgzZjg5OTc1ODc4MGEwZDg3OTM0ZTc4OGQ0OWE4MTJhODdjNjc0ODAwNDEzNmE5ODExN2Q0OTMwMjQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImQ4YzBjMWZhOGYzZTI2YzNiYmNiODg1ZGEwNTk4NTczN2YxZWE4ZTE4ZWY2YjQ2N2FiYTkzNWIzMjQ5YjgwM2MiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjE5ZTc2MzU1Y2YxMTk5NDgwYzNmOTk4MzZiMTQ4NmM4NDFkODkxZmFhZDkwNGM2MDhlMDkzMDIyZDM3NTdhZWUifQ"
+        },
+        {
+          "resource": "repo://test/equipment/testshield.cpp#L143-L170",
+          "version": "repo-lines-v1:sha256:e9157ad945b6ecfd1eaa544cf70379886ffe5693623a2c19fdf2b9f3c1714b2b:eyJzZWxlY3RlZExpbmVDb3VudCI6MjgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY3ZmE3NDU5NDExNjBjNDE5ODBiYjVkMmRmZmVhNDRlYTVlNDNmZjMzODI3Y2EyMjQ4MDg3Njg1MWJhMTdkZDMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjE3YTk1ZGJmOGNkZDgwNTE5NTYzZDY1MWYyZjQyNzQ1YmIzNWY1ZDI1ODMyMjYxNjAyNWJlOGNkZDI4YWViZTciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImNmNzdlMDU1NDQzZTk4MGU0ODNmMjUyMDY1ZmUzYTUzMjZkM2E5NDk5MmRiYWNiZDIzOWU3YTQ4ZTZkYjMwODkifQ"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.2",
-    "at": "2026-11-05T22:43:09.174Z"
+    "at": "2026-11-19T09:46:20.407Z"
   }
 }

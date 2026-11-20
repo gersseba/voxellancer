@@ -13,9 +13,9 @@
 
 HUDElements::HUDElements(HUD& hud):
     m_hud(hud),
-    m_targetName(new TextFieldHudget(&m_hud, glm::normalize(glm::vec3(0, -1.1f, -2)), 0.025f, "")),
-    m_speedLabel(new TextFieldHudget(&m_hud, glm::normalize(glm::vec3(1.5f, -1.1f, -2)), 0.020f, "")),
-    m_shieldLabel(new TextFieldHudget(&m_hud, glm::normalize(glm::vec3(-1.5f, -1.1f, -2)), 0.020f, "")),
+    m_targetName(new TextFieldHudget(&m_hud, glm::normalize(glm::vec3(0, -1.0f, -2)), 0.025f, "")),
+    m_speedLabel(new TextFieldHudget(&m_hud, glm::normalize(glm::vec3(1.5f, -1.0f, -2)), 0.020f, "")),
+    m_shieldLabel(new TextFieldHudget(&m_hud, glm::normalize(glm::vec3(-1.5f, -1.0f, -2)), 0.020f, "")),
     m_missionTitle(new TextFieldHudget(&m_hud, glm::normalize(glm::vec3(0.0f, 1.0f, -2)), 0.020f, "")),
     m_missionTitleHider(new HudgetHideAnimation(*m_missionTitle)),
     m_missionCaption(new TextFieldHudget(&m_hud, glm::normalize(glm::vec3(0.0f, 0.8f, -2)), 0.010f, "")),

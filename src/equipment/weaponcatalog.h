@@ -1,0 +1,34 @@
+#pragma once
+
+#include <cstdint>
+#include <string>
+
+struct WeaponProfile {
+    bool enabled = false;
+    bool physical = false;
+    float speed = 0;
+    float range = 0;
+    float shield = 0;
+    float armor = 0;
+    float normal = 0;
+    float radius = 0;
+    float mass = 0;
+    int penetration = 1;
+    int pellets = 1;
+
+    static WeaponProfile load(const std::string& projectile);
+};
+
+struct CatalogWeapon {
+    std::uint8_t id;
+    std::string key;
+    std::string name;
+    std::string role;
+    std::uint32_t price;
+    WeaponProfile profile;
+    float energyCost = 0;
+};
+
+constexpr std::uint8_t WeaponCatalogSize = 6;
+CatalogWeapon catalogWeapon(std::uint8_t id);
+std::uint8_t catalogWeaponId(const std::string& key);

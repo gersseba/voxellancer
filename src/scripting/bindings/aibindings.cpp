@@ -1,4 +1,5 @@
 #include "aibindings.h"
+#include <stdexcept>
 
 #include "ai/basictasks/flytotask.h"
 #include "ai/basictasks/fighttask.h"
@@ -45,10 +46,25 @@ void AiBindings::bind() {
         this,
         &AiBindings::apiCreateFightTaskWithArchetype);
     m_lua.Register("addFightTaskTarget", this, &AiBindings::apiAddFightTaskTarget);
+    m_lua.Register("setFightTaskShootingSkill", this, &AiBindings::apiSetFightTaskShootingSkill);
 
     m_lua.Register("taskExecutor", this, &AiBindings::apiTaskExecutor);
 }
 
+int AiBindings::apiSetFightTaskShootingSkill(apikey key, float lead, float tracking, float accuracy) {
+    auto* task = m_scriptEngine.get<FightTask>(key);
+    if (!task) {
+        glow::warning("AiBindings: FightTask '%;' doesn't exist",key);
+        return -1;
+    }
+    try {
+        task->shooting().setSkill({lead,tracking,accuracy});
+    } catch (const std::invalid_argument& error) {
+        glow::warning("AiBindings: %;",error.what());
+        return -1;
+    }
+    return 0;
+}
 
 std::string AiBindings::apiGetFaction(apikey key) {
     Ship* ship = m_scriptEngine.get<Ship>(key);
@@ -171,6 +187,8 @@ apikey AiBindings::apiCreateFightTaskWithArchetype(
         aiArchetype = AiArchetype::Fighter;
     } else if (archetype == "cruiser") {
         aiArchetype = AiArchetype::Cruiser;
+    } else if (archetype == "interceptor") {
+        aiArchetype = AiArchetype::Interceptor;
     } else {
         glow::warning(
             "AiBindings: Unknown fight-task archetype '%;'", archetype);

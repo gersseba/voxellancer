@@ -30,8 +30,8 @@ AimHelperHudget::AimHelperHudget(HUD* hud):
 
 AimHelperHudget::~AimHelperHudget() = default;
 
-const glm::vec3& AimHelperHudget::targetPoint() const {
-    return m_targetPoint;
+bool AimHelperHudget::isLinedUp(const Ray& ray, const WorldObject& target) const {
+    return m_lastTargetWorldObject == &target && isAt(ray);
 }
 
 void AimHelperHudget::update(float deltaSec) {
@@ -44,8 +44,9 @@ void AimHelperHudget::update(float deltaSec) {
 
     WorldObject* targetObject = ship->targetObject();
 
-    if(!targetObject) {
+    if (!targetObject) {
         setVisible(false);
+        m_lastVisible = false;
         return;
     }
 
@@ -92,10 +93,9 @@ void AimHelperHudget::calculateTargetPoint(WorldObject* targetObject) {
             continue;
         }
 
-        HardpointAimHelper aimHelper(hardpoint.get(), targetObject);
-        aimHelper.aim();
+        HardpointAimHelper aimHelper(hardpoint.get(), targetObject, true);
 
-        if (aimHelper.isHittable()) {
+        if (aimHelper.isHittable() && hardpoint->inFieldOfAim(aimHelper.point())) {
             m_targetPoint += aimHelper.point();
             hitableHardpointCount++;
         }

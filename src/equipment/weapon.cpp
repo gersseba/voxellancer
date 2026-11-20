@@ -1,6 +1,8 @@
 #include "weapon.h"
 
 #include <algorithm>
+#include <cmath>
+#include <stdexcept>
 
 #include "utils/geometryhelper.h"
 
@@ -56,19 +58,33 @@ WeaponType Weapon::type() const {
 }
 
 void Weapon::update(float deltaSec) {
-    m_cooldown = std::max(m_cooldown - deltaSec, 0.0f);
+    m_cooldown = std::max(m_cooldown - deltaSec, -deltaSec);
 }
 
 bool Weapon::canFire() {
-    return m_cooldown == 0.0f;
+    if (m_cooldown > 0) return false;
+    if (!m_hardpoint || !m_hardpoint->components()) return true;
+    const auto& components = *m_hardpoint->components();
+    return components.weaponEnergyCapacity() == 0 ||
+        components.weaponEnergy() + 0.00001f >= m_energyCost;
+}
+
+float Weapon::energyCost() const { return m_energyCost; }
+
+void Weapon::setEnergyCost(float cost) {
+    if (!std::isfinite(cost) || cost < 0)
+        throw std::invalid_argument("Weapon energy cost must be finite and nonnegative.");
+    m_energyCost = cost;
 }
 
 void Weapon::onFired() {
-    m_cooldown = cooldownTime();
     WorldObject* owner = m_hardpoint && m_hardpoint->components()
         ? m_hardpoint->components()->worldObject()
         : nullptr;
     World* world = owner ? owner->world() : nullptr;
+    if (owner && !owner->components().consumeWeaponEnergy(m_energyCost))
+        throw std::logic_error("Weapon fired without its required energy.");
+    m_cooldown += cooldownTime();
     if (world != nullptr && m_hardpoint->voxel() != nullptr) {
         world->worldLogic().recordWeaponFired(
             owner,

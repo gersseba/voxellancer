@@ -7,7 +7,7 @@
 #include "ui/voxelfontconstants.h"
 
 class TextFieldHudget;
-class VoxelFont;
+class UiFont;
 
 class TextFieldHudgetVoxels{
 public:
@@ -30,7 +30,7 @@ protected:
     FontSize m_fontSize;
     TextFieldHudget* m_textFieldHudget;
     std::string m_text;
-    VoxelFont* m_voxelFont;
+    UiFont* m_font;
     glm::vec3 m_direction;
     float m_width, m_height, m_scale;
     float m_offset;

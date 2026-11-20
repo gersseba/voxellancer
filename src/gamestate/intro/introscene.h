@@ -4,7 +4,6 @@
 
 
 class Intro;
-class VoxelFont;
 class VoxelRenderer;
 
 class IntroScene : public Scene {
@@ -17,7 +16,6 @@ public:
 
 protected:
     Intro& m_intro;
-    std::unique_ptr<VoxelFont> m_font;
     std::shared_ptr<VoxelRenderer> m_voxelRenderer;
 
 

@@ -2,6 +2,54 @@
     "version": "2.0.0",
     "tasks": [
         {
+            "label": "AI Dogfight Comparison (macOS)",
+            "type": "shell",
+            "command": "cmake --build build/macos --target voxellancer && ./build/macos/voxellancer -scenario ai-comparison -nointro",
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": ["$gcc"],
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
+            }
+        },
+        {
+            "label": "Play Contracts with Local Server (macOS)",
+            "type": "process",
+            "command": "/bin/bash",
+            "args": [
+                "${workspaceFolder}/tools/run-local-macos.sh",
+                "-scenario",
+                "contracts",
+                "-nointro"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": ["$gcc"],
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
+            }
+        },
+        {
+            "label": "Start Client with Local Server (macOS)",
+            "type": "process",
+            "command": "/bin/bash",
+            "args": [
+                "${workspaceFolder}/tools/run-local-macos.sh"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": ["$gcc"],
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
+            }
+        },
+        {
             "label": "Start Server",
             "type": "process",
             "command": "powershell.exe",

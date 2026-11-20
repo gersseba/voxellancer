@@ -2,7 +2,6 @@
 
 
 #include <GL/glew.h>
-#include <GL/gl.h>
 
 #include <glow/FrameBufferObject.h>
 

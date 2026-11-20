@@ -22,6 +22,11 @@ public:
     bool canLockOn();
     void setCanLockOn(bool canLockOn);
 
+    bool invulnerable() const;
+    void setInvulnerable(bool invulnerable);
+    float weaponDamageMultiplier() const;
+    void setWeaponDamageMultiplier(float multiplier);
+
     std::string shieldStatus();
 
 
@@ -31,4 +36,6 @@ protected:
     std::string m_definitionKey;
     bool m_showOnHud;
     bool m_canLockOn;
+    bool m_invulnerable = false;
+    float m_weaponDamageMultiplier = 1.0f;
 };

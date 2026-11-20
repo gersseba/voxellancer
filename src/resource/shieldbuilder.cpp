@@ -21,6 +21,7 @@ Shield* ShieldBuilder::build() {
     shield->setRegeneration(Property<float>::get(m_name + ".general.regeneration"));
     shield->setMaxHP(Property<float>::get(m_name + ".general.hp"));
     shield->setHP(shield->maxHP());
+    shield->setRechargeDelay(Property<float>(m_name + ".general.rechargeDelay", 0));
 
     return shield;
 }

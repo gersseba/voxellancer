@@ -1,0 +1,85 @@
+#pragma once
+
+#include <cstddef>
+#include <map>
+#include <array>
+#include <random>
+#include <string>
+#include <vector>
+
+#include "protocol/serverprotocol.h"
+
+class World;
+
+class ContractRun {
+public:
+    static std::vector<voxellancer::protocol::EntityId> createPlayers(
+        World& world, std::size_t count);
+
+    ContractRun(World& world, const std::vector<voxellancer::protocol::EntityId>& players);
+    void update();
+    void act(voxellancer::protocol::EntityId player,
+        const voxellancer::protocol::ContractAction& action);
+    void removePlayer(voxellancer::protocol::EntityId player);
+    bool contains(voxellancer::protocol::EntityId player) const;
+    bool isEnemy(voxellancer::protocol::EntityId actor) const;
+    voxellancer::protocol::ContractStatus status(voxellancer::protocol::EntityId player) const;
+    bool inMission() const;
+    voxellancer::protocol::EntityId controlledActor(voxellancer::protocol::EntityId player) const;
+    voxellancer::protocol::EntityId viewActor(voxellancer::protocol::EntityId player) const;
+
+private:
+    struct PlayerState {
+        voxellancer::protocol::EntityId actor;
+        bool alive = true, protection = false, rewardClaimed = false;
+        std::uint32_t credits = 0;
+        bool gun = false;
+        bool shield = false;
+        bool ready = false;
+        std::uint8_t offer = 1;
+        std::uint8_t shieldBuild = 0;
+        std::array<std::uint16_t, voxellancer::protocol::ContractWeaponKinds> inventory{};
+        std::uint64_t lastSequence = 0;
+        std::uint32_t creditsEarned = 0;
+        std::uint16_t weaponsFound = 0;
+        std::uint8_t damageUpgrades = 0, shieldUpgrades = 0;
+        std::uint8_t rewardWeapon = 0, rewardUpgrade = 0;
+        voxellancer::protocol::ContractResult result =
+            voxellancer::protocol::ContractResult::None;
+    };
+
+    World& m_world;
+    // Participant keys survive ship loss; PlayerState::actor changes only on a fresh run.
+    std::map<std::uint64_t, PlayerState> m_players;
+    std::vector<voxellancer::protocol::EntityId> m_enemies;
+    std::uint32_t m_mission = 0;
+    voxellancer::protocol::ContractPhase m_phase = voxellancer::protocol::ContractPhase::Station;
+    std::vector<voxellancer::protocol::RouteNode> m_route;
+    std::uint8_t m_currentNode = 0, m_selectedNode = 1;
+    std::uint32_t m_visitedNodes = 1, m_reward = 0;
+    std::uint32_t m_run = 1;
+    std::uint64_t m_startTick = 0, m_endTick = 0;
+    std::uint16_t m_attacksCleared = 0, m_enemiesDefeated = 0, m_basesVisited = 1;
+    std::size_t m_remainingEnemies = 0;
+    float m_damageBonus, m_shieldBonus;
+    std::mt19937 m_offerRandom{std::random_device{}()};
+
+    void deploy();
+    void finishEncounter(bool success);
+    void generateRoute();
+    void chooseNext();
+    void visitBase();
+    void advanceRevision();
+    voxellancer::protocol::ContractResult purchase(PlayerState& player, bool gun,
+        std::uint8_t shield = 1);
+    voxellancer::protocol::ContractResult equip(PlayerState& player,
+        const voxellancer::protocol::ContractAction& action);
+    void refreshOffer(PlayerState& player);
+    bool alive(const PlayerState& player) const;
+    void clearEncounter(bool removePlayers = false);
+    void startNewRun();
+    void finishRewards();
+    void applyUpgrades(PlayerState& player);
+    voxellancer::protocol::ContractResult claimReward(PlayerState& player,
+        voxellancer::protocol::RewardChoice choice);
+};

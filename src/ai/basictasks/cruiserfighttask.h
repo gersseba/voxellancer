@@ -22,6 +22,7 @@ public:
     virtual void update(float deltaSec) override;
 
     virtual bool isFinished() override;
+    WorldObject* rocketTarget() override;
 
 
 protected:

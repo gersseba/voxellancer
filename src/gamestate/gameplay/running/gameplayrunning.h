@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <memory>
 #include <optional>
+#include <string>
 #include <vector>
 
 #include <glm/glm.hpp>
@@ -37,6 +38,16 @@ public:
     bool connectRemotePreview(std::unique_ptr<TcpClient> client);
     bool remotePreviewActive() const;
     std::optional<voxellancer::protocol::LobbyStatus> remoteLobbyStatus() const;
+    std::optional<voxellancer::protocol::ContractStatus> contractStatus() const;
+    bool contractSessionEnded() const;
+    bool remoteWorldReady() const;
+    const std::string& remoteConnectionError() const;
+    bool submitContractAction(voxellancer::protocol::ContractActionKind action,
+        std::uint8_t weapon = 0, glm::ivec3 cell = glm::ivec3(0),
+        std::uint8_t node = voxellancer::protocol::NoRouteNode,
+        voxellancer::protocol::RewardChoice choice = voxellancer::protocol::RewardChoice::None,
+        std::uint8_t shield = 0);
+    std::uint64_t contractActionSequence() const;
     std::uint64_t remotePreviewTick() const;
     void submitRemoteInput(
         const glm::vec3& movement,
@@ -79,6 +90,10 @@ protected:
     };
 
     std::unique_ptr<TcpClient> m_remotePreview;
+    bool m_contractSessionEnded = false;
+    std::optional<bool> m_submittedInvulnerability;
+    std::optional<voxellancer::protocol::EntityId> m_remoteViewActor;
+    std::string m_remoteConnectionError;
     std::optional<voxellancer::protocol::EntitySnapshot> m_remotePreviewSnapshot;
     std::vector<voxellancer::protocol::EntitySnapshot> m_remoteReplicaSnapshots;
     InputPredictor m_remoteInputPredictor;

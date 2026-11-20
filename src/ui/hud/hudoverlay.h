@@ -41,6 +41,8 @@ public:
         FontSize size = FontSize::SIZE3x5
     );
     void setTextLines(const std::vector<std::string>& lines);
+    void setPrimaryAction(const std::string& label, bool enabled,
+        const std::function<void()>& callback);
 
     bool handleMouseButtonEvent(
         int button,
@@ -68,6 +70,8 @@ protected:
         None,
         MinimizeButton,
         CloseButton,
+        PrimaryButton,
+        HideButton,
         Dragging,
         Resizing
     };
@@ -82,6 +86,9 @@ protected:
     glm::vec2 m_dragOffset;
     glm::vec4 m_interactionStartBounds;
     std::function<void()> m_focusChangedCallback;
+    std::string m_primaryActionLabel;
+    bool m_primaryActionEnabled = false;
+    std::function<void()> m_primaryAction;
     std::shared_ptr<ScreenQuad> m_quad;
     glow::ref_ptr<glow::Program> m_program;
 

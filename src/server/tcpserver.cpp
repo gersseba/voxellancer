@@ -26,6 +26,7 @@
 #include "world/world.h"
 #include "world/worldlogic.h"
 #include "missions/missionsystem.h"
+#include "simulation/contractrun.h"
 #include "worldobject/ship.h"
 #include "worldobject/worldobjectcomponents.h"
 #include "worldobject/worldobject.h"
@@ -248,11 +249,15 @@ void TcpServer::poll() {
     if (!acceptConnections()) {
         throw std::runtime_error("TCP listener failed while accepting a client.");
     }
+    if (m_contracts) {
+        m_contracts->update();
+    }
 
     for (std::size_t index = 0; index < m_connections.size();) {
         Connection& connection = m_connections[index];
         const char* failure = nullptr;
         if (connection.actor.valid() &&
+            !(m_contracts && m_contracts->contains(connection.actor)) &&
             !m_world.worldObject(connection.actor)) {
             failure = "assigned actor no longer exists";
         } else if (connection.actor.valid() && !receiveInput(connection)) {
@@ -268,6 +273,10 @@ void TcpServer::poll() {
     }
 
     broadcastLobbyStatus();
+    if (m_contracts) {
+        m_session.setPlayerInputEnabled(m_contracts->inMission());
+        sendContractStatus();
+    }
     sendAcknowledgements();
     sendVoxelDamageEvents(m_session.drainVoxelDamageEvents());
     sendShieldHitEvents(m_world.worldLogic().drainShieldHitEvents());
@@ -376,7 +385,15 @@ bool TcpServer::processInputFrames(Connection& connection) {
             return false;
         }
 
-        if (packet[1] == 5) {
+        if (packet[1] == 14) {
+            voxellancer::protocol::ContractAction action;
+            if (!m_contracts || !m_contracts->contains(connection.actor) ||
+                voxellancer::protocol::decodeContractAction(
+                    packet, packetSize, action) != voxellancer::protocol::DecodeError::None) {
+                return false;
+            }
+            m_contracts->act(connection.actor, action);
+        } else if (packet[1] == 5) {
             if (voxellancer::protocol::decodeSnapshotResyncRequest(
                     packet, packetSize) !=
                 voxellancer::protocol::DecodeError::None) {
@@ -409,8 +426,10 @@ bool TcpServer::processInputFrames(Connection& connection) {
             if (decodeResult != voxellancer::protocol::DecodeError::None) {
                 return false;
             }
+            const auto actor = m_contracts
+                ? m_contracts->controlledActor(connection.actor) : connection.actor;
             const voxellancer::protocol::InputCommandResult result =
-                m_session.submitInputCommand(connection.actor, command);
+                m_session.submitInputCommand(actor, command);
             if (result != voxellancer::protocol::InputCommandResult::Queued) {
                 voxellancer::protocol::InputCommandAcknowledgementPacket acknowledgement{};
                 if (!voxellancer::protocol::encodeInputCommandAcknowledgement(
@@ -520,11 +539,10 @@ bool TcpServer::queuePacket(
 }
 
 bool TcpServer::sendSnapshot(Connection& connection, std::uint64_t sequence) {
-    WorldObject* actor = m_world.worldObject(connection.actor);
     std::vector<voxellancer::protocol::EntitySnapshot> worldState;
     {
         BenchmarkCpuScope scope(BenchmarkMetric::ServerSnapshotBuild);
-        if (actor == nullptr || !m_session.createSnapshotState(worldState)) {
+        if (!m_session.createSnapshotState(worldState)) {
             return false;
         }
     }
@@ -536,8 +554,10 @@ bool TcpServer::sendSnapshot(
     std::uint64_t sequence,
     const std::vector<voxellancer::protocol::EntitySnapshot>& worldState
 ) {
-    WorldObject* actor = m_world.worldObject(connection.actor);
-    if (actor == nullptr) {
+    const auto view = m_contracts
+        ? m_contracts->viewActor(connection.actor) : connection.actor;
+    WorldObject* actor = m_world.worldObject(view);
+    if (actor == nullptr && !m_contracts) {
         return false;
     }
 
@@ -547,18 +567,18 @@ bool TcpServer::sendSnapshot(
     BenchmarkProfiler::instance().addCounter(
         BenchmarkCounter::SnapshotEntitiesConsidered, worldState.size());
     current.reserve(worldState.size());
-    const glm::vec3 center = actor->position();
+    const glm::vec3 center = actor ? actor->position() : glm::vec3(0);
     bool deltaBuilt = false;
     {
         BenchmarkCpuScope scope(BenchmarkMetric::ServerInterestFilter);
         for (const auto& snapshot : worldState) {
-            if (snapshot.id == connection.actor) {
-                current.push_back(snapshot);
-                continue;
-            }
             const glm::vec3 offset = snapshot.position - center;
-            if (glm::dot(offset, offset) <= m_interestRadiusSquared) {
+            if (snapshot.id == view ||
+                glm::dot(offset, offset) <= m_interestRadiusSquared) {
                 current.push_back(snapshot);
+                if (m_contracts) {
+                    current.back().hostile = m_contracts->isEnemy(snapshot.id);
+                }
             }
         }
     }
@@ -950,8 +970,9 @@ void TcpServer::sendAcknowledgements() {
         const auto connection = std::find_if(
             m_connections.begin(),
             m_connections.end(),
-            [&acknowledgement](const Connection& candidate) {
-                return candidate.actor == acknowledgement.actor;
+            [this, &acknowledgement](const Connection& candidate) {
+                return (m_contracts ? m_contracts->controlledActor(candidate.actor)
+                    : candidate.actor) == acknowledgement.actor;
             });
         if (connection == m_connections.end()) {
             continue;
@@ -969,17 +990,54 @@ void TcpServer::sendAcknowledgements() {
 
 void TcpServer::removeConnection(std::size_t index, const char* reason) {
     Connection& connection = m_connections[index];
+    const bool contractPlayer = m_contracts && m_contracts->contains(connection.actor);
+    if (contractPlayer) {
+        m_contracts->removePlayer(connection.actor);
+    }
     std::cerr << "Client disconnected from local simulation at simulation "
         "interval " << m_session.tickIndex() << ": " << reason << ".\n";
     connection.socket->disconnect();
     if (connection.actor.valid()) {
         m_controlledActors.erase(entityIdKey(connection.actor));
     }
-    if (connection.actor.valid() &&
+    if (!contractPlayer && connection.actor.valid() &&
         !m_session.requestActorRemoval(connection.actor)) {
         std::cerr << "Could not queue disconnected actor removal.\n";
     }
     m_connections.erase(m_connections.begin() + static_cast<std::ptrdiff_t>(index));
+}
+
+void TcpServer::enableContracts(
+    const std::vector<voxellancer::protocol::EntityId>& players
+) {
+    if (m_contracts) {
+        throw std::logic_error("Contracts are already enabled.");
+    }
+    m_contracts = std::make_unique<ContractRun>(m_world, players);
+    m_session.setPlayerInputEnabled(false);
+}
+
+void TcpServer::sendContractStatus() {
+    for (std::size_t index = 0; index < m_connections.size();) {
+        auto& connection = m_connections[index];
+        if (!m_contracts->contains(connection.actor)) {
+            ++index;
+            continue;
+        }
+        voxellancer::protocol::ContractStatusPacket packet{};
+        if (!voxellancer::protocol::encodeContractStatus(
+                m_contracts->status(connection.actor), packet)) {
+            throw std::logic_error("Invalid authoritative contract status.");
+        }
+        if (!connection.contractStatus || *connection.contractStatus != packet) {
+            if (!queuePacket(connection, packet.data(), packet.size())) {
+                removeConnection(index, "contract status send failed");
+                continue;
+            }
+            connection.contractStatus = packet;
+        }
+        ++index;
+    }
 }
 
 std::optional<voxellancer::protocol::EntityId> TcpServer::availableActor() const {
@@ -991,7 +1049,8 @@ std::optional<voxellancer::protocol::EntityId> TcpServer::availableActor() const
     }
     for (Ship* ship : m_world.ships()) {
         const auto id = m_world.entityId(ship);
-        if (id && m_controlledActors.find(entityIdKey(*id)) == m_controlledActors.end()) {
+        if (id && (!m_contracts || m_contracts->contains(*id)) &&
+            m_controlledActors.find(entityIdKey(*id)) == m_controlledActors.end()) {
             return id;
         }
     }

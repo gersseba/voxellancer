@@ -2,60 +2,60 @@
   "schemaVersion": 1,
   "pages": {
     "/openwiki/architecture/client-server-simulation.md": {
-      "pageVersion": "sha256:a3a11c00c59cba853b68c3ac57ea97735c0fcdcaee864036061310cca7308b3f",
+      "pageVersion": "sha256:9b1e71b5cb46f0e45d2a79116ad6cd75c0ac6ef4cc3fbfdbd7ae561e9e8599d7",
       "completedBy": "copilot",
-      "completedRunId": "83a00501-6047-41c8-aec7-44061ded0d87",
-      "gitHead": "784d1c3a6a8a68e4079e3013e047e9d457eeb851",
-      "sourceFingerprint": "sha256:824316edb11ed20d82c2dff126a725c12838bce042d687d0387dbfaebd1a5338"
+      "completedRunId": "eedb83ee-66bc-428f-bb97-7477c0aeae9d",
+      "gitHead": "71be36bf42c024d882f1f378359f99bd9910fd12",
+      "sourceFingerprint": "sha256:ba88b33c721bf9476832b12094c470cf7473ec895a2b0562ba78753218c816a2"
     },
     "/openwiki/architecture/runtime.md": {
-      "pageVersion": "sha256:a7b8df2338e92981f538735cd9f6e55ba556c4f72d71259e38c7c28acc2aa06b",
+      "pageVersion": "sha256:9f4265770e19708526784f2149acdc85344a4ef934d5e3b25de9bdff1533666a",
       "completedBy": "copilot",
-      "completedRunId": "83a00501-6047-41c8-aec7-44061ded0d87",
-      "gitHead": "784d1c3a6a8a68e4079e3013e047e9d457eeb851",
-      "sourceFingerprint": "sha256:824316edb11ed20d82c2dff126a725c12838bce042d687d0387dbfaebd1a5338"
+      "completedRunId": "eedb83ee-66bc-428f-bb97-7477c0aeae9d",
+      "gitHead": "71be36bf42c024d882f1f378359f99bd9910fd12",
+      "sourceFingerprint": "sha256:ba88b33c721bf9476832b12094c470cf7473ec895a2b0562ba78753218c816a2"
     },
     "/openwiki/architecture/world-simulation.md": {
-      "pageVersion": "sha256:ed5f8ab05d81806c345ceee1aad188f30a23816972163d7aaea5dd631fa18a79",
+      "pageVersion": "sha256:d41effd251374bbaea1b99484952ca9f3abe3abecaeb70e1c99ca07d9bbff349",
       "completedBy": "copilot",
-      "completedRunId": "83a00501-6047-41c8-aec7-44061ded0d87",
-      "gitHead": "784d1c3a6a8a68e4079e3013e047e9d457eeb851",
-      "sourceFingerprint": "sha256:824316edb11ed20d82c2dff126a725c12838bce042d687d0387dbfaebd1a5338"
+      "completedRunId": "eedb83ee-66bc-428f-bb97-7477c0aeae9d",
+      "gitHead": "71be36bf42c024d882f1f378359f99bd9910fd12",
+      "sourceFingerprint": "sha256:ba88b33c721bf9476832b12094c470cf7473ec895a2b0562ba78753218c816a2"
     },
     "/openwiki/concepts/voxel-ships-and-damage.md": {
-      "pageVersion": "sha256:dcf6093de720fccdebc0727433b3ab7b310fbfd2f35b673b7d9019e91b9a9b93",
+      "pageVersion": "sha256:0bd5dd81fbd96301d3299a19b5f5d5375d69757779fd8ef6a73c9ea629ffe05f",
       "completedBy": "copilot",
-      "completedRunId": "83a00501-6047-41c8-aec7-44061ded0d87",
-      "gitHead": "784d1c3a6a8a68e4079e3013e047e9d457eeb851",
-      "sourceFingerprint": "sha256:824316edb11ed20d82c2dff126a725c12838bce042d687d0387dbfaebd1a5338"
+      "completedRunId": "eedb83ee-66bc-428f-bb97-7477c0aeae9d",
+      "gitHead": "71be36bf42c024d882f1f378359f99bd9910fd12",
+      "sourceFingerprint": "sha256:ba88b33c721bf9476832b12094c470cf7473ec895a2b0562ba78753218c816a2"
     },
     "/openwiki/development/build-and-test.md": {
-      "pageVersion": "sha256:18bb735d0d900a9a088f32b988b692de446c911815b6311f6e42f8dd6ee31e7f",
+      "pageVersion": "sha256:a79f9f6cace05cfe532cb1e5cb98a00c9f9bcbbe1d30f953873592161f161f9c",
       "completedBy": "copilot",
-      "completedRunId": "83a00501-6047-41c8-aec7-44061ded0d87",
-      "gitHead": "784d1c3a6a8a68e4079e3013e047e9d457eeb851",
-      "sourceFingerprint": "sha256:824316edb11ed20d82c2dff126a725c12838bce042d687d0387dbfaebd1a5338"
+      "completedRunId": "eedb83ee-66bc-428f-bb97-7477c0aeae9d",
+      "gitHead": "71be36bf42c024d882f1f378359f99bd9910fd12",
+      "sourceFingerprint": "sha256:ba88b33c721bf9476832b12094c470cf7473ec895a2b0562ba78753218c816a2"
     },
     "/openwiki/integrations/lua-scripting.md": {
-      "pageVersion": "sha256:87b3b344f3f21a97398c71299394c51126533ade70dac98c3fa41bd9bb6f297b",
+      "pageVersion": "sha256:0b87965fb6b16d3ea932c33c0f14abffce274e998d8ada991cab3bb64150271e",
       "completedBy": "copilot",
-      "completedRunId": "83a00501-6047-41c8-aec7-44061ded0d87",
-      "gitHead": "784d1c3a6a8a68e4079e3013e047e9d457eeb851",
-      "sourceFingerprint": "sha256:824316edb11ed20d82c2dff126a725c12838bce042d687d0387dbfaebd1a5338"
+      "completedRunId": "eedb83ee-66bc-428f-bb97-7477c0aeae9d",
+      "gitHead": "71be36bf42c024d882f1f378359f99bd9910fd12",
+      "sourceFingerprint": "sha256:ba88b33c721bf9476832b12094c470cf7473ec895a2b0562ba78753218c816a2"
     },
     "/openwiki/quickstart.md": {
-      "pageVersion": "sha256:14a50493cc61d6620cc8eb79a3e3aeca48f218c3e97743c872be5a72ff7bb6ac",
+      "pageVersion": "sha256:287815f87c9316823e3a55c651c4ca5ee0ab8779b6d4fa3c0a7ec24751131fa9",
       "completedBy": "copilot",
-      "completedRunId": "83a00501-6047-41c8-aec7-44061ded0d87",
-      "gitHead": "784d1c3a6a8a68e4079e3013e047e9d457eeb851",
-      "sourceFingerprint": "sha256:824316edb11ed20d82c2dff126a725c12838bce042d687d0387dbfaebd1a5338"
+      "completedRunId": "eedb83ee-66bc-428f-bb97-7477c0aeae9d",
+      "gitHead": "71be36bf42c024d882f1f378359f99bd9910fd12",
+      "sourceFingerprint": "sha256:ba88b33c721bf9476832b12094c470cf7473ec895a2b0562ba78753218c816a2"
     },
     "/openwiki/workflows/content-authoring.md": {
-      "pageVersion": "sha256:d64cb4376b5574e7e80803ad4bdcb5073ba3c557632723828c530b7273d0ce43",
+      "pageVersion": "sha256:e39fabcd27a9ee436a3085af4ee791c11cbf0beda91bcd0788e60003c68f54aa",
       "completedBy": "copilot",
-      "completedRunId": "83a00501-6047-41c8-aec7-44061ded0d87",
-      "gitHead": "784d1c3a6a8a68e4079e3013e047e9d457eeb851",
-      "sourceFingerprint": "sha256:824316edb11ed20d82c2dff126a725c12838bce042d687d0387dbfaebd1a5338"
+      "completedRunId": "eedb83ee-66bc-428f-bb97-7477c0aeae9d",
+      "gitHead": "71be36bf42c024d882f1f378359f99bd9910fd12",
+      "sourceFingerprint": "sha256:ba88b33c721bf9476832b12094c470cf7473ec895a2b0562ba78753218c816a2"
     }
   }
 }

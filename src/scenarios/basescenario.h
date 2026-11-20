@@ -9,6 +9,7 @@ class WorldObjectBuilder;
 class BaseScenario {
 public:
     explicit BaseScenario(World& world);
+    virtual ~BaseScenario() = default;
 
     void load();
     void clear();

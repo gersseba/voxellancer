@@ -86,11 +86,14 @@ void CommandLineParser::checkHelp() {
         glow::debug("  -nointro     [dev] don't show the intro");
         glow::debug("  -server-preview  show interpolated snapshots from 127.0.0.1:27800");
         glow::debug("  -multiplayer-client  connect a visible client to 127.0.0.1:27801");
-        glow::debug("  -local-singleplayer  start a local authoritative battle server");
+        glow::debug("  Default: main menu with an automatically started local contracts server");
+        glow::debug("  -local-singleplayer  start a local authoritative server (contracts unless benchmarking)");
         glow::debug("  -benchmark-large-combat  benchmark client rendering and replication during a server-side 800-ship battle");
         glow::debug("  -benchmark-run-id <id>   group server and client benchmark reports");
         glow::debug("  -benchmark-client-id <id> identify this client in its benchmark report");
         glow::debug("  -scenario shield-showcase  start the shield showcase scenario");
+        glow::debug("  -scenario ai-comparison  observe ten legacy-versus-interceptor AI duels");
+        glow::debug("  -scenario contracts  open the main menu for station contracts with a local server");
         exit(0);
     }
 }

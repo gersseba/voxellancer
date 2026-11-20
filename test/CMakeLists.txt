@@ -36,6 +36,15 @@ if(VOXELLANCER_BUILD_CLIENT)
     )
 
     make_test(all_tests ${ALL_TEST_FILES})
+
+    add_executable(menu_tests
+        ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/ui/testmainmenustate.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/ui/testcontactmarker.cpp
+    )
+    target_include_directories(menu_tests PRIVATE ${SRC_DIR})
+    target_link_libraries(menu_tests PRIVATE glm::glm)
+    set_target_properties(menu_tests PROPERTIES FOLDER "UnitTest")
 endif()
 
 add_executable(protocol_tests
@@ -54,6 +63,7 @@ if(VOXELLANCER_BUILD_SERVER)
     add_executable(server_tests
         ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/server/testtcpserver.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/ai/testfighttask.cpp
     )
     target_link_libraries(server_tests
         PRIVATE voxellancer-server-core

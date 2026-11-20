@@ -4,6 +4,7 @@
 #include <memory>
 
 #include "equipment/weapon.h"
+#include "equipment/weaponcatalog.h"
 
 #include "sound/soundproperties.h"
 
@@ -13,6 +14,7 @@ class Ray;
 class WorldTreeQuery;
 class Faction;
 class Ship;
+struct ShotRecord;
 
 class Gun: public Weapon {
 public:
@@ -23,11 +25,14 @@ public:
     void setBulletSpeed(float bulletSpeed);
 
     float bulletLifetime() const;
+    float bulletSpawnOffset() const;
+    const WeaponProfile& profile() const { return m_profile; }
 
     const SoundProperties& fireSound() const;
     void setFireSound(const SoundProperties& fireSound);
 
-    virtual void fireAtPoint(const glm::vec3& point, bool checkFriendlyFire);
+    virtual void fireAtPoint(const glm::vec3& point, bool checkFriendlyFire,
+        const std::shared_ptr<ShotRecord>& record = {});
     virtual bool isBulletPathClear(const glm::vec3& point, bool checkFriendlyFire);
 
     virtual void update(float deltaSec) override;
@@ -35,6 +40,7 @@ public:
 
 protected:
     float m_bulletSpeed;
+    WeaponProfile m_profile;
     Visuals m_visuals;
     SoundProperties m_fireSound;
 

@@ -1,9 +1,12 @@
 #include <omp.h>
+#include <atomic>
 #include <chrono>
 #include <cstdlib>
 #include <ctime>
 #include <cstdint>
 #include <filesystem>
+#include <functional>
+#include <future>
 #include <iostream>
 #include <memory>
 #include <stdexcept>
@@ -37,6 +40,7 @@
 #include "scenarios/battlescenario.h"
 #include "scenarios/largecombatscenario.h"
 #include "scenarios/shieldshowcasescenario.h"
+#include "scenarios/aicomparisonscenario.h"
 
 #include "display/stereorenderinfo.h"
 #include "display/viewer.h"
@@ -55,8 +59,13 @@
 
 #include "display/rendering/texturerenderer.h"
 
+#if defined(__APPLE__)
+static GLint MajorVersionRequire = 4;
+static GLint MinorVersionRequire = 1;
+#else
 static GLint MajorVersionRequire = 3;
 static GLint MinorVersionRequire = 1;
+#endif
 
 static Game* game;
 
@@ -110,9 +119,14 @@ static void errorCallback(int error, const char* description) {
 static void resizeCallback(GLFWwindow* window, int width, int height) {
     glow::info("Resizing viewport to %;x%;", width, height);
     if (width > 0 && height > 0) {
-        glViewport(0, 0, width, height);
-        game->inputHandler().onResizeEvent(width, height);
-        game->viewer().setViewport(Viewport(0, 0, width, height));
+        int framebufferWidth, framebufferHeight;
+        glfwGetFramebufferSize(window, &framebufferWidth, &framebufferHeight);
+        if (framebufferWidth <= 0 || framebufferHeight <= 0) {
+            return;
+        }
+        glViewport(0, 0, framebufferWidth, framebufferHeight);
+        game->gamePlay().resizeInput(width, height);
+        game->viewer().setViewport(Viewport(0, 0, framebufferWidth, framebufferHeight));
     }
 }
 
@@ -120,12 +134,18 @@ static void toggleFullScreen();
 
 static void onKeyEvent(GLFWwindow* window, int key, int scancode, int action, int mods) {
     if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
+        if (game && game->mainMenuEnabled()) {
+            if (!game->mainMenuVisible() && game->gamePlay().scene().closeEquipment()) return;
+            game->toggleMainMenu();
+            return;
+        }
         glfwSetWindowShouldClose(window, GL_TRUE);
     }
     if ((key == GLFW_KEY_ENTER && action == GLFW_PRESS) &&
         ((glfwGetKey(window, GLFW_KEY_LEFT_ALT) == GLFW_PRESS) ||
         (glfwGetKey(window, GLFW_KEY_RIGHT_ALT) == GLFW_PRESS))) {
         toggleFullScreen();
+        return;
     }
 
     if (key == GLFW_KEY_F8 && action == GLFW_PRESS) {
@@ -178,22 +198,26 @@ static std::uint16_t availableLocalPort() {
 }
 
 static std::unique_ptr<TcpClient> connectToLocalServer(
-    LocalServerProcess& server,
-    std::uint16_t port)
+    LocalServerProcess* server,
+    std::uint16_t port,
+    const std::atomic<bool>* cancelled = nullptr)
 {
     const auto deadline = std::chrono::steady_clock::now() +
         std::chrono::seconds(10);
     std::string lastConnectionError;
     while (std::chrono::steady_clock::now() < deadline) {
+        if (cancelled && cancelled->load()) {
+            throw std::runtime_error("Server connection cancelled.");
+        }
         auto client = std::make_unique<TcpClient>();
         if (client->connectLocal(port)) {
             return client;
         }
         lastConnectionError = client->lastError();
-        if (!server.isRunning()) {
+        if (server && !server->isRunning()) {
             throw std::runtime_error(
                 "The local simulation server exited during startup. " +
-                server.lastError());
+                server->lastError());
         }
         std::this_thread::sleep_for(std::chrono::milliseconds(50));
     }
@@ -202,7 +226,15 @@ static std::unique_ptr<TcpClient> connectToLocalServer(
         lastConnectionError);
 }
 
-static void mainloop() {
+static void mainloop(const std::function<void()>& pollConnection = {}) {
+#if defined(__APPLE__)
+    glfwPollEvents();
+    GLFWwindow* window = glfwGetCurrentContext();
+    if (glfwGetWindowAttrib(window, GLFW_ICONIFIED)) {
+        glfwRestoreWindow(window);
+    }
+    glfwFocusWindow(window);
+#endif
     glow::debug("Entering mainloop");
     double time = glfwGetTime();
 
@@ -210,6 +242,9 @@ static void mainloop() {
         double delta = glfwGetTime() - time;
         time += delta;
 
+        if (pollConnection) {
+            pollConnection();
+        }
         game->update(static_cast<float>(delta));
         game->draw();
 
@@ -220,12 +255,13 @@ static void mainloop() {
 
 void toggleFullScreen() {
     ContextProvider::instance()->toggleFullScreen();
-    if (!miscSettings(true)) {
+    if (!miscSettings(Property<bool>::get("window.vsync", true))) {
         std::cerr << "Could not enable VSync after recreating the window context.\n";
     }
 
     GLFWwindow* window = glfwGetCurrentContext();
-    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
+    glfwSetInputMode(window, GLFW_CURSOR,
+        game && game->mainMenuVisible() ? GLFW_CURSOR_NORMAL : GLFW_CURSOR_HIDDEN);
 
     setGLFWCallbacks(window);
 
@@ -247,12 +283,20 @@ int main(int argc, char* argv[]) {
         return 1;
     }
     const std::string scenario = clParser.scenario();
-    if (!scenario.empty() && scenario != "shield-showcase") {
+    if (!scenario.empty() && scenario != "shield-showcase" && scenario != "contracts" &&
+        scenario != "ai-comparison") {
         std::cerr << "Unknown scenario: " << scenario << ".\n";
         delete initTimer;
         return 1;
     }
-    if (!scenario.empty() &&
+    if (scenario == "contracts" &&
+        (benchmarkMode != BenchmarkMode::None ||
+         clParser.multiplayerClient() || clParser.serverPreview())) {
+        std::cerr << "-scenario contracts cannot be combined with benchmarks or remote client options.\n";
+        delete initTimer;
+        return 1;
+    }
+    if ((scenario == "shield-showcase" || scenario == "ai-comparison") &&
         (benchmarkMode != BenchmarkMode::None ||
          clParser.localSingleplayer() ||
          clParser.multiplayerClient() ||
@@ -297,19 +341,24 @@ int main(int argc, char* argv[]) {
             ? (clParser.localSingleplayer() ? "integrated-client" : "client")
             : clParser.benchmarkClientId());
 
+    const bool showMainMenu = benchmarkMode == BenchmarkMode::None &&
+        scenario != "shield-showcase" && scenario != "ai-comparison" && !clParser.serverPreview();
     LocalServerProcess localServer;
     std::unique_ptr<TcpClient> preconnectedClient;
-    if (clParser.localSingleplayer()) {
+    std::atomic<bool> cancelConnection(false);
+    std::future<std::unique_ptr<TcpClient>> pendingConnection;
+    if (clParser.localSingleplayer() && !showMainMenu) {
         try {
             const std::uint16_t port = availableLocalPort();
             if (!localServer.start(
                     std::filesystem::absolute(argv[0]),
                     port,
                     benchmarkMode == BenchmarkMode::LargeCombat,
-                    runId)) {
+                    runId,
+                    scenario == "contracts")) {
                 throw std::runtime_error(localServer.lastError());
             }
-            preconnectedClient = connectToLocalServer(localServer, port);
+            preconnectedClient = connectToLocalServer(&localServer, port);
         } catch (const std::exception& exception) {
             std::cerr << "Could not start local singleplayer: "
                 << exception.what() << '\n';
@@ -330,6 +379,10 @@ int main(int argc, char* argv[]) {
         FileSystem::copyFile("data/controls.ini.default", controlsConfig);
     }
     PropertyManager::instance()->load(controlsConfig);
+    const std::string settingsConfig = FileSystem::userConfigDir() + "/settings.ini";
+    if (benchmarkMode == BenchmarkMode::None && FileSystem::exists(settingsConfig)) {
+        PropertyManager::instance()->load(settingsConfig);
+    }
     PropertyManager::instance()->load("data/voxels.ini", "voxels");
 
     if (!glfwInit()) {
@@ -342,7 +395,7 @@ int main(int argc, char* argv[]) {
 
     ContextProvider::instance()->setRequiredGLVersion(MajorVersionRequire, MinorVersionRequire);
     if (clParser.fullScreen()) {
-        ContextProvider::instance()->initFullScreen(1);
+        ContextProvider::instance()->initFullScreen(0);
     } else if (clParser.multiplayerClient()) {
         const GLFWvidmode* mode = glfwGetVideoMode(glfwGetPrimaryMonitor());
         if (mode == nullptr) {
@@ -380,7 +433,8 @@ int main(int argc, char* argv[]) {
     }
     CheckGLError();
 
-    const bool enableVsync = true;
+    const bool enableVsync = benchmarkMode != BenchmarkMode::None ||
+        Property<bool>("window.vsync").get();
     const bool swapIntervalSet = miscSettings(enableVsync);
     if (!swapIntervalSet) {
         std::cerr << "Could not enable VSync.\n";
@@ -412,20 +466,43 @@ int main(int argc, char* argv[]) {
         PropertyDirectory("data/equipment/projectiles").read();
 
         loadingScreen->display("Loading... Game");
-        game = new Game(benchmarkMode == BenchmarkMode::None &&
+        game = new Game(!showMainMenu && benchmarkMode == BenchmarkMode::None &&
             !clParser.multiplayerClient() &&
             !clParser.localSingleplayer() &&
             clParser.showIntro() && Property<bool>::get("general.showIntro", true));
 
-        if (benchmarkMode == BenchmarkMode::LargeCombat ||
+        if (showMainMenu) {
+            game->enableMainMenu();
+            try {
+                std::uint16_t port = 27801;
+                LocalServerProcess* server = nullptr;
+                if (!clParser.multiplayerClient()) {
+                    port = availableLocalPort();
+                    if (!localServer.start(std::filesystem::absolute(argv[0]),
+                            port, false, {}, true)) {
+                        throw std::runtime_error(localServer.lastError());
+                    }
+                    server = &localServer;
+                }
+                pendingConnection = std::async(std::launch::async,
+                    [server, port, &cancelConnection]() {
+                        return connectToLocalServer(server, port, &cancelConnection);
+                    });
+            } catch (const std::exception& exception) {
+                glow::warning("Could not set up server connection: %;", exception.what());
+                game->setConnectionError(exception.what());
+            }
+        } else if (benchmarkMode == BenchmarkMode::LargeCombat ||
             clParser.multiplayerClient()) {
             game->gamePlay().setInitialScenario(99);
         } else if (scenario == "shield-showcase") {
             game->gamePlay().setInitialScenario(
                 ShieldShowcaseScenario::ScenarioId);
+        } else if (scenario == "ai-comparison") {
+            game->gamePlay().setInitialScenario(AiComparisonScenario::ScenarioId);
         }
 
-        if (clParser.localSingleplayer()) {
+        if (!showMainMenu && clParser.localSingleplayer()) {
             if (benchmarkMode == BenchmarkMode::None) {
                 game->gamePlay().setInitialScenario(BattleScenario::ScenarioId);
             }
@@ -434,9 +511,9 @@ int main(int argc, char* argv[]) {
                 std::cerr << "Could not initialize the local simulation client.\n";
                 exitCode = 1;
             }
-        } else if (clParser.serverPreview()) {
+        } else if (!showMainMenu && clParser.serverPreview()) {
             game->gamePlay().running().connectRemotePreview(27800);
-        } else if (clParser.multiplayerClient()) {
+        } else if (!showMainMenu && clParser.multiplayerClient()) {
             if (!game->gamePlay().running().connectRemotePreview(27801)) {
                 std::cerr << "Could not connect to multiplayer server.\n";
                 exitCode = 1;
@@ -451,12 +528,29 @@ int main(int argc, char* argv[]) {
             game->viewer().switchToStereoView(StereoRenderInfo::dummy());
         }
         game->gamePlay().updateView();
+        const auto resolution = ContextProvider::instance()->resolution();
+        resizeCallback(window, resolution.width(), resolution.height());
 
         delete loadingScreen;
         delete initTimer;
 
         if (benchmarkMode == BenchmarkMode::None && exitCode == 0) {
-            mainloop();
+            mainloop([&pendingConnection]() {
+                if (!pendingConnection.valid() ||
+                    pendingConnection.wait_for(std::chrono::seconds(0)) !=
+                        std::future_status::ready) {
+                    return;
+                }
+                try {
+                    if (!game->gamePlay().running().connectRemotePreview(
+                            pendingConnection.get())) {
+                        throw std::runtime_error("Could not initialize the server connection.");
+                    }
+                } catch (const std::exception& exception) {
+                    glow::warning("Could not connect to server: %;", exception.what());
+                    game->setConnectionError(exception.what());
+                }
+            });
         } else {
             if (benchmarkMode != BenchmarkMode::None && exitCode == 0) {
                 exitCode = BenchmarkRunner(benchmarkMode, runId, clientId).run(*game);
@@ -493,6 +587,10 @@ int main(int argc, char* argv[]) {
     }
 #endif
 
+    cancelConnection.store(true);
+    if (pendingConnection.valid()) {
+        pendingConnection.wait();
+    }
     delete game;
     localServer.stop();
     ContextProvider::instance()->shutdown();

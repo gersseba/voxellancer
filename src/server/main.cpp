@@ -25,8 +25,10 @@
 #include "scenarios/basescenario.h"
 #include "scenarios/battlescenario.h"
 #include "scenarios/largecombatscenario.h"
+#include "scenarios/aicomparisonscenario.h"
 #include "server/tcpserver.h"
 #include "simulation/simulationsession.h"
+#include "simulation/contractrun.h"
 #include "utils/simulationtickrunner.h"
 #include "world/god.h"
 #include "world/world.h"
@@ -65,7 +67,7 @@ namespace {
         for (int i = 1; i < argc; ++i) {
             const std::string argument(argv[i]);
             if (argument == "--help") {
-                std::cout << "Usage: voxellancer-server [--scenario battle|benchmark] "
+                std::cout << "Usage: voxellancer-server [--scenario battle|benchmark|contracts|ai-comparison] "
                     << "[--listen] [--listen-port port] [--target-players count] "
                     << "[--ships-per-team count] [--benchmark-ticks count] "
                     << "[--squad-size count] "
@@ -106,9 +108,10 @@ namespace {
                 options.squadSize = static_cast<int>(parsed);
                 options.squadSizeSpecified = true;
             } else if (argument == "--scenario") {
-                if (value != "benchmark" && value != "battle") {
+                if (value != "benchmark" && value != "battle" && value != "contracts" &&
+                    value != "ai-comparison") {
                     throw std::invalid_argument(
-                        "--scenario must be benchmark or battle.");
+                        "--scenario must be benchmark, battle, contracts or ai-comparison.");
                 }
                 options.scenario = value;
                 scenarioSpecified = true;
@@ -159,7 +162,18 @@ namespace {
             throw std::invalid_argument(
                 "--squad-size cannot exceed --ships-per-team.");
         }
-        if (!options.listen) {
+        if (options.scenario == "contracts" && options.targetPlayers > 4) {
+            throw std::invalid_argument("Contracts support one to four players.");
+        }
+        if (options.scenario == "contracts" && options.targetPlayers == 0) {
+            options.targetPlayers = 1;
+        }
+        if (options.scenario == "ai-comparison" &&
+            (options.listen || options.targetPlayers || options.shipsPerTeamSpecified)) {
+            throw std::invalid_argument(
+                "AI comparison is a standalone sixteen-pair experiment; omit networking and team-size options.");
+        }
+        if (!options.listen && options.scenario != "ai-comparison") {
             throw std::invalid_argument(
                 "The server requires --listen, --listen-port, or --target-players.");
         }
@@ -458,6 +472,13 @@ int main(int argc, char* argv[]) {
         std::srand(LargeCombatScenario::SimulationRandomSeed);
 
         World* world = World::instance(World::Mode::Server);
+        if (options.scenario == "ai-comparison") {
+            AiComparisonScenario comparison(*world);
+            comparison.load();
+            while (!comparison.finished())
+                world->update(static_cast<float>(SimulationTickRunner::TickDurationSeconds));
+            return 0;
+        }
         SimulationSession session(*world);
         std::unique_ptr<BaseScenario> scenario;
         std::optional<voxellancer::protocol::EntityId> preferredActor;
@@ -483,7 +504,20 @@ int main(int argc, char* argv[]) {
             }
         }
 
-        if (options.scenario == "battle") {
+        if (options.scenario == "contracts") {
+            const auto actors = ContractRun::createPlayers(
+                *world, options.targetPlayers == 0 ? 1 : options.targetPlayers);
+            preferredActor = actors.front();
+            if (!server) {
+                server = std::make_unique<TcpServer>(
+                    *world, session, options.port, 650.0f, preferredActor);
+                std::cout << "Listening on 127.0.0.1:" << server->port() << '\n';
+            }
+            server->enableContracts(actors);
+            if (options.targetPlayers != 0) {
+                server->startWorldForPlayers(actors);
+            }
+        } else if (options.scenario == "battle") {
             auto battle = std::make_unique<BattleScenario>(*world);
             battle->load();
             preferredActor = world->entityId(battle->playerShip());

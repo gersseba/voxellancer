@@ -8,7 +8,9 @@ class WorldObject;
 
 class DamageImpact {
 public:
-    DamageImpact(WorldObject* worldObject, Voxel* voxel, const glm::vec3& damageVec, float fieldOfDamage);
+    DamageImpact(WorldObject* worldObject, Voxel* voxel, const glm::vec3& damageVec,
+        float fieldOfDamage, bool resolvedProjectile = false);
+    bool resolvedProjectile() const { return m_resolvedProjectile; }
 
     WorldObject* worldObject();
     const WorldObject* worldObject() const;
@@ -32,6 +34,7 @@ protected:
     glm::vec3 m_direction;
     float m_damage;
     float m_fieldOfDamage;
+    bool m_resolvedProjectile;
 
     void makeUniform();
 };

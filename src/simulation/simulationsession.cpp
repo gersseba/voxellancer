@@ -236,6 +236,10 @@ double SimulationSession::backlogSeconds() const {
     return m_tickRunner.backlogSeconds();
 }
 
+void SimulationSession::setPlayerInputEnabled(bool enabled) {
+    m_playerInputEnabled = enabled;
+}
+
 void SimulationSession::applyInputCommands(std::uint64_t tick) {
     using namespace voxellancer::protocol;
     std::deque<PendingInput> pendingCommands;
@@ -286,6 +290,12 @@ void SimulationSession::applyInputCommands(std::uint64_t tick) {
 
         const std::optional<InputCommand> command =
             input->second.commands.advanceToTick(tick);
+        if (!m_playerInputEnabled) {
+            worldObject->components().setEngineState(EngineState());
+            worldObject->physics().setSpeed(Speed());
+            ++input;
+            continue;
+        }
         if (command) {
             Ship* ship = static_cast<Ship*>(worldObject);
             glm::vec3 directional(
@@ -305,8 +315,13 @@ void SimulationSession::applyInputCommands(std::uint64_t tick) {
             ship->components().setEngineState(EngineState(directional, angular));
 
             if ((command->buttons & FirePrimary) != 0) {
-                const glm::vec3 forward = ship->orientation() * glm::vec3(0, 0, -1);
-                ship->components().fireAtPoint(ship->position() + forward * 1000.0f, false);
+                if ((command->buttons & FireWithLead) != 0) {
+                    if (auto* target = m_world.worldObject(command->target))
+                        ship->components().fireGunsWithLead(*target, false);
+                } else {
+                    ship->components().fireAtPoint(
+                        ship->position() + ship->orientation() * command->firePoint, false);
+                }
             }
             if ((command->buttons & FireSecondary) != 0) {
                 WorldObject* target = m_world.worldObject(command->target);

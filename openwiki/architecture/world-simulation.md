@@ -26,14 +26,18 @@ sources:
     resource: repo://src/world/worldlogic.cpp
   - id: openwiki-source-42eade458ade851bd08201c8
     resource: repo://src/worldobject/ship.cpp
+  - id: openwiki-source-21c13e08029057e33ca84ebd
+    resource: repo://src/worldobject/ship.h
   - id: openwiki-source-7d54c53d91c204a211ae0787
     resource: repo://src/worldobject/worldobject.cpp
   - id: openwiki-source-3742844d97ced7569ebb10f5
     resource: repo://test/server/testtcpserver.cpp
-generated: { by: "copilot", at: "2026-11-05T22:43:09.174Z" }
+  - id: openwiki-source-ae23635257bfb1829e540daa
+    resource: repo://test/simulation/testsimulationsession.cpp
+generated: { by: "copilot", at: "2026-11-19T09:46:20.407Z" }
 verified:
   - by: openwiki/0.7.2
-    at: 2026-11-05T22:43:09.174Z
+    at: 2026-11-19T09:46:20.407Z
 ---
 
 # World simulation and object lifecycle
@@ -42,18 +46,21 @@ verified:
 `WorldTree`, lifecycle manager (`God`), script engine, faction matrix, event
 poller, and mission system. The graphical client world also owns the player,
 skybox, and particle engine; server mode has no client player or presentation
-services. `World::instance` remains the game's lazy singleton entry point, while
-tests and tools can construct a `World` directly.
+services. `World::instance(mode)` enforces that the active singleton keeps its
+original client/server mode, while tests and tools can construct a `World`
+directly.
 
 `World::update` increments the simulation tick, optionally updates the client
 player, then runs world logic, scripts, event polls, optional particles,
 missions, and registered world objects. The order is shared by client and server
 simulation, with presentation-only updates omitted in the headless server build.
+Calling `World::clear` destroys its objects and rebuilds the world's simulation
+services in place; it does not replace the global `World` singleton.
 
 ## Fixed-step and execution ownership
 
 `SimulationSession` wraps a `World` with `SimulationTickRunner`. It advances at
-60 Hz, applies queued input at tick boundaries, and runs at most five catch-up
+30 Hz, applies queued input at tick boundaries, and runs at most five catch-up
 ticks per advance; unprocessed time remains in the runner's accumulator. The
 standalone server advances the session and polls `TcpServer` from the same
 loop. The graphical running state advances its local session only when remote
@@ -84,12 +91,16 @@ the `RemovalScheduled` state.
 
 `World` maintains all world objects and a ship subset. It registers ships with
 the script engine on addition and unregisters every object when removed. A
+spawned object receives a generation-protected entity ID; removal releases that
+ID so later reuse of its index cannot identify an older object. A
 `WorldObject` combines a voxel cluster with physics, collision detection, content
 metadata, components, and destruction state. Adding or removing a voxel updates
-the physics and collision representations; losing the configured crucial voxel or
-all cockpit voxels records the associated destruction state. `Ship` adds
-character, board-computer, and squad logic; its character updates are scheduled
-on the simulation tick.
+the physics and collision representations; losing the configured crucial voxel
+or all cockpit voxels records the associated destruction state. `Ship` adds
+character, board-computer, and squad logic. Its board computer updates each
+simulation tick, while its character AI runs every six ticks (5 Hz at the
+standard 30 Hz simulation rate) at a per-ship phase assigned when the ship
+joins the world.
 
 Event polls are scriptable objects too: the event poller registers a newly added
 poll with the script engine, updates its polls each frame, and drops dead polls.
@@ -100,7 +111,9 @@ poll with the script engine, updates its polls each frame, and drops dead polls.
 updates the HUD view, and selects a scenario implementation. Scenario 0 is the
 Lua-backed demo; other IDs select built-in gameplay or benchmark scenarios,
 with unknown IDs falling back to `BaseScenario`. On entry, gameplay loads its
-configured initial scenario.
+configured initial scenario. Clearing a `BaseScenario` calls `World::clear`,
+which removes that world's objects and reconstructs its simulation services
+without deleting the global client world.
 
 `BaseScenario` stores the `World` passed to its constructor. Loading populates
 that world, flushes initial scheduled spawns, and starts its script engine.
@@ -109,6 +122,10 @@ boundaries, so scenario population and mid-frame structural changes become
 registered in controlled phases. The standalone battle server uses the
 scenario's player ship as the preferred client actor, and both AI fleets include
 that ship as a target even without client presentation.
+
+Focused checks for tick accumulation, input-at-tick behavior, and generation
+protected IDs are in `test/simulation`; battle actor assignment and server-mode
+behavior are covered in `test/server`.
 
 ## Related work
 

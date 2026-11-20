@@ -206,6 +206,11 @@ Size<int> ContextProvider::currentResolution(GLFWmonitor* monitor) {
 void ContextProvider::setWindowHints() {
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, m_majorVersionRequire);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, m_minorVersionRequire);
+#if defined(__APPLE__)
+    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+    glfwWindowHint(GLFW_COCOA_RETINA_FRAMEBUFFER, GLFW_FALSE);
+    glfwWindowHint(GLFW_AUTO_ICONIFY, GLFW_FALSE);
+#endif
 #if defined(NDEBUG)
     glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GL_FALSE);
 #else

@@ -1,4 +1,6 @@
 #include "worldobjectinfo.h"
+#include <cmath>
+#include <stdexcept>
 
 #include "equipment/shield.h"
 #include "equipment/shieldslot.h"
@@ -46,6 +48,24 @@ bool WorldObjectInfo::canLockOn(){
 
 void WorldObjectInfo::setCanLockOn(bool canLockOn){
     m_canLockOn = canLockOn;
+}
+
+bool WorldObjectInfo::invulnerable() const {
+    return m_invulnerable;
+}
+
+void WorldObjectInfo::setInvulnerable(bool invulnerable) {
+    m_invulnerable = invulnerable;
+}
+
+float WorldObjectInfo::weaponDamageMultiplier() const {
+    return m_weaponDamageMultiplier;
+}
+
+void WorldObjectInfo::setWeaponDamageMultiplier(float multiplier) {
+    if (!std::isfinite(multiplier) || multiplier <= 0)
+        throw std::invalid_argument("Weapon damage multiplier must be finite and positive.");
+    m_weaponDamageMultiplier = multiplier;
 }
 
 std::string WorldObjectInfo::shieldStatus() {

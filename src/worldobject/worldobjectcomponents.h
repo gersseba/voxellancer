@@ -79,8 +79,16 @@ public:
      * aimType
      */
     void fireAtPoint(const glm::vec3& point, bool checkFriendlyFire);
+    void fireGunsWithLead(WorldObject& target, bool checkFriendlyFire);
 
     void fireAtObject(WorldObject* worldObject);
+    void configureWeaponEnergy(float capacity, float regeneration, float delay);
+    float weaponEnergy() const;
+    float weaponEnergyCapacity() const;
+    float weaponEnergyRegeneration() const;
+    float weaponEnergyRechargeRemaining() const;
+    bool consumeWeaponEnergy(float amount);
+    void refillWeaponEnergy();
 
     /**
      * Add and query shields
@@ -105,6 +113,7 @@ public:
 
 
 protected:
+    void fireGuns(const glm::vec3& point, WorldObject* leadTarget, bool checkFriendlyFire);
     WorldObject* m_worldObject;
 
     std::list<std::shared_ptr<EngineSlot>> m_engineSlots;
@@ -114,6 +123,9 @@ protected:
     std::unique_ptr<ComponentsInfo> m_componentsInfo;
 
     EngineState m_engineState;
+    float m_weaponEnergy = 0, m_weaponEnergyCapacity = 0, m_weaponEnergyRegeneration = 0;
+    float m_weaponEnergyDelay = 0, m_weaponEnergyRechargeRemaining = 0;
+    std::size_t m_fireOffset = 0;
 
 
     virtual void updateObserver();

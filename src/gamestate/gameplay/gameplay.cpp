@@ -1,5 +1,7 @@
 #include "gameplay.h"
 
+#include <stdexcept>
+
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 
@@ -24,12 +26,16 @@
 #include "scenarios/piratescenario.h"
 #include "scenarios/largecombatscenario.h"
 #include "scenarios/shieldshowcasescenario.h"
+#include "scenarios/aicomparisonscenario.h"
 
 #include "sound/soundmanager.h"
 
 #include "voxeleffect/voxelparticleengine.h"
 
 #include "world/world.h"
+#include "world/god.h"
+#include "worldobject/ship.h"
+#include "resource/worldobjectbuilder.h"
 
 #include "player.h"
 #include "camera/camerahead.h"
@@ -110,9 +116,7 @@ bool GamePlay::waitingForRemoteWorld() const {
         return false;
     }
 
-    const auto lobby = m_runningState->remoteLobbyStatus();
-    return !lobby || !lobby->worldStarted ||
-        !m_runningState->remotePreviewSnapshot().has_value();
+    return !m_runningState->remoteWorldReady();
 }
 
 GamePlayFreecamInput& GamePlay::freecamInput() {
@@ -121,6 +125,11 @@ GamePlayFreecamInput& GamePlay::freecamInput() {
 
 bool GamePlay::mouseCursorFree() const {
     return m_mouseCursorFree;
+}
+
+void GamePlay::resizeInput(unsigned int width, unsigned int height) {
+    m_normalInput->onResizeEvent(width, height);
+    m_freecamInput->onResizeEvent(width, height);
 }
 
 void GamePlay::setMouseCursorFree(bool free) {
@@ -135,6 +144,7 @@ void GamePlay::refreshMouseCursorMode() {
     }
 
     const bool cursorVisible =
+        m_game->mainMenuVisible() ||
         m_mouseCursorFree || m_scene->hudOverlay().focused();
     const int desiredMode = cursorVisible
         ? GLFW_CURSOR_NORMAL
@@ -182,6 +192,10 @@ void GamePlay::setInitialScenario(int scenario) {
     m_initialScenario = scenario;
 }
 
+AiComparisonScenario* GamePlay::aiComparison() const {
+    return dynamic_cast<AiComparisonScenario*>(m_scenario.get());
+}
+
 void GamePlay::loadScenario(int i) {
     TextureRenderer loadRenderer("data/textures/loading.dds");
     loadRenderer.display("Loading Scenario...");
@@ -218,6 +232,9 @@ void GamePlay::loadScenario(int i) {
     case LargeCombatScenario::ScenarioId:
         m_scenario.reset(new LargeCombatScenario(world));
         break;
+    case AiComparisonScenario::ScenarioId:
+        m_scenario.reset(new AiComparisonScenario(world));
+        break;
     default:
         m_scenario.reset(new BaseScenario(world));
     }
@@ -245,7 +262,11 @@ void GamePlay::update(float deltaSec) {
         }
     }
 #endif
-    inputHandler().update(deltaSec);
+    if (m_game->mainMenuVisible()) {
+        m_runningState->submitRemoteInput(glm::vec3(0), glm::vec3(0), false);
+    } else {
+        inputHandler().update(deltaSec);
+    }
 
     if (m_freecamActive) {
         m_soundManager->setListener(m_freecamInput->cameraHead().position(), m_freecamInput->cameraHead().orientation());
@@ -262,6 +283,16 @@ void GamePlay::onEntered() {
     m_soundManager->activate();
     loadScenario(m_initialScenario);
 #ifndef VOXELLANCER_HEADLESS_SERVER
+    if (m_game->mainMenuEnabled()) {
+        World& world = *World::instance();
+        Ship* ship = WorldObjectBuilder("contractship", world).buildShip();
+        world.god().scheduleSpawn(ship);
+        world.god().spawn();
+        if (!world.entityId(ship)) {
+            throw std::runtime_error("Could not create the contract camera presentation ship.");
+        }
+        world.player().setShip(ship);
+    }
     refreshMouseCursorMode();
 #endif
 }

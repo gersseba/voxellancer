@@ -204,12 +204,19 @@ bool readCompressedQuaternion(const std::uint8_t* source, glm::quat& value) {
 bool validInputCommand(const InputCommand& command) {
     const bool targetGenerationValid =
         command.target.generation != 0 || command.target.index == 0;
-    const bool secondaryTargetValid =
-        (command.buttons & FireSecondary) == 0 || command.target.valid();
+    const bool targetRequired = (command.buttons & (FireSecondary | FireWithLead)) != 0;
+    const bool leadModeValid = (command.buttons & FireWithLead) == 0 ||
+        (command.buttons & FirePrimary) != 0;
     return command.sequence != 0 &&
+        std::isfinite(command.firePoint.x) &&
+        std::isfinite(command.firePoint.y) &&
+        std::isfinite(command.firePoint.z) &&
+        glm::dot(command.firePoint, command.firePoint) > 1e-8f &&
+        glm::dot(command.firePoint, command.firePoint) <=
+            MaxFirePointDistance * MaxFirePointDistance &&
         (command.buttons & ~ValidInputButtons) == 0 &&
         targetGenerationValid &&
-        secondaryTargetValid;
+        (!targetRequired || command.target.valid()) && leadModeValid;
 }
 
 DecodeError validateHeader(
@@ -366,7 +373,8 @@ bool EntitySnapshot::operator==(const EntitySnapshot& other) const {
         hullFraction == other.hullFraction &&
         scale == other.scale &&
         maxMass == other.maxMass &&
-        engineState == other.engineState;
+        engineState == other.engineState &&
+        hostile == other.hostile;
 }
 
 bool VoxelRemovalEvent::operator==(const VoxelRemovalEvent& other) const {
@@ -467,7 +475,8 @@ bool InputCommand::operator==(const InputCommand& other) const {
         aimY == other.aimY &&
         roll == other.roll &&
         buttons == other.buttons &&
-        target == other.target;
+        target == other.target &&
+        firePoint == other.firePoint;
 }
 
 bool InputCommandAcknowledgement::operator==(
@@ -582,6 +591,272 @@ DecodeError decodeEntityId(
     return DecodeError::None;
 }
 
+bool encodeContractAction(const ContractAction& action, ContractActionPacket& packet) {
+    const auto kind = static_cast<std::uint8_t>(action.kind);
+    const auto choice = static_cast<std::uint8_t>(action.choice);
+    if (action.sequence == 0 || kind < 1 || kind > 9 ||
+        action.weapon > ContractWeaponKinds ||
+        (kind == 6 ? action.weapon == 0 : action.weapon != 0) ||
+        glm::any(glm::lessThan(action.cell, glm::ivec3(0))) ||
+        glm::any(glm::greaterThan(action.cell, glm::ivec3(255))) ||
+        (kind != 6 && action.cell != glm::ivec3(0)) ||
+        (kind == 7 ? action.node >= MaxRouteNodes : action.node != NoRouteNode) ||
+        (kind == 8 ? choice < 1 || choice > 3 : choice != 0) ||
+        (kind == 3 ? action.shield > ContractShieldKinds : action.shield != 0)) {
+        return false;
+    }
+    packet[0] = ProtocolVersion;
+    packet[1] = 14;
+    writeU64(packet.data() + 2, action.sequence);
+    writeU32(packet.data() + 10, action.mission);
+    packet[14] = kind;
+    packet[15] = action.weapon;
+    packet[16] = static_cast<std::uint8_t>(action.cell.x);
+    packet[17] = static_cast<std::uint8_t>(action.cell.y);
+    packet[18] = static_cast<std::uint8_t>(action.cell.z);
+    packet[19] = action.node;
+    packet[20] = choice;
+    packet[21] = action.shield;
+    return true;
+}
+
+DecodeError decodeContractAction(
+    const std::uint8_t* data, std::size_t size, ContractAction& action
+) {
+    const auto error = validateHeader(data, size, ContractActionPacketSize, 14);
+    if (error != DecodeError::None) {
+        return error;
+    }
+    ContractAction decoded{readU64(data + 2), readU32(data + 10),
+        static_cast<ContractActionKind>(data[14])};
+    decoded.weapon = data[15];
+    decoded.cell = glm::ivec3(data[16], data[17], data[18]);
+    decoded.node = data[19];
+    decoded.choice = static_cast<RewardChoice>(data[20]);
+    decoded.shield = data[21];
+    ContractActionPacket check{};
+    if (!encodeContractAction(decoded, check)) {
+        return DecodeError::InvalidValue;
+    }
+    action = decoded;
+    return DecodeError::None;
+}
+
+bool encodeContractStatus(const ContractStatus& status, ContractStatusPacket& packet) {
+    const auto phase = static_cast<std::uint8_t>(status.phase);
+    for (float value : {status.shieldHP,status.shieldCapacity,status.shieldRegeneration,
+            status.shieldRechargeRemaining,status.weaponEnergy,status.weaponEnergyCapacity,
+            status.weaponEnergyRegeneration,status.weaponEnergyRechargeRemaining})
+        if (!std::isfinite(value) || value < 0) return false;
+    if (status.shieldBuild > ContractShieldKinds || status.shieldHP > status.shieldCapacity ||
+        status.weaponEnergy > status.weaponEnergyCapacity) return false;
+    if (phase < 1 || phase > 6 || status.players == 0 ||
+        status.players > 16 || status.readyPlayers > status.players ||
+        static_cast<std::uint8_t>(status.result) >
+            static_cast<std::uint8_t>(ContractResult::RunDefeated) ||
+        status.offer == 0 || status.offer > ContractWeaponKinds ||
+        status.mounts.size() > MaxContractMounts ||
+        status.gunPrice == 0 || status.shieldPrice == 0 || status.run == 0 ||
+        status.livingPlayers > status.players || status.pendingRewards > status.livingPlayers ||
+        status.damageUpgrades > MaxRunUpgradeStacks || status.shieldUpgrades > MaxRunUpgradeStacks ||
+        status.rewardWeapon > ContractWeaponKinds || status.rewardUpgrade > 2 ||
+        (!status.viewActor.valid() && status.viewActor.index != 0) ||
+        (status.phase == ContractPhase::Reward &&
+            (status.rewardWeapon == 0 || status.rewardUpgrade == 0 || status.reward == 0))) {
+        return false;
+    }
+    unsigned inventoryCount = 0;
+    for (auto count : status.inventory) inventoryCount += count;
+    if (inventoryCount > ContractInventoryCapacity) return false;
+    if (status.route.size() > MaxRouteNodes) return false;
+    const auto nodeMask = (1u << status.route.size()) - 1;
+    if (status.visitedNodes & ~nodeMask) return false;
+    if (status.route.empty()) {
+        if (status.currentNode != NoRouteNode || status.selectedNode != NoRouteNode ||
+            phase > 2) return false;
+    } else {
+        if (status.currentNode >= status.route.size() ||
+            !(status.visitedNodes & (1u << status.currentNode))) return false;
+        if (status.selectedNode != NoRouteNode &&
+            (status.selectedNode >= status.route.size() ||
+                !(status.route[status.currentNode].links & (1u << status.selectedNode)) ||
+                status.route[status.selectedNode].kind == RouteNodeKind::Encounter)) return false;
+        for (std::size_t i = 0; i < status.route.size(); ++i) {
+            const auto& node = status.route[i];
+            const auto kind = static_cast<std::uint8_t>(node.kind);
+            if (kind < 1 || kind > 3 || node.row > 6 || node.lane > 2 ||
+                (node.kind == RouteNodeKind::Attack ? node.level < 1 || node.level > 3 : node.level != 0) ||
+                (node.links & ~nodeMask)) return false;
+            for (std::size_t j = 0; j < status.route.size(); ++j)
+                if ((node.links & (1u << j)) && status.route[j].row != node.row + 1)
+                    return false;
+        }
+    }
+    for (std::size_t i = 0; i < status.mounts.size(); ++i) {
+        const auto& mount = status.mounts[i];
+        if (mount.weapon > ContractWeaponKinds ||
+            glm::any(glm::lessThan(mount.cell, glm::ivec3(0))) ||
+            glm::any(glm::greaterThan(mount.cell, glm::ivec3(255)))) return false;
+        for (std::size_t j = 0; j < i; ++j)
+            if (status.mounts[j].cell == mount.cell) return false;
+    }
+    packet.fill(0);
+    packet[0] = ProtocolVersion;
+    packet[1] = 15;
+    packet[2] = phase;
+    writeU32(packet.data() + 3, status.mission);
+    writeU32(packet.data() + 7, status.credits);
+    writeU16(packet.data() + 11, status.remaining);
+    packet[13] = status.gun;
+    packet[14] = status.shield;
+    packet[15] = status.ready;
+    packet[16] = status.readyPlayers;
+    packet[17] = status.players;
+    packet[18] = static_cast<std::uint8_t>(status.result);
+    writeU64(packet.data() + 19, status.acknowledgedSequence);
+    writeU32(packet.data() + 27, status.gunPrice);
+    writeU32(packet.data() + 31, status.shieldPrice);
+    writeU32(packet.data() + 35, status.reward);
+    packet[39] = status.invulnerable;
+    packet[40] = status.offer;
+    for (std::size_t i = 0; i < status.inventory.size(); ++i)
+        writeU16(packet.data() + 41 + i * 2, status.inventory[i]);
+    packet[53] = static_cast<std::uint8_t>(status.mounts.size());
+    for (std::size_t i = 0; i < status.mounts.size(); ++i) {
+        const auto& mount = status.mounts[i];
+        const auto offset = 55 + i * 4;
+        packet[offset] = static_cast<std::uint8_t>(mount.cell.x);
+        packet[offset + 1] = static_cast<std::uint8_t>(mount.cell.y);
+        packet[offset + 2] = static_cast<std::uint8_t>(mount.cell.z);
+        packet[offset + 3] = mount.weapon;
+    }
+    packet[ContractRouteOffset] = status.currentNode;
+    packet[ContractRouteOffset + 1] = status.selectedNode;
+    writeU32(packet.data() + ContractRouteOffset + 2, status.visitedNodes);
+    packet[ContractRouteOffset + 6] = static_cast<std::uint8_t>(status.route.size());
+    for (std::size_t i = 0; i < status.route.size(); ++i) {
+        const auto offset = ContractRouteOffset + 7 + i * 8;
+        const auto& node = status.route[i];
+        packet[offset] = static_cast<std::uint8_t>(node.kind);
+        packet[offset + 1] = node.level;
+        packet[offset + 2] = node.row;
+        packet[offset + 3] = node.lane;
+        writeU32(packet.data() + offset + 4, node.links);
+    }
+    auto* run = packet.data() + ContractRunOffset;
+    writeU32(run, status.run);
+    writeU32(run + 4, status.viewActor.index);
+    writeU32(run + 8, status.viewActor.generation);
+    writeU64(run + 12, status.elapsedTicks);
+    writeU32(run + 20, status.creditsEarned);
+    writeU16(run + 24, status.attacksCleared);
+    writeU16(run + 26, status.enemiesDefeated);
+    writeU16(run + 28, status.basesVisited);
+    writeU16(run + 30, status.weaponsFound);
+    run[32] = status.damageUpgrades;
+    run[33] = status.shieldUpgrades;
+    run[34] = status.rewardWeapon;
+    run[35] = status.rewardUpgrade;
+    run[36] = status.alive;
+    run[37] = status.rewardClaimed;
+    run[38] = status.livingPlayers;
+    run[39] = status.pendingRewards;
+    auto* resources = packet.data() + ContractResourceOffset;
+    resources[0] = status.shieldBuild;
+    writeFloat(resources+1,status.shieldHP);
+    writeFloat(resources+5,status.shieldCapacity);
+    writeFloat(resources+9,status.shieldRegeneration);
+    writeFloat(resources+13,status.shieldRechargeRemaining);
+    writeFloat(resources+17,status.weaponEnergy);
+    writeFloat(resources+21,status.weaponEnergyCapacity);
+    writeFloat(resources+25,status.weaponEnergyRegeneration);
+    writeFloat(resources+29,status.weaponEnergyRechargeRemaining);
+    return true;
+}
+
+DecodeError decodeContractStatus(
+    const std::uint8_t* data, std::size_t size, ContractStatus& status
+) {
+    const auto error = validateHeader(data, size, ContractStatusPacketSize, 15);
+    if (error != DecodeError::None) {
+        return error;
+    }
+    ContractStatus decoded;
+    decoded.phase = static_cast<ContractPhase>(data[2]);
+    decoded.mission = readU32(data + 3);
+    decoded.credits = readU32(data + 7);
+    decoded.remaining = readU16(data + 11);
+    decoded.gun = data[13] != 0;
+    decoded.shield = data[14] != 0;
+    decoded.ready = data[15] != 0;
+    decoded.readyPlayers = data[16];
+    decoded.players = data[17];
+    decoded.result = static_cast<ContractResult>(data[18]);
+    decoded.acknowledgedSequence = readU64(data + 19);
+    decoded.gunPrice = readU32(data + 27);
+    decoded.shieldPrice = readU32(data + 31);
+    decoded.reward = readU32(data + 35);
+    decoded.invulnerable = data[39] != 0;
+    decoded.offer = data[40];
+    for (std::size_t i = 0; i < decoded.inventory.size(); ++i)
+        decoded.inventory[i] = readU16(data + 41 + i * 2);
+    if (data[53] > MaxContractMounts || data[54] != 0) return DecodeError::InvalidValue;
+    for (std::size_t i = 0; i < data[53]; ++i) {
+        const auto offset = 55 + i * 4;
+        decoded.mounts.push_back({glm::ivec3(data[offset], data[offset + 1],
+            data[offset + 2]), data[offset + 3]});
+    }
+    for (std::size_t i = 55 + data[53] * 4; i < ContractRouteOffset; ++i)
+        if (data[i] != 0) return DecodeError::InvalidValue;
+    decoded.currentNode = data[ContractRouteOffset];
+    decoded.selectedNode = data[ContractRouteOffset + 1];
+    decoded.visitedNodes = readU32(data + ContractRouteOffset + 2);
+    const auto count = data[ContractRouteOffset + 6];
+    if (count > MaxRouteNodes) return DecodeError::InvalidValue;
+    for (std::size_t i = 0; i < count; ++i) {
+        const auto offset = ContractRouteOffset + 7 + i * 8;
+        decoded.route.push_back({static_cast<RouteNodeKind>(data[offset]), data[offset + 1],
+            data[offset + 2], data[offset + 3], readU32(data + offset + 4)});
+    }
+    for (std::size_t i = ContractRouteOffset + 7 + count * 8; i < ContractRunOffset; ++i)
+        if (data[i] != 0) return DecodeError::InvalidValue;
+    const auto* run = data + ContractRunOffset;
+    decoded.run = readU32(run);
+    decoded.viewActor = {readU32(run + 4), readU32(run + 8)};
+    decoded.elapsedTicks = readU64(run + 12);
+    decoded.creditsEarned = readU32(run + 20);
+    decoded.attacksCleared = readU16(run + 24);
+    decoded.enemiesDefeated = readU16(run + 26);
+    decoded.basesVisited = readU16(run + 28);
+    decoded.weaponsFound = readU16(run + 30);
+    decoded.damageUpgrades = run[32];
+    decoded.shieldUpgrades = run[33];
+    decoded.rewardWeapon = run[34];
+    decoded.rewardUpgrade = run[35];
+    decoded.alive = run[36] != 0;
+    decoded.rewardClaimed = run[37] != 0;
+    decoded.livingPlayers = run[38];
+    decoded.pendingRewards = run[39];
+    const auto* resources = data + ContractResourceOffset;
+    decoded.shieldBuild = resources[0];
+    decoded.shieldHP = readFloat(resources+1);
+    decoded.shieldCapacity = readFloat(resources+5);
+    decoded.shieldRegeneration = readFloat(resources+9);
+    decoded.shieldRechargeRemaining = readFloat(resources+13);
+    decoded.weaponEnergy = readFloat(resources+17);
+    decoded.weaponEnergyCapacity = readFloat(resources+21);
+    decoded.weaponEnergyRegeneration = readFloat(resources+25);
+    decoded.weaponEnergyRechargeRemaining = readFloat(resources+29);
+    ContractStatusPacket check{};
+    if (data[13] > 1 || data[14] > 1 || data[15] > 1 || data[39] > 1 ||
+        run[36] > 1 || run[37] > 1 ||
+        !encodeContractStatus(decoded, check)) {
+        return DecodeError::InvalidValue;
+    }
+    status = decoded;
+    return DecodeError::None;
+}
+
 bool encodeLobbyStatus(const LobbyStatus& status, LobbyStatusPacket& packet) {
     if (status.targetPlayers == 0 ||
         status.connectedPlayers > status.targetPlayers) {
@@ -638,6 +913,9 @@ bool encodeInputCommand(const InputCommand& command, InputCommandPacket& packet)
     writeU16(encoded.data() + 30, command.buttons);
     writeU32(encoded.data() + 32, command.target.index);
     writeU32(encoded.data() + 36, command.target.generation);
+    writeFloat(encoded.data() + 40, command.firePoint.x);
+    writeFloat(encoded.data() + 44, command.firePoint.y);
+    writeFloat(encoded.data() + 48, command.firePoint.z);
     packet = encoded;
     return true;
 }
@@ -664,6 +942,8 @@ DecodeError decodeInputCommand(
     decoded.roll = readI16(data + 28);
     decoded.buttons = readU16(data + 30);
     decoded.target = EntityId{readU32(data + 32), readU32(data + 36)};
+    decoded.firePoint = glm::vec3(
+        readFloat(data + 40), readFloat(data + 44), readFloat(data + 48));
     if (!validInputCommand(decoded)) {
         return DecodeError::InvalidValue;
     }
@@ -1385,6 +1665,7 @@ bool encodeSnapshotFrame(const SnapshotFrame& frame, std::vector<std::uint8_t>& 
                 std::lround(glm::clamp(value, -1.0f, 1.0f) * 127.0f));
             encoded[offset++] = static_cast<std::uint8_t>(quantized);
         }
+        encoded[offset++] = snapshot.hostile;
     }
     for (EntityId id : frame.removals) {
         writeU32(encoded.data() + offset, id.index);
@@ -1479,6 +1760,11 @@ DecodeError decodeSnapshotFrame(
         }
         snapshot.engineState =
             glm::vec3(engineState[0], engineState[1], engineState[2]);
+        const auto hostile = data[offset++];
+        if (hostile > 1) {
+            return DecodeError::InvalidValue;
+        }
+        snapshot.hostile = hostile != 0;
         if (!validSnapshot(snapshot) ||
             !entityIds.insert(entityIdKey(snapshot.id)).second) {
             return DecodeError::InvalidValue;

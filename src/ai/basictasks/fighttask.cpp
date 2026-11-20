@@ -7,6 +7,7 @@
 
 #include "ai/basictasks/fighterfighttask.h"
 #include "ai/basictasks/cruiserfighttask.h"
+#include "ai/basictasks/interceptorfighttask.h"
 
 namespace {
     AiArchetype defaultArchetype(BoardComputer* boardComputer) {
@@ -34,9 +35,11 @@ FightTask::FightTask(BoardComputer* boardComputer, const std::vector<Handle<Worl
 FightTask::FightTask(
     BoardComputer* boardComputer,
     const std::vector<Handle<WorldObject>>& targets,
-    AiArchetype archetype) :
+    AiArchetype archetype,
+    const ShootingSkill& skill) :
     AiTask(boardComputer),
-    m_archetype(archetype)
+    m_archetype(archetype),
+    m_shooting(boardComputer,skill)
 {
     switch (m_archetype) {
     case AiArchetype::Fighter:
@@ -45,11 +48,16 @@ FightTask::FightTask(
     case AiArchetype::Cruiser:
         m_task.reset(new CruiserFightTask(boardComputer, targets));
         break;
+    case AiArchetype::Interceptor:
+        m_task.reset(new InterceptorFightTask(boardComputer, targets));
+        break;
     }
 }
 
 void FightTask::update(float deltaSec) {
     m_task->update(deltaSec);
+    m_shooting.update(deltaSec,m_task->targets(),m_task->primaryTarget(),m_task->gunsEnabled());
+    if (auto* target = m_task->rocketTarget()) boardComputer()->shootRockets(target);
 }
 
 AiArchetype FightTask::archetype() const {

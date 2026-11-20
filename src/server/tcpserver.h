@@ -16,6 +16,7 @@
 
 class SimulationSession;
 class World;
+class ContractRun;
 
 class TcpServer {
 public:
@@ -49,6 +50,7 @@ public:
     );
     std::vector<ClientStatistics> clientStatistics() const;
     void poll();
+    void enableContracts(const std::vector<voxellancer::protocol::EntityId>& players);
 
 private:
     struct Connection {
@@ -64,6 +66,7 @@ private:
         std::uint64_t lastResyncTick = 0;
         std::uint64_t bytesSent = 0;
         bool hasResynced = false;
+        std::optional<voxellancer::protocol::ContractStatusPacket> contractStatus;
         std::vector<voxellancer::protocol::EntitySnapshot> snapshotBaseline;
         std::unordered_map<
             std::uint64_t,
@@ -90,6 +93,7 @@ private:
     std::uint64_t m_nextSnapshotTick = SnapshotIntervalTicks;
     std::unordered_set<std::uint64_t> m_controlledActors;
     std::vector<Connection> m_connections;
+    std::unique_ptr<ContractRun> m_contracts;
 
     bool acceptConnections();
     bool receiveInput(Connection& connection);
@@ -128,6 +132,7 @@ private:
     );
     void broadcastSnapshot();
     void broadcastLobbyStatus();
+    void sendContractStatus();
     void sendAcknowledgements();
     void removeConnection(std::size_t index, const char* reason);
     std::optional<voxellancer::protocol::EntityId> availableActor() const;

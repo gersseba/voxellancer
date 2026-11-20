@@ -8,6 +8,260 @@ using namespace voxellancer::protocol;
 
 go_bandit([]() {
     describe("server protocol values", []() {
+        it("round trips shield choices and live resources and rejects invalid resource values", []() {
+            ContractStatus state;
+            state.players = 1;
+            state.gunPrice = state.shieldPrice = 100;
+            state.shieldBuild = 3;
+            state.shieldHP = 4000;
+            state.shieldCapacity = 16000;
+            state.shieldRegeneration = 1600;
+            state.shieldRechargeRemaining = 0.75f;
+            state.weaponEnergy = 12.5f;
+            state.weaponEnergyCapacity = 100;
+            state.weaponEnergyRegeneration = 35;
+            state.weaponEnergyRechargeRemaining = 0.25f;
+            ContractStatusPacket packet{}, reencoded{};
+            AssertThat(encodeContractStatus(state,packet),IsTrue());
+            ContractStatus decoded;
+            AssertThat(decodeContractStatus(packet.data(),packet.size(),decoded),Equals(DecodeError::None));
+            AssertThat(decoded.shieldBuild,Equals(state.shieldBuild));
+            AssertThat(decoded.weaponEnergy,Equals(state.weaponEnergy));
+            AssertThat(decoded.shieldRechargeRemaining,Equals(state.shieldRechargeRemaining));
+            AssertThat(encodeContractStatus(decoded,reencoded),IsTrue());
+            AssertThat(packet == reencoded,IsTrue());
+            state.weaponEnergy = 101;
+            AssertThat(encodeContractStatus(state,packet),IsFalse());
+            state.weaponEnergy = std::numeric_limits<float>::quiet_NaN();
+            AssertThat(encodeContractStatus(state,packet),IsFalse());
+            state.weaponEnergy = 10;
+            state.shieldHP = -1;
+            AssertThat(encodeContractStatus(state,packet),IsFalse());
+            state.shieldHP = 16001;
+            AssertThat(encodeContractStatus(state,packet),IsFalse());
+            packet = reencoded;
+            packet[ContractResourceOffset+19] = 0x80;
+            packet[ContractResourceOffset+20] = 0x7f;
+            AssertThat(decodeContractStatus(packet.data(),packet.size(),decoded),Equals(DecodeError::InvalidValue));
+            ContractAction action{5,2,ContractActionKind::BuyShield};
+            ContractActionPacket request{};
+            for (std::uint8_t id = 1; id <= ContractShieldKinds; ++id) {
+                action.shield = id;
+                AssertThat(encodeContractAction(action,request),IsTrue());
+                ContractAction received;
+                AssertThat(decodeContractAction(request.data(),request.size(),received),Equals(DecodeError::None));
+                AssertThat(received.shield,Equals(id));
+            }
+            action.shield = 4;
+            AssertThat(encodeContractAction(action,request),IsFalse());
+            action.shield = 1;
+            action.kind = ContractActionKind::Ready;
+            AssertThat(encodeContractAction(action,request),IsFalse());
+        });
+
+        it("round trips run outcomes rewards and spectator identity and rejects malformed choices", []() {
+            ContractStatus state;
+            state.players = 2;
+            state.livingPlayers = state.pendingRewards = 1;
+            state.alive = false;
+            state.run = 3;
+            state.viewActor = {0,7};
+            state.elapsedTicks = 9876543210ULL;
+            state.creditsEarned = 450;
+            state.attacksCleared = 3;
+            state.enemiesDefeated = 12;
+            state.basesVisited = 2;
+            state.weaponsFound = 1;
+            state.damageUpgrades = 2;
+            state.shieldUpgrades = 1;
+            state.gunPrice = state.shieldPrice = state.reward = 100;
+            state.rewardWeapon = 6;
+            state.rewardUpgrade = 2;
+            state.route = {{RouteNodeKind::Base,0,0,1,2},{RouteNodeKind::Attack,1,1,1,0}};
+            state.currentNode = 1;
+            state.visitedNodes = 3;
+            for (const auto phase : {ContractPhase::Reward,ContractPhase::Complete,ContractPhase::Defeat}) {
+                state.phase = phase;
+                ContractStatusPacket packet{}, reencoded{};
+                AssertThat(encodeContractStatus(state,packet),IsTrue());
+                ContractStatus decoded;
+                AssertThat(decodeContractStatus(packet.data(),packet.size(),decoded),Equals(DecodeError::None));
+                AssertThat(decoded.phase,Equals(phase));
+                AssertThat(decoded.viewActor,Equals(state.viewActor));
+                AssertThat(decoded.elapsedTicks,Equals(state.elapsedTicks));
+                AssertThat(decoded.alive,IsFalse());
+                AssertThat(encodeContractStatus(decoded,reencoded),IsTrue());
+                AssertThat(reencoded == packet,IsTrue());
+                for (const auto offset : {32,33,34,35,36,37,38,39}) {
+                    auto invalid = packet;
+                    invalid[ContractRunOffset+offset] = 255;
+                    AssertThat(decodeContractStatus(invalid.data(),invalid.size(),decoded),
+                        Equals(DecodeError::InvalidValue));
+                }
+            }
+            ContractAction action{9,4,ContractActionKind::ClaimReward};
+            ContractActionPacket packet{};
+            AssertThat(encodeContractAction(action,packet),IsFalse());
+            for (const auto choice : {RewardChoice::Credits,RewardChoice::Weapon,RewardChoice::Upgrade}) {
+                action.choice = choice;
+                AssertThat(encodeContractAction(action,packet),IsTrue());
+                ContractAction decoded;
+                AssertThat(decodeContractAction(packet.data(),packet.size(),decoded),Equals(DecodeError::None));
+                AssertThat(decoded.choice,Equals(choice));
+            }
+            action.kind = ContractActionKind::NewRun;
+            AssertThat(encodeContractAction(action,packet),IsFalse());
+            action.choice = RewardChoice::None;
+            AssertThat(encodeContractAction(action,packet),IsTrue());
+        });
+
+        it("round trips route choices and rejects invalid graphs and reserved route bytes", []() {
+            ContractStatus state;
+            state.players = 2;
+            state.gunPrice = state.shieldPrice = 100;
+            state.phase = ContractPhase::Route;
+            state.route = {{RouteNodeKind::Base,0,0,1,6},
+                {RouteNodeKind::Attack,2,1,0,0},{RouteNodeKind::Encounter,0,1,2,0}};
+            state.currentNode = 0;
+            state.selectedNode = 1;
+            state.visitedNodes = 1;
+            ContractStatusPacket packet{};
+            AssertThat(encodeContractStatus(state,packet),IsTrue());
+            ContractStatus decoded;
+            AssertThat(decodeContractStatus(packet.data(),packet.size(),decoded),Equals(DecodeError::None));
+            AssertThat(decoded.route.size(),Equals(std::size_t(3)));
+            AssertThat(decoded.route[0].links,Equals(std::uint32_t(6)));
+            AssertThat(decoded.route[1].level,Equals(std::uint8_t(2)));
+            AssertThat(decoded.selectedNode,Equals(std::uint8_t(1)));
+            packet[ContractRunOffset-1] = 1;
+            AssertThat(decodeContractStatus(packet.data(),packet.size(),decoded),Equals(DecodeError::InvalidValue));
+            state.route[1].links = 1;
+            AssertThat(encodeContractStatus(state,packet),IsFalse());
+            state.route[1].links = 0;
+            state.selectedNode = 2;
+            AssertThat(encodeContractStatus(state,packet),IsFalse());
+            ContractAction action{9,3,ContractActionKind::SelectNode,0,glm::ivec3(0),16};
+            ContractActionPacket request{};
+            AssertThat(encodeContractAction(action,request),IsTrue());
+            ContractAction received;
+            AssertThat(decodeContractAction(request.data(),request.size(),received),Equals(DecodeError::None));
+            AssertThat(received.node,Equals(std::uint8_t(16)));
+            request[19] = 17;
+            AssertThat(decodeContractAction(request.data(),request.size(),received),Equals(DecodeError::InvalidValue));
+        });
+
+        it("round trips inventory and precise mount swaps and rejects invalid equipment payloads", []() {
+            ContractAction action{12,4,ContractActionKind::EquipGun,6,glm::ivec3(7,3,12)};
+            ContractActionPacket request{};
+            AssertThat(encodeContractAction(action,request),IsTrue());
+            ContractAction decoded;
+            AssertThat(decodeContractAction(request.data(),request.size(),decoded),Equals(DecodeError::None));
+            AssertThat(decoded.weapon,Equals(std::uint8_t(6)));
+            AssertThat(decoded.cell == action.cell,IsTrue());
+            request[15] = 7;
+            AssertThat(decodeContractAction(request.data(),request.size(),decoded),Equals(DecodeError::InvalidValue));
+            ContractStatus state;
+            state.players = 1;
+            state.gunPrice = state.shieldPrice = state.reward = 100;
+            state.offer = 6;
+            state.inventory[2] = 4;
+            state.mounts = {{glm::ivec3(7,3,12),2},{glm::ivec3(9,3,12),6}};
+            ContractStatusPacket packet{};
+            AssertThat(encodeContractStatus(state,packet),IsTrue());
+            ContractStatus received;
+            AssertThat(decodeContractStatus(packet.data(),packet.size(),received),Equals(DecodeError::None));
+            AssertThat(received.inventory[2],Equals(std::uint16_t(4)));
+            AssertThat(received.mounts.size(),Equals(std::size_t(2)));
+            AssertThat(received.mounts[1].cell == glm::ivec3(9,3,12),IsTrue());
+            AssertThat(received.mounts[1].weapon,Equals(std::uint8_t(6)));
+            packet[40] = 7;
+            AssertThat(decodeContractStatus(packet.data(),packet.size(),received),Equals(DecodeError::InvalidValue));
+            state.inventory[2] = 65;
+            AssertThat(encodeContractStatus(state,packet),IsFalse());
+            state.inventory[2] = 4;
+            state.mounts[1].cell = state.mounts[0].cell;
+            AssertThat(encodeContractStatus(state,packet),IsFalse());
+        });
+
+        it("replicates hostility-only changes and rejects noncanonical contact flags", []() {
+            EntitySnapshot previous;
+            previous.id = EntityId{1, 1};
+            previous.kind = EntitySnapshot::Kind::Ship;
+            EntitySnapshot enemy = previous;
+            enemy.hostile = true;
+            SnapshotFrame frame;
+            AssertThat(buildSnapshotDelta(2, 1, 1, {enemy}, {previous}, frame), IsTrue());
+            AssertThat(frame.updates.size(), Equals(std::size_t(1)));
+            std::vector<std::uint8_t> packet;
+            AssertThat(encodeSnapshotFrame(frame, packet), IsTrue());
+            SnapshotFrame decoded;
+            AssertThat(decodeSnapshotFrame(packet.data(), packet.size(), decoded),
+                Equals(DecodeError::None));
+            AssertThat(decoded.updates.front().hostile, IsTrue());
+            packet[SnapshotHeaderSize + SnapshotEntitySize - 1] = 2;
+            AssertThat(decodeSnapshotFrame(packet.data(), packet.size(), decoded),
+                Equals(DecodeError::InvalidValue));
+        });
+
+        it("round trips contract actions and rejects invalid commands and status", []() {
+            ContractActionPacket actionPacket{};
+            ContractAction action{42, 3, ContractActionKind::BuyShield};
+            AssertThat(encodeContractAction(action, actionPacket), IsTrue());
+            ContractAction decoded;
+            AssertThat(decodeContractAction(actionPacket.data(), actionPacket.size(), decoded),
+                Equals(DecodeError::None));
+            AssertThat(decoded.sequence, Equals(action.sequence));
+            AssertThat(decoded.mission, Equals(action.mission));
+            AssertThat(decoded.kind, Equals(action.kind));
+            for (const auto kind : {ContractActionKind::EnableInvulnerability,
+                    ContractActionKind::DisableInvulnerability}) {
+                action.kind = kind;
+                AssertThat(encodeContractAction(action, actionPacket), IsTrue());
+                AssertThat(decodeContractAction(actionPacket.data(), actionPacket.size(), decoded),
+                    Equals(DecodeError::None));
+                AssertThat(decoded.kind, Equals(kind));
+            }
+            actionPacket[14] = 6;
+            AssertThat(decodeContractAction(actionPacket.data(), actionPacket.size(), decoded),
+                Equals(DecodeError::InvalidValue));
+            AssertThat(decodeContractAction(actionPacket.data(), actionPacket.size() - 1, decoded)
+                != DecodeError::None, IsTrue());
+
+            ContractStatus state;
+            state.players = 2;
+            state.readyPlayers = 1;
+            state.credits = 123456;
+            state.gunPrice = 100;
+            state.shieldPrice = 150;
+            state.reward = 200;
+            state.gun = true;
+            state.invulnerable = true;
+            state.acknowledgedSequence = 42;
+            ContractStatusPacket packet{};
+            AssertThat(encodeContractStatus(state, packet), IsTrue());
+            ContractStatus received;
+            AssertThat(decodeContractStatus(packet.data(), packet.size(), received),
+                Equals(DecodeError::None));
+            ContractStatusPacket reencoded{};
+            AssertThat(encodeContractStatus(received, reencoded), IsTrue());
+            AssertThat(packet == reencoded, IsTrue());
+            AssertThat(received.invulnerable, IsTrue());
+            packet[39] = 0;
+            AssertThat(decodeContractStatus(packet.data(), packet.size(), received),
+                Equals(DecodeError::None));
+            AssertThat(received.invulnerable, IsFalse());
+            packet[39] = 2;
+            AssertThat(decodeContractStatus(packet.data(), packet.size(), received),
+                Equals(DecodeError::InvalidValue));
+            packet[39] = 1;
+            packet[13] = 2;
+            AssertThat(decodeContractStatus(packet.data(), packet.size(), received),
+                Equals(DecodeError::InvalidValue));
+            packet[13] = 1;
+            packet[16] = 3;
+            AssertThat(decodeContractStatus(packet.data(), packet.size(), received),
+                Equals(DecodeError::InvalidValue));
+        });
         it("round trips entity IDs and input commands", []() {
             const EntityId originalId{0x12345678, 0x90abcdef};
             EntityIdPacket idPacket{};
@@ -35,8 +289,9 @@ go_bandit([]() {
                 1,
                 32767,
                 -1234,
-                FirePrimary | FireSecondary,
-                EntityId{0x10203040, 0x50607080}
+                FirePrimary | FireSecondary | FireWithLead,
+                EntityId{0x10203040, 0x50607080},
+                glm::vec3(125.0f, -32.5f, -600.0f)
             };
             InputCommandPacket commandPacket{};
             AssertThat(encodeInputCommand(originalCommand, commandPacket), Equals(true));
@@ -59,6 +314,43 @@ go_bandit([]() {
                 Equals(DecodeError::None)
             );
             AssertThat(decodedCommand, Equals(originalCommand));
+        });
+
+        it("rejects malformed or unbounded primary fire points", []() {
+            InputCommand command{1};
+            InputCommandPacket packet{};
+            for (const auto point : {
+                    glm::vec3(std::numeric_limits<float>::quiet_NaN(), 0, -100),
+                    glm::vec3(0, std::numeric_limits<float>::infinity(), -100),
+                    glm::vec3(0),
+                    glm::vec3(MaxFirePointDistance + 1.0f, 0, 0)}) {
+                command.firePoint = point;
+                AssertThat(encodeInputCommand(command, packet), IsFalse());
+            }
+            command.firePoint = glm::vec3(MaxFirePointDistance, 0, 0);
+            AssertThat(encodeInputCommand(command, packet), IsTrue());
+            // Corrupt a valid float into positive infinity on the wire.
+            packet[40] = 0;
+            packet[41] = 0;
+            packet[42] = 0x80;
+            packet[43] = 0x7f;
+            InputCommand decoded;
+            AssertThat(decodeInputCommand(packet.data(), packet.size(), decoded),
+                Equals(DecodeError::InvalidValue));
+        });
+
+        it("requires primary fire and a generational target for marker assistance", []() {
+            InputCommand command{1};
+            InputCommandPacket packet{};
+            command.buttons = FireWithLead;
+            command.target = EntityId{2, 1};
+            AssertThat(encodeInputCommand(command, packet), IsFalse());
+            command.buttons |= FirePrimary;
+            AssertThat(encodeInputCommand(command, packet), IsTrue());
+            command.target = EntityId{2, 0};
+            AssertThat(encodeInputCommand(command, packet), IsFalse());
+            command.target = {};
+            AssertThat(encodeInputCommand(command, packet), IsFalse());
         });
 
         it("round trips and validates multiplayer lobby status", []() {

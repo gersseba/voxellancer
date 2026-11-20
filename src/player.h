@@ -34,6 +34,7 @@ public:
     HUD& hud();
 
     void fire();
+    glm::vec3 aimPoint();
 
     void move(const glm::vec3& vec);
     void rotate(const glm::vec3& euler);

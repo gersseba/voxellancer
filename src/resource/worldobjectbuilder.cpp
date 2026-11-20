@@ -65,6 +65,7 @@ Bullet* WorldObjectBuilder::buildBullet() {
 
     bullet->setEmissiveness(Property<float>(m_name + ".general.emissiveness", 0.0f));
     bullet->setLifetime(Property<float>(m_name + ".general.lifetime"));
+    bullet->profile = WeaponProfile::load(m_name);
     bullet->setHitSound(SoundProperties::fromProperties(m_name + ".hitsound"));
 
     return bullet;
@@ -131,6 +132,10 @@ Ship* WorldObjectBuilder::buildShip() {
     Ship* ship = makeWorldObject<Ship>(*m_world);
     ship->setShipType(parsedShipType);
     ship->setShieldType(parsedShieldType);
+    ship->components().configureWeaponEnergy(
+        Property<float>(m_name + ".general.weaponEnergyCapacity", 0),
+        Property<float>(m_name + ".general.weaponEnergyRegeneration", 0),
+        Property<float>(m_name + ".general.weaponEnergyDelay", 0));
     if (ship->crucialVoxel() == nullptr) {
         glow::warning("WorldObjectBuilder: ship %; has no crucial voxel", m_name);
     }
@@ -231,7 +236,11 @@ void WorldObjectBuilder::setupShieldSlots(WorldObjectComponents& components) {
 void WorldObjectBuilder::equipSomehow(WorldObject* worldObject) {
     for (std::shared_ptr<Hardpoint>& hardpoint : worldObject->components().hardpoints()) {
         if(!hardpoint->mountables().empty()) {
-            Weapon* weapon = WeaponBuilder(hardpoint->mountables().front()).build();
+            const std::string key = Property<std::string>(m_name + ".hardpointGroup" +
+                std::to_string(hardpoint->group()) + ".equipped", hardpoint->mountables().front());
+            if (!hardpoint->mountable(key))
+                throw std::invalid_argument("Default weapon is not mountable: " + key);
+            Weapon* weapon = WeaponBuilder(key).build();
             hardpoint->setWeapon(std::shared_ptr<Weapon>(weapon));
         }
     }
@@ -245,7 +254,11 @@ void WorldObjectBuilder::equipSomehow(WorldObject* worldObject) {
 
     for (std::shared_ptr<ShieldSlot>& shieldSlot : worldObject->components().shieldSlots()) {
         if(!shieldSlot->mountables().empty()) {
-            Shield* shield = ShieldBuilder(shieldSlot->mountables().front()).build();
+            const std::string key = Property<std::string>(m_name + ".shieldslot" +
+                std::to_string(shieldSlot->group()) + ".equipped", shieldSlot->mountables().front());
+            if (!shieldSlot->mountable(key))
+                throw std::invalid_argument("Default shield is not mountable: " + key);
+            Shield* shield = ShieldBuilder(key).build();
             shieldSlot->setShield(std::shared_ptr<Shield>(shield));
         }
     }

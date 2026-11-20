@@ -3,10 +3,12 @@
 #include <cassert>
 
 
-DamageImpact::DamageImpact(WorldObject* worldObject, Voxel* voxel, const glm::vec3& damageVec, float fieldOfDamage):
+DamageImpact::DamageImpact(WorldObject* worldObject, Voxel* voxel, const glm::vec3& damageVec,
+    float fieldOfDamage, bool resolvedProjectile):
     m_worldObject(worldObject),
     m_voxel(voxel),
-    m_fieldOfDamage(fieldOfDamage)
+    m_fieldOfDamage(fieldOfDamage),
+    m_resolvedProjectile(resolvedProjectile)
 {
     assert(m_worldObject);
     assert(m_voxel);

@@ -20,6 +20,7 @@ void DamageForwarder::forwardDamageImpacts(std::list<DamageImpact> &dampedDeadly
     m_damageImpactAccumulator.clear();
 
     for(DamageImpact &dampedDeadlyDamageImpact : dampedDeadlyDamageImpacts) {
+        if (dampedDeadlyDamageImpact.resolvedProjectile()) continue;
         Voxel *deadVoxel = dampedDeadlyDamageImpact.voxel();
 
         m_currentWorldObject = dampedDeadlyDamageImpact.worldObject();

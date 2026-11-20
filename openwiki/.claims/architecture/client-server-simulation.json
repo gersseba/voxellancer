@@ -1,166 +1,210 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:a3a11c00c59cba853b68c3ac57ea97735c0fcdcaee864036061310cca7308b3f",
+  "pageVersion": "sha256:9b1e71b5cb46f0e45d2a79116ad6cd75c0ac6ef4cc3fbfdbd7ae561e9e8599d7",
   "claims": [
     {
       "id": "claim_1b5445dac428483f8da8f963c9100068",
-      "statement": "In local singleplayer, the graphical executable starts the sibling server with the battle scenario and connects to it before GLFW initialization; the user launches one executable, but the client and server run as separate processes.",
+      "statement": "In local singleplayer, the graphical executable starts the matching sibling server with the battle scenario and connects to it before GLFW initialization; the user launches one executable, but the client and server run as separate processes.",
       "evidence": [
         {
-          "resource": "repo://src/client/localserverprocess.cpp#L42-L70",
-          "version": "repo-lines-v1:sha256:c669d88c92b3b98f988a121582b958504034db322b2399ca5a1c688ac7a6d993:eyJzZWxlY3RlZExpbmVDb3VudCI6MjksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImExN2RmYTdhZjQwMDc2MzViZjFmNzk3YTdiMTJhZGM3NzUwMWQwYzAzMzcwZTk1NGYxZWZkMTJlODIyM2FhNDciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjE3NzgzZTM2YjUxN2I3YTQ5ZTg0NGNlN2U4ZTE5OTFmODIyODVmNzE4NjNlNWZmOTVmMGE1ZTYzZDNlZjlkNDkiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjZjMDIwMDQ1MDE4MzQ4M2RiZDNmYTU2ZWY5YzQ0NzQxYjJiZTI1MTFlNWUzNmQ3M2I4MWM5ZjZmOTFkNTYwNjMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImQwYTY2ZDkwNjRjNGU4YjQ3MmY1ZDZjNGU3MTljZGQ4MWY1ZGU3ODUwYzAyNWMxMjg0NjEwYzU4OTZjYjdkZDcifQ"
+          "resource": "repo://src/client/localserverprocess.cpp#L17-L39",
+          "version": "repo-lines-v1:sha256:1786130b58cfd6c1ababa1860ce4c9e89661a5c16b28046f9c319c0ffe5768e3:eyJzZWxlY3RlZExpbmVDb3VudCI6MjMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImI1MjM5YTkzNDBlZjk0NDAyMzRlYmYwYTE2YWUyNzZhNThjYWJiNjkyM2RmMDVmN2ZjNDliNjZjZDcwYWNlMjAiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQwZjA5MTcxNWRkMjM0YWU4MmQ0MGQ0ZTk3OWIzZTEwNzk2NWJhZmMyMjJmZDM3N2JjMWYwNThmYWMxNDkyZGIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImU0MDVmM2E3MzMxYTljZGIzZjlkYzRhYjc3YmNkOWZkNjU1ODM0YTQ4ZTNmMGFjNDUwMDNjYzU1YTA5MDIzY2QiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUyZGM3OWY5YTY5YjRkYWYyYjE5MTgyNTA3YzViNTMwZjkzZjY5YzEzOThhZjYxMjRmMmU5MzVmMTliOGQzZWUifQ"
         },
         {
-          "resource": "repo://src/main.cpp#L239-L254",
-          "version": "repo-lines-v1:sha256:b199bc81ea5c2456db2499da7164affb442016cc5aa523bebba75b16be5cdb57:eyJzZWxlY3RlZExpbmVDb3VudCI6MTYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImRjMDBiN2MyN2NjODM0OTY4YjMyZGYyYTI5NjU4OGFjMmUxYWE5ZTk3MDk2ZTgyMjQ5Y2E4MDMzZmM4ZDEzNjgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjE4N2JjMjcyMWNjZjM4NGYwYTQ2MzUzNWUyNWU5NDQ0ZmI5M2ViOGQ5YmVmYjRmOWU4NDYxZDZmYjdlNzViYzAiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjI1NzY5NmIzYTZjMzIzYjgxOTAyZmE0YjAwYWZkOTQ2ZWYxZmZmMTlhMzY2YTcxMDBhZWRhYWM4ZTEwZDkwNzIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImM3NTRlYmJmZDhlZmVhNGQ0OWVjNWM3YTM4Yjg3MTYwNWNlNGYzMGM5NTY3NmQ2ZTU5MTBmYzQ4ZjUwMzQ1MTAifQ"
+          "resource": "repo://src/client/localserverprocess.cpp#L42-L87",
+          "version": "repo-lines-v1:sha256:3baf154ef9669d3f0bf1eb3275acb3cf913357bf0f20ac728bdd0d15843735a0:eyJzZWxlY3RlZExpbmVDb3VudCI6NDYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjU3MTQzMzJlZTViNjJhODFjODMwZmNiNmVkMGE5MWQ4M2ExNGY4MzA4YTc1Y2RjZGM0ZjRmOWNiMTZkYTVjMGUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjFkOTI3YjFmMTQwNTY2MDI3MWJiYjkwNzZlNTI0YTJjOTNlM2EwMWFjNjRjMzYyNTZhMDY5MmYzOWJlYjM3OTYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjY2YmE2MGQ5NjBiZDdjMjZiM2FiZGY0ZTI5YTI4YWFhZTA4MTNkZDEzYTgwOGNkMzljNzMyMzY0ZjQ4MGNkNjgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjMyZTA0OGY4ZDNkNmZhZGIwYWQxMDMzYjU0MzExNTc3YmU2ZjZjMzkzYTI4NTVjOTQzNDk1ZmExZDkxZTdjYTUifQ"
         },
         {
-          "resource": "repo://src/main.cpp#L272-L273",
-          "version": "repo-lines-v1:sha256:884ee6906bfbb925a33c7e2b78df3e487f873f53398a46450bec00bc5762e0d3:eyJzZWxlY3RlZExpbmVDb3VudCI6MiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMGM3MmMzMjU5ZWFiYWM1NmQ2ZjEwZTlkYWZmZjJkNjQxZjQ0YjQwMTM5MjAyYjM3NzAyMTcwMWFiYzQyMDIyZSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiZTM4NDFhNzcxY2U0NDg0OGVhMDMzNWQ2ODc4NmQ4ODNiZWVhMjdiZWNkMDdlMjU2ODY2MDk2ZjljMDNiNGY0YSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNWZiNjJmYTg1NzEwYTZhNWQ3YThkNGZmZjQ0ZGVkNDhiMGVmOTMzZjgyOWNmZDRhYzY3MGExNTUxZTI4ZjllOSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiYTFjNTJkYWYwYzk4YTgyNTY5ZjFlNDM1MGQwMWExNjc5OTlkMjMyMDllNGFlZjkwYWY3ZDk5MDE4NGJiNzEyNyJ9"
+          "resource": "repo://src/main.cpp#L304-L345",
+          "version": "repo-lines-v1:sha256:086e05a47436750c101b52cde53d999ab1fa2efaa3bcb8989b0f3a40b1124f7a:eyJzZWxlY3RlZExpbmVDb3VudCI6NDIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImM3NDYwODY2NzU1NzY3ZDM0NTk1NTZjYzJjYTY2MjhlNzA0ZDRlZWVmZmZjYWU2YTQ4YWI4ZjczOTVlMzUxZDMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjlhYzQyNTU2ODhkMzhiZGU1YjFjOWU0NmRkMzBiMWVjNDcyOGUzMjRhNWU4NzlkNjU4YjBiYmI3N2E5ZmU3YzIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjVmODc1NzUxMjFhZmRhZGMyYzQ4NGQwMDVmZWQxZTFiMmQ1ZWIyYzI2OTVhNzI2MTM1MDM4MzUzMDE4NWE4NzkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImY4YjRhZjRhNThhMzA2YWE0OTA1MGM3YWE5M2RjZWU5NjMxYWUxNDBkNzg0MzlhMjYxMzRlOGE1ZTRiNDMzZTgifQ"
         }
       ]
     },
     {
       "id": "claim_3a303299d0e5432ba28ef47a9af129d9",
-      "statement": "The standalone server creates a server-mode world and advances its simulation session before polling TCP networking on the same thread.",
+      "statement": "During normal server operation, the main loop advances the SimulationSession and polls TcpServer sequentially on the same thread.",
       "evidence": [
         {
-          "resource": "repo://src/server/main.cpp#L117-L178",
-          "version": "repo-lines-v1:sha256:f9e537edb17116e0656784736a671ef5713a6f5436ba19b8fbba0a9beb0ef85c:eyJzZWxlY3RlZExpbmVDb3VudCI6NjIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI1ZGI5NTRiMjZmOTY5OTk5Zjg2NGRlMWU5NWZjYjRiNWEyODgzNDU1MDhkY2FkYzAwNzY5YjNmMmI3ODU0MTYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjE5YzEwMWFmYTlmOWFhYjc5ODQ2ZGYxNTFhNjI4ZGY1MzkyN2Q2NDgwNDYwMDMxN2QxOTE5NmYzOGNiZmI3ZjMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImQyM2Y1NzdhN2MxZDY0OWYxYjZjNjQ0OWFiY2FkMTg4ZTUxNDEzMzEyNDk1NmIyZGEzYzEwOTlhYTk5OThmY2MiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImFhYWNiMTVjY2FmNmIyY2U5Y2ZmZGU3ZDk1MjJjNWU2ZmM1MTVjMmFjMzQ0ODBlYjczYjFjNjRkYjAwY2Y5YmYifQ"
+          "resource": "repo://src/server/main.cpp#L420-L450",
+          "version": "repo-lines-v1:sha256:454bfe309268c76b7869e2050ade8a5cdca2ac0d18a061743666505799e6796a:eyJzZWxlY3RlZExpbmVDb3VudCI6MzEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImI1ZWMyYTllNGQwZmVmY2EwMjFmMmU0NjBhMzc4ZGZiOTM3ODY5ODk2ZTBmMDljOGFhNzNlNTFlOTI5ZjY5NzYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImY0YWQ2YWI2NTk2YTM4Yjc1Y2EzMDNiNThmM2I4ZDdjYjJiYTlkNjViZmI4MWFhNTBiMTBhMWM0Yzg0Y2U5YjYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjRhYTEyZDI2ZDdhYjBkNTZlZTEzNzEzNjJhMjdlYWE3MDRjN2M4ZDhiMTQzNjI0N2MwMzc0ZDI2NjdmOTNmY2EifQ"
         }
       ]
     },
     {
       "id": "claim_d68acda01eaf41e4941de862b57ad1cc",
-      "statement": "SimulationTickRunner advances at 60 Hz, limits each advance to five ticks by default, and retains unprocessed elapsed time in its accumulator.",
+      "statement": "SimulationTickRunner advances at 30 Hz, limits each advance to five ticks by default, and retains unprocessed elapsed time in its accumulator.",
       "evidence": [
         {
-          "resource": "repo://src/simulation/simulationsession.cpp#L92-L98",
-          "version": "repo-lines-v1:sha256:a429a97f26d6792751449e494f7d3f2afa09ab5a0d1278d6f6e7a04ce0b246b1:eyJzZWxlY3RlZExpbmVDb3VudCI6NywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYmZlYjBmNmY1YjlmOTNiZDZjODljZjdjOWEwMmUxOWRjNGUzZTVmN2I4MGI2Yjk4MzIzMGI5NzlhN2EyY2NhNiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMmE0ZjZmM2MzNWExMjgzOTBkY2Y0M2MxZjcxODc5ODUxYzA4YWZhYWY1OTI0NmE4OGU4ZTNmZDBjMmRhZTA5NiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMGFlZWY2YzhmZDAyZDRiMGZiZWFlZTRiMWZiZDMyZDdlMDhkMTZlMTYwODFjNjliZGUzODhmZGM0NzkzMGY2ZiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiOGY3MDIyOTZjNjQzNGNmYjVhM2IxMDQ1YzAwOGRlOWVlODVlYjY5MmQ0N2IyZjFkNGU2ZmVjZWUyNDIxZDM5OSJ9"
+          "resource": "repo://src/utils/simulationtickrunner.h#L19-L39",
+          "version": "repo-lines-v1:sha256:ad3d688d376192397c7c61e59118171a936ca6e3b479be548929968c1663d6e0:eyJzZWxlY3RlZExpbmVDb3VudCI6MjEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjE4YjAwMjExYjMxMzlkNTRmZWM3OGFjYzJmM2EwNzJmMTMwZjQ3NTJiNTVhOTAwMzY0MDc5ODRhNmY1ZjIwOTciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjU1MjJjNDJjZDE5YzZkMDNkODA4YzQ1MjcyMDU1MjgyNWI3ZWExYzViNDkxYjIxODUxMWNhYzc0MTVjZjlkOWIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjJlZWJiNjVlNGQ0ZGM4OWQ2ZjBkOWQ5MTJiMzY1MDkxZjc5MjEwZTBhM2ZlNGNiZDc1ZDU5YzNiYjlhMTMyNzgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjE3OTQ0NjVkZTQzZTQwNmFhMThlNDA5MzQxZGUzODFkNzU1OTNhZWU4YTYzZDU4MTIzYzRhNGE1YWRiYTViNDYifQ"
         },
         {
-          "resource": "repo://src/utils/simulationtickrunner.h#L7-L35",
-          "version": "repo-lines-v1:sha256:481b95d93ad067c70cfc378f840e6a50db6c242a6f19f556b78f7f75c69d6841:eyJzZWxlY3RlZExpbmVDb3VudCI6MjksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjRhYWEzMzNlMDQ1ZDQzZTIwOTUxYWNlOGY4OGE4ZWJiYTJhOWY1Y2Y2M2MyMDZlNDUzMTZkMzE4OGFkYTE1OGMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImViOTYyYzk3NjJlNTM5MDYyNzhkMzNiZjU1NDViYzk0NDMwYjdjZGNmYzYxMTk5MWRiZWIzNGYzNjkwODExZTciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjlmMzQxZjQyYjkwMzczZDkyYWU2MTMxY2M3NGQ1NmVlOTg1NTA1NDVhMzUxYzczNDMwOTIzNzZhNTg5MWEyZTEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjExZjNlZTA1YmM4YjVlMzliY2RjMzE3M2RkNWNhZGIzNGNhMDQyODNlMWJiNDBlNjlkYTU0YzY1NDMxOTQ1MWMifQ"
+          "resource": "repo://src/utils/simulationtickrunner.h#L8-L11",
+          "version": "repo-lines-v1:sha256:2173880f484386679ae8e7ffc376a6c745c2844a07c2ed7e004ec8a38142c07b:eyJzZWxlY3RlZExpbmVDb3VudCI6NCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMWM4Y2UxN2UxN2M2ZjQyNWExOWY2OTA1MDhmNzRiMmJlY2QwZGVmNzJhMTdmY2MzNDJhYjcxNTMxNTQ4OWIzYSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNDZjNmMzYjZkMGE2M2U0OTM2NDlhZmQyMzJmZmZkMzI2N2JhYzQ5ZTU5OGM0NTgzOGZkZTBiMzg3NjQ4ZTc3MiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiYTQ4NmExYWEzYWFkNzYyZWMxMGU3OGM2YzI0MGJlMzEzZGYwOWE4ZjU0YTIwYWVjOWMyYzBkNGE2MzI1MzE1YSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMWY0MzJlNjgxZmI2NDY2ZTg1YjE4MGFhNGVkYTA3ZDk2YzFlMGUzNzQ5M2U0YjIwYjhjYTM4NTNjYTk5Yzg2YSJ9"
         }
       ]
     },
     {
       "id": "claim_ad1be1135526476b801e9a575c5b897c",
-      "statement": "The TCP listener binds to the local host, supports at most 16 clients, and defaults to a 650-unit interest radius with snapshots every three ticks.",
+      "statement": "The TCP listener binds to the local host and supports at most 16 clients; the normal battle path uses a 650-unit interest radius, and snapshots are sent every two simulation ticks (15 Hz).",
       "evidence": [
         {
-          "resource": "repo://src/server/tcpserver.cpp#L126-L148",
-          "version": "repo-lines-v1:sha256:eae24c6be79fa074d82092d14fc238785b788df18350b5ccfa307122c72faffa:eyJzZWxlY3RlZExpbmVDb3VudCI6MjMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjdlYjcwMjU3NTkzZGEwNmY2ODJhM2RkZGE1NGE5ZDI2MGQ0ZmM1MTRmNjQ1MjM3ZjVjYTc0YjA4ZjhkYTYxYTYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjE0MTlhNmRjYzA0ZTIxM2EzYzdhNzdhNDU2YjAxZTc2ZDFlZjc4Y2QwMGJiZWMxZDhmODE0NThmZTkzZWRjNTYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjE0YzJmOTM5Yzk1OWVjZDA4MzIwNzhiM2IxOTQ5OTViOWFhMTZkYWEwNDcyNTgwY2E1ZmI5N2QzNDYyODRjMDYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjhjYjRlZWIzYWEwODAzYTU4OGU0NTQyNjhhZTk2ZDliMTdjZDhmMGMyMmJmMWJmZDZlNTgwMWRkMTg5MTQxMjIifQ"
+          "resource": "repo://src/server/main.cpp#L466-L480",
+          "version": "repo-lines-v1:sha256:8fcef4ffbaeb0d8037455cb955db6f24703af15b3b297c08dc5f541f485d7770:eyJzZWxlY3RlZExpbmVDb3VudCI6MTUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjViYTIxM2U1ZjY1ZDljNDBlZjgyYzlhMjA1NTllZWQwZDdlOWQ4YjM2ODI1Mjk5YWJkZDlkODgyYzI0NzJmMDQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImI0NTlhZjUzNjJlOTdjYTg2OTMyMDM0OGVhZWQ3YmNhMzkwOWEzYmJiZTMzZTdhNTE1OTFiNWVkMTY2ZmEwNjkiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUwNGIyNmVmMjExNTk1MDY2NGE4YjMzMmYzYmExODU5YmQxZjFlOGFjNjI4MzU1ZTIzNDY4YTNhZDUzYmNhN2YiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImJmNDI3Njc1OGI0MWEwODQ3OGY1MzMwZjY2MjI3ZWM1MjYxY2UxYzE1ODcxNjM4YTQwYTJkYTViYjYxMjViOTkifQ"
         },
         {
-          "resource": "repo://src/server/tcpserver.h#L20-L36",
-          "version": "repo-lines-v1:sha256:4f0243861688a5e7c739d02a5f46f88eb74768db89ecae97917232744ac85bf0:eyJzZWxlY3RlZExpbmVDb3VudCI6MTcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImVjNThjNGMyZDU1YTQ1M2Y5N2ZmNjBkMGRiMmYxMzJhOTY3YjNhNGJkMWE4Y2FiOWIyNmUxMmNhNzNjMzM4MGIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjYzNmU1M2Q5YTQwNDcxOTIwMDVhYTRiM2M2M2UxODFlMjMxZTNmOGMzNmUxYzg2NzgxNWEyMGI5OGM3MDM4Y2YiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjA3NjI3ODQyMTk4NGZlZGZkZGVkMmRlYzU0N2JhN2I4M2Y4ZDg4YmM2NWYwNjZmNTVmMTRiNzBjYzhhYWM2OTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjlmOTliODhiYzBmMjgwZGIyYTZmZGU5MjY0MDhkYWFkNjljOWU2NjgwZTFkOGZjYzRkM2Q1ZDgyOGUyM2FiZjUifQ"
+          "resource": "repo://src/server/tcpserver.cpp#L145-L157",
+          "version": "repo-lines-v1:sha256:4a69a5a6f76cb510a8b4e5b019906a91de65341c9f9f3b586bc4c602dd0316b8:eyJzZWxlY3RlZExpbmVDb3VudCI6MTMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI3YTNjM2MxOGI1Yjg1Yjk5Y2JlMzRiNTdkZDFjNDIzZjhkZWVkOTRkZWYzZGZhYmYxYzNiZmQ1ZWQwODBhOTgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI0ZWZhYjM3YThlNTA3NjNjYTVjMTFmM2YyMWE4NGNhY2IxYTAxOGVjNTE1NjUyODEyZjAxZjhlYmY3MzUzZDIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImVkMDhmMzExYWY0MjM5NWQwNGNmYjZmOWNiNThlZTI5ZWQ5MWViMzJkOTUyMDMxMTQxNTg4YjM0MDJiNDlmNTkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImI1MzQzY2Q1ZTUzMWFkMzk4MDIwNGYwNWFkZmZiYTFjN2Q5ZGQzZDQ4YzdiZTg3YmJiZjVjODkyMWFlYWUwZjIifQ"
         },
         {
-          "resource": "repo://src/server/tcpserver.h#L69-L72",
-          "version": "repo-lines-v1:sha256:086616e75e8f7a8436c415525f06344251ad70b116a8d46c0f762bba0052c654:eyJzZWxlY3RlZExpbmVDb3VudCI6NCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYWE3NjQxODJjZWNlZWRkOGQ3ZmYxNzZiNDFjMDc1Y2RmNTMxOGIxYjNjMTZlZDhkYmM4ZjgwOGY2YmViMzVlYiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMDhhMGQ2ODA5MDA5YWMwYTlhYjAyMzA5YTBlOGJhZmQxMzhjMzJmM2U3ZWQxM2ZlYTc1Y2I5NGU5N2Y5MDAzNCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMTMxZjA3NWU3ODNiYWQ0YzBjNDYyNzQ3ZmQ2YzFlMWJkZTRiZjVlYmE4ZjhmMjNiMmVkODgyMWY4MDdlYTI0NiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMjIwMmIyZDg5NGMyOTNmMzE1OTJjYmFkMmNjYWE0Y2Y0ZmY2YWRlZWIyNzkwOWQ4YmUzMzI2NmEzY2YxODBlMSJ9"
+          "resource": "repo://src/server/tcpserver.h#L22-L22",
+          "version": "repo-lines-v1:sha256:b91c0b03500922bc8f8d527a334aac0593c701c45a05460ff80968737b37531b:eyJzZWxlY3RlZExpbmVDb3VudCI6MSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYjkxYzBiMDM1MDA5MjJiYzhmOGQ1MjdhMzM0YWFjMDU5M2M3MDFjNDVhMDU0NjBmZjgwOTY4NzM3YjM3NTMxYiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiYjkxYzBiMDM1MDA5MjJiYzhmOGQ1MjdhMzM0YWFjMDU5M2M3MDFjNDVhMDU0NjBmZjgwOTY4NzM3YjM3NTMxYiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiYTM3YjhjMWJlYmQ2MmIyMzBkNWM3NzgxY2Y1NzA5YjY3ZmM2YjVkZDY3YTBmMmEzYTJkOTQ2ZWI3MGNiYzcyZCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiODY5MzA4ODIzNjUxYmI5ZjMwOWZiYTNkZmI1ZjhkZDAwYzcxZjZkOTU3ZTk1ODcxMTA2NzNmYWY1NWY2MjRlMyJ9"
+        },
+        {
+          "resource": "repo://src/server/tcpserver.h#L75-L90",
+          "version": "repo-lines-v1:sha256:415c37511d99ee39cca04f5542e1c3b51736a930762c28aa8fe3af72535b90a3:eyJzZWxlY3RlZExpbmVDb3VudCI6MTYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQ5ZWUwNzMyNmNkZTA5NjcyNzU5Yjk4YzU0ZmUyOGI1NjI5MjIwZTI0OTkyNGY3NTU5MWRlMmVmNzYzNzgwN2EiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjU5MmQ1MzRlNzI3ZmQxZDEzZjNlNDE5MTE1YWZhMmRkODhmOWIzZmMwYzk1MWU0ZGE0YTQzY2E5YzE0M2M0ODEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjVhNTk4YTM5NjZhMmQ2YTg4ZWI2YTczOWFlZTI3MTFmZWUyMTYyOTc1MGMxOTBiMzI0MzIzN2U3ZjEwNDkzMGIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImI4MDI2ZTkzMjIzNWZhNjUzYThiNDEyZmFhM2ZlZmIyNGE5YTQ3MDgxYmYwN2VjMmUyMzFhNjJmOTYwNmNmMTMifQ"
         }
       ]
     },
     {
       "id": "claim_a02589a59a3944889aad3bd237c8a5c3",
-      "statement": "TCP frames use a four-byte little-endian payload length and protocol packets carry version and message-type bytes; the client rejects an unsupported protocol version instead of negotiating it.",
+      "statement": "TCP frames use a four-byte little-endian payload length and protocol packets carry version and message-type bytes; the current protocol version is 18 and mismatches are rejected rather than negotiated.",
       "evidence": [
         {
-          "resource": "repo://src/client/tcpclient.cpp#L216-L219",
-          "version": "repo-lines-v1:sha256:2f6a2822482ad219fa78adcdf56cb826a31a6a83f5b3048191daedeffa5ac357:eyJzZWxlY3RlZExpbmVDb3VudCI6NCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYjVkODQxODFjYTZiNzI3ZmJhYWE0MTJkMDgyMzYyMmNiNTc5OWRjYjA2MjA5ZTU3MjhjYWZkNDZjNjA2OThlYiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiODI1MWJmYWJjZmI2ZDg5ZmQ5ZjRlM2I3YmM0YTE3NGZkOTBjOTk4MTg2ZTRmZGUyYzhmYTM0ZTZkNWMyOTNhYSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNzRkMTM4Njk4OGJhMmY3OTllYzI1YzAwMmFjNDE1ZmEzNDIxNjgyYWE4MzkwNjgxODA3NmExODAwN2RjZTg3MSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZjc0NGQ3MjhjZmQ3NGRiZTcwN2RjZmY2NmMxMWM1ZGZjZGZiZDYxMjc2NTI4NjkyMWQzYjIyZDYyOGI2OWJlZSJ9"
+          "resource": "repo://src/client/tcpclient.cpp#L246-L251",
+          "version": "repo-lines-v1:sha256:3e597a34ba7158ed9d5b66213c45c7ccc6219d08a73177c14ec4a4f221c1b806:eyJzZWxlY3RlZExpbmVDb3VudCI6NiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZTZiMDQ0OTE0Njk3MjJlODM2M2E5NGU0MDQ0NTM4ZTAxM2EyYTIxN2UzNmIxZTU2OGJhNjBhY2I3YjRjOGYyZSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiZTZiMDQ0OTE0Njk3MjJlODM2M2E5NGU0MDQ0NTM4ZTAxM2EyYTIxN2UzNmIxZTU2OGJhNjBhY2I3YjRjOGYyZSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMDlhM2ViMDU4MzgwMmJjYThlNmQ4YmFjOWEyYTRhNjMzMjY0ZjA4MjgxMzM0MWIyZTVjZjJkNDI2ZDA1N2YzMyIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNzk4ZDQwNDNjMDA0NWYzMzAyYTlhYjFkZGI1Y2Y0NTBhNzMwZjI2YjVhMjEwZjM4YTEzNjNiMGM5OWNjZTQxZSJ9"
         },
         {
-          "resource": "repo://src/protocol/serverprotocol.h#L15-L24",
-          "version": "repo-lines-v1:sha256:4ddcf1e7b59beb5e2d55082e10f148bdb2940df1024ae20c98164ef91c96e933:eyJzZWxlY3RlZExpbmVDb3VudCI6MTAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjdhNjUzNjIwNmM3ODVjYzVkYTUxOTMxY2IwNTk4OTYwOWViYzc0YzBiMTNkNTQwMzZmODg3ZjMwMDNjMTk4ZmEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjRiNjhkYjk4NTQ3OTYyZTZiYTYwZGM5ZGU4NzZiYmY2ZTc4NTE0YjE0Yzk0MTZhZjRiNWVjOTcyZWZmN2E3YzkiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjQwYmQxMjhkN2JiMDgzNWQzOGU3ODExNWNkYTMxOTlkODhlMTVjZTE3ZWU5NWRlM2VmNWRhODZjNzgzMWFlYzciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijg4N2RmMGJmMTRjNjhmNTlkZGMxZjBlZTE0YmVmOTYzNGY0MTY4YTRkYWQ2ZDAwOTlhNmYxYzRhZTU4MTIyMDYifQ"
+          "resource": "repo://src/protocol/serverprotocol.h#L15-L18",
+          "version": "repo-lines-v1:sha256:2d17279152b784b950aba15e9d237418c0f0f408cb9e8753d3af40143bd57c60:eyJzZWxlY3RlZExpbmVDb3VudCI6NCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZWE2NjY5OTZhZjEwODE4Yjc2MzliNWE5NWRlYjkyZDVlZTE2ZGI5NTVmOGIzN2JjZWZhZjA4MjYxZWNmNzMyYSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMzhkNGNiOGM4MGU1ZGJmNzFlZjlhMzUwYTQzZDZhYTc0Mjg1N2M3MWM3MzU1OWVmMWYwM2IwNzgzMzA5YTkzZiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZTEwYmE4NDJmZjk2YTM1MjQxZjUwNDZjOTg0OTJkMmFlOTkwOGNlZGQ3NzVkY2Q1MDZhYzRiZDExNjBmNzgzZCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNDAxZjUyMDY2MWI4OTg2NjJkMTkzN2M1N2Y5YzczYWQ0ZGZkNGJjNjlhZWU5NmQxZDhjNjEwOWIzY2JlYmZlYyJ9"
         },
         {
           "resource": "repo://src/server/tcpserver.cpp#L33-L50",
-          "version": "repo-lines-v1:sha256:6ec2d2d988025d7b2ca06e6f791e41eb95326c7c417b081c4e8f1847616b7216:eyJzZWxlY3RlZExpbmVDb3VudCI6MTgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjdlYjcwMjU3NTkzZGEwNmY2ODJhM2RkZGE1NGE5ZDI2MGQ0ZmM1MTRmNjQ1MjM3ZjVjYTc0YjA4ZjhkYTYxYTYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjdmNjk2NDM0Zjg4NGRlZWNhZDBlZGQyZTU1NTYyNDkzNWYxN2ZlMDRjNTlmODIzMGU5ZTNlYjQ0NjQ5NGJiMGQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijg0ZjljM2Y2NDQxYzdjNDliMmIyYzAzYzE4ODk4YjQ3ZGVlN2VkYmMwOTNlZThkYTc0ZjFhZjhlYmFlM2ViODkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjVjZGYxNDE2NWFhMzBlZDMxMTg2Y2E1M2ViY2QwZTg0ZTlhMGNmYzgxNjI4Yjc2NGQ5Y2M0ZDA3MjdjY2I3NzYifQ"
+          "version": "repo-lines-v1:sha256:6fe532deed484e8ea59ff68323a20f01e47e1577e5a888f275c2a72e6638b536:eyJzZWxlY3RlZExpbmVDb3VudCI6MTgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImNmMDRkOTljMGY1ZDM1MjFmNjdmN2M1ODdkMjBkZDM1OTJhNTAyNGI5MDM1MjllMWU0Njg4NDRmN2ZhZTgxMzUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijg2OWE4ODI2OWVmOWE0YWU3YTc0ZTljNDU2MTY2MjAyMDZjNGIyYTBlYWY4MmZlMGM2OWM5NmE5Y2Q1NmU2NGUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjYzMjM4YjY2MzVhMzNmN2RhOTY5MDE3ZDM5ZDE2OTkyZmNkY2VkYzU5YWMxOTI4ODI1NzMwZDNhY2JmMWVmNmUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjFkMTc0NTYxMTVjMThiN2UxYTUzZjEwYzA1MDQyNDE2YjJmMWE2ODI2YjhiMTY3OGNkMTMxM2NlNTRkMWY3N2MifQ"
+        },
+        {
+          "resource": "repo://src/server/tcpserver.cpp#L369-L377",
+          "version": "repo-lines-v1:sha256:a3aaa16feb65ab790d422041778ca76db44b1bf34d2d90ba89a577d5e86552c9:eyJzZWxlY3RlZExpbmVDb3VudCI6OSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYTkzMWU5YjU5YTU2Yzk2YzEyZDlkMTA4Yzc3ZjlmMjg3OTMxZjcwMmVkMjRkOTcyMDgyN2RkMGIwZTJmYjNkYiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiZTZiMDQ0OTE0Njk3MjJlODM2M2E5NGU0MDQ0NTM4ZTAxM2EyYTIxN2UzNmIxZTU2OGJhNjBhY2I3YjRjOGYyZSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZTMzYWMwYjczMmUxOTUzYzBkZGZkYTZhNjEwOTUwYTk5MDllNmE3OTE5MjEwMzkzNzkzNDAxOTk3ZmRjYjk3NSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNWY0ZDBhYzkzYzc2ZjY0ZjE1ZjBhZThkOGZiODZmZmU3YjFjNmM3MmE1MWIxYTJiMWJiNTZiZmZmZWFjYzg0ZSJ9"
         }
       ]
     },
     {
       "id": "claim_d407c72cac46418b825c302bc9689de1",
-      "statement": "The server sends per-client baseline snapshot deltas filtered by interest radius, sends full voxel/equipment content when entities first become visible, and uses separate messages for subsequent state changes and events.",
+      "statement": "For each connection, the server filters baseline snapshot deltas by interest radius, sends full voxel and equipment content when an entity first becomes visible, and uses separate messages for subsequent equipment updates and authoritative gameplay events.",
       "evidence": [
         {
-          "resource": "repo://src/server/tcpserver.cpp#L444-L509",
-          "version": "repo-lines-v1:sha256:773ce959fe31dbd8ff92eb7a8ba64004c04234e87cee908c8748ec5f079e03b0:eyJzZWxlY3RlZExpbmVDb3VudCI6NjYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImRkOGM3NzkwNWViODZiNGU5MDA0MjY4N2JiOTc2NzlmZGQ5N2YxYTYxYmQ4MDI2YTVkOTZmMjk2YjBiOTg5YjUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImUyMmZhYTUzNWJkMmVhM2Q1MmU3NDFlZDQ1NDQzNWI3ZmU0OWU4MzU4NmU5NDNkOThkODJiYmZiMjRkMWY1YzUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImVlNTNmMzhjYzNiODk2NWNiYTQ3MDFiODg4ZDQ5MTE4ODEwYTgyYmE4NGRmMzE0MzgyNWI0NTZiZGQ5ZGIyYzkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImFjODY1NWIyYThjNDcxMzk0ZjM1ZjJlNGYzZmIwOGU2YzBkNTJhODAxZGQwZjIxNTY4MzU0NGY2MGNjZDljZDgifQ"
+          "resource": "repo://src/server/tcpserver.cpp#L263-L280",
+          "version": "repo-lines-v1:sha256:9190a47412e4ccb296f782ba8b5d3894c42bdb457bb3183ebf94e97082ca1eca:eyJzZWxlY3RlZExpbmVDb3VudCI6MTgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjZhNWUxNDY5MmVmOGZjM2I2NTlkYjljNjJlNjA5MDQxYWIxYmFkOTQ2NmE5MzA4MWYzOGU1MjcyNTM5NWM1MjIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjZlMDgzYzFiNWFhZDg3MTBkYmExM2VlMDdkNjhjN2FhMWIzZmFjNTRmYmM2YWJiZWY5ZGRmY2RmYTJmZTkxMjEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjcxYWExOTYwZjgyNGQzNGQ4NmUwOTliOWI3MjRmZjU4YTAzOWJkNWEyOGQyM2VhNTM3NDI2Y2QwOGUzOGJlMzEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImZiYmY4YzMwYjAzMjcwYTA0N2FmMDdjNDYyNTY4MmY2MDUxZGI0N2UzMWNmOThjNWI0ZTZiZmRiYzRkMTlhY2IifQ"
         },
         {
-          "resource": "repo://src/server/tcpserver.cpp#L674-L760",
-          "version": "repo-lines-v1:sha256:b3dbe4cf15b44563a45314c14ae0302f64eb15780654318ef5806770eaa73e47:eyJzZWxlY3RlZExpbmVDb3VudCI6ODcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjM4MjBmNGQ3MjIwMjYzOTc2NTgwMjM1ZmZmOWNiNDY3MzFhMGYyOGJiNzllYzhjODkxZDU5NzExODgxZDMyYjIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjBjYWVjNDI0ZjFhMjFjY2UyMjBhM2E5YmIzYmMyMzBkMjM4ZjdiMjdiODY1MzQxNDZiYzYyODhhN2U3NDBhMTIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImU5YjAyMjAwNzkxODdkZmIyNmExY2UxOGVjYzBiMTIzMTM1MzJmN2E1MTc5ZjY5YmFjOGNhMzY5YjNlY2VmODMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjRlM2FmOTk1ZmQ0MDI0YTQ4ZTA0OWIxMWJkNDRjYTc5YzYwYTcxMjA5Y2ZlOGRhYTFjZThiMTIzOTliNjE5MDAifQ"
+          "resource": "repo://src/server/tcpserver.cpp#L534-L620",
+          "version": "repo-lines-v1:sha256:3f62765aca0e030e6255f36b315919a7e8426701cde23e98c731d9a3c3233b8f:eyJzZWxlY3RlZExpbmVDb3VudCI6ODcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjZhYWViYzgwYjczMmQ5MzlkNThmM2RkNjA4NjdlOGRlN2Y2ZDc2NGE4ZTQyYWMzNWFkYjAxMzI1MjQzYjhlZWEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjRkOTM1N2E2MzgyZjkxM2Y3N2IwYmViMGIyYjg2NzExYTcyZmQwZWM0NzI0OGMxNTIwOWRkNjA5NmM5YjM4MzQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijc2OTYyZmY3ZTI2MDdlMGFlM2EyMTYwNWMzYTIyMmQ4YmVlNzFkMjIzMGExYzA5M2U1Yjc3YzAxYzU1YjBiM2EiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjI3ZjMwOTcwNTMzNWE2MzVmOGJiYTU3YmE2NDljYjJhNWJjMTdmOGUwZWNkMDViYTQ4OGM2ODNkMDQwZGM1ZTkifQ"
+        },
+        {
+          "resource": "repo://src/server/tcpserver.cpp#L789-L857",
+          "version": "repo-lines-v1:sha256:f7866af7b31e8edd9b12448db42d7c1389ed70ce576a93fc54584d6bd5997bbb:eyJzZWxlY3RlZExpbmVDb3VudCI6NjksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQ0ZjhjMTMxMzE5ZTY4MTAxY2NhMGRhNjNkZTlkMWY3MzA1YjBjYjZiM2JjMzU1ZWZiNDk5MThhZTU1MDFjNDIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijk1ZDZkMzM3YWU4MmZjYmM5Njg1MzExZjZiZDdiYTBjZTY5ZTZhNGQyYjE5ODJhNmQwMGIzYTc4Y2Q0YmE2ZTIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjE5ZTc2MzU1Y2YxMTk5NDgwYzNmOTk4MzZiMTQ4NmM4NDFkODkxZmFhZDkwNGM2MDhlMDkzMDIyZDM3NTdhZWUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImIyMjQ3ZTgwOTdkMTQ2MzA3Y2FiNTM5OGY3ZDc1YWJmZDMzMDc3NzI1NjMzODA3MGZkNWI0NmQzN2Q1ODJiMzMifQ"
         }
       ]
     },
     {
       "id": "claim_02bd1a6940644e8aa136ad4ab87a5015",
-      "statement": "The graphical client sends tick-stamped input commands four ticks ahead; the server validates and applies commands at simulation tick boundaries, while replicated world state remains server-owned.",
+      "statement": "The graphical client schedules remote input two simulation ticks ahead; the server validates queued commands for their assigned actor and applies accepted state at simulation tick boundaries, while replicated world state remains server-owned.",
       "evidence": [
         {
-          "resource": "repo://src/gamestate/gameplay/running/gameplayrunning.cpp#L173-L184",
-          "version": "repo-lines-v1:sha256:ecc01dcf4801244f20c3743546cff6779f9ac6a0d6fdbbd010580624fda000cc:eyJzZWxlY3RlZExpbmVDb3VudCI6MTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQ2MzUzOWU4ZTZlNGE3N2IzZDYyZmFiZWY0ZmU4NzE3MjQzNGY1MjEzYmFmNDAxMGZlNTljMWJlMGRiYmE0ODEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjE0MTlhNmRjYzA0ZTIxM2EzYzdhNzdhNDU2YjAxZTc2ZDFlZjc4Y2QwMGJiZWMxZDhmODE0NThmZTkzZWRjNTYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjQ0ZDY5YWVkOTVmMTAwMzZkZDU2ZjZjYWQ5YzMwYWRjZTkzYzQ3ZmIwMjczMGE4NmFmMzE4OTY1ZmIwMTc5MWEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjNhOGQ1MmY3ZDI3NzkxNTgwYmNjOWNlZmRlODc3M2JhMTdlZjhmNjlhZTdkMTc2YjRlNGU4MjM0N2NiNzVhNjkifQ"
+          "resource": "repo://src/gamestate/gameplay/running/gameplayrunning.cpp#L31-L50",
+          "version": "repo-lines-v1:sha256:4d4c2594ba7498bc71cd25c6cd48ac13ea29e08c2a3678e7126bf2e145079cdd:eyJzZWxlY3RlZExpbmVDb3VudCI6MjAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImNmMDRkOTljMGY1ZDM1MjFmNjdmN2M1ODdkMjBkZDM1OTJhNTAyNGI5MDM1MjllMWU0Njg4NDRmN2ZhZTgxMzUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjY2MGFiZTAyNzI2YTM1YmVkZTdiNmEwNzUxOGM2OTBhZDE5NWQ4NjJmM2NhMjdlZjgwOWM5NDZjNzdmOTE3YTIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjBhZDcyMWRhNDk3MGJkYzI3MzJhZDdhYWE2ZmU3OTY0NWYwNGRiYzQzY2ZjMGViNTJmMTJiMDg2OTdlMzU5NTEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijk1ODIyZjBlN2Q1NWViYzE2NGM5NDIwZWIwZDVmYmRkMmYyMTI0MGRhNDlkOTU5ZDhlYTllYWIzNmRiMzI0OTkifQ"
         },
         {
-          "resource": "repo://src/gamestate/gameplay/running/gameplayrunning.cpp#L37-L48",
-          "version": "repo-lines-v1:sha256:5e94e423f408c4347cc6982459bacfe4813e3ff10bf5d683b4197b453108bffb:eyJzZWxlY3RlZExpbmVDb3VudCI6MTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU2YmMyYWUwZDA2YTYyMDQzZWU1ZWEzZDRjMGFiMTE2NDBmN2YzZTg1MTFhMTZkZDliYmNiNGQwZWM1NGQwZTEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijk0NWQ5YmZkMmM0OGQxOWY1YmNjMmI3YmVkMzlmNTk0NjQ4NmY5N2M5ODVmNTcyMjc1YzkxMDY4Yzk5ZTYzMjgiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjkxNDFlMzg0MmQ1YzM5NThhZjUxYjI5NTVkNmNkNThjZmI3NGMzYzg3NDA4Nzc4ZjNlMzVhZDUzMWVmYjBjNGEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijc3ZWUxNjhiMzUyOTFiYWVkZWIyNDU0MzdiYzZkNWNkMmVjNDQ3YjU0OWVlNjZhNTE0ZTBhZDM4MmJjN2EzY2MifQ"
+          "resource": "repo://src/server/tcpserver.cpp#L369-L425",
+          "version": "repo-lines-v1:sha256:a9eba33cc7593cb69bca1f3e88580339d23057e380be46a139a87b221b5181ef:eyJzZWxlY3RlZExpbmVDb3VudCI6NTcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImE5MzFlOWI1OWE1NmM5NmMxMmQ5ZDEwOGM3N2Y5ZjI4NzkzMWY3MDJlZDI0ZDk3MjA4MjdkZDBiMGUyZmIzZGIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU2YjA0NDkxNDY5NzIyZTgzNjNhOTRlNDA0NDUzOGUwMTNhMmEyMTdlMzZiMWU1NjhiYTYwYWNiN2I0YzhmMmUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzM2FjMGI3MzJlMTk1M2MwZGRmZGE2YTYxMDk1MGE5OTA5ZTZhNzkxOTIxMDM5Mzc5MzQwMTk5N2ZkY2I5NzUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjZmN2ZiZjhiNmM3NGVjNGQ1MDIwMDBkZjIxOTk3NzE1ZGZmN2QwMDZkNGQ4NzkzNDQwNmU3Yzg5ZDkzMDYzMjMifQ"
         },
         {
-          "resource": "repo://src/protocol/serverprotocol.h#L29-L55",
-          "version": "repo-lines-v1:sha256:b58e692119c7da5a2efe7e3d42f51ca407fb65cceb20618b2657b9f37fc81415:eyJzZWxlY3RlZExpbmVDb3VudCI6MjcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjU4MTM1YzI4OTc1YTgyOWM2ZGYyZmUwM2ExNDViYTFiMTcyNjY4MGFmMmM5YTAxMDZkZWI0YmUzOTA4NTc0OWIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImM1ZTAwMzk0Njk4MzE2ZmU3N2Y5NTc0MzBhNGIzZjg4MTJmNTMxNWMzZWJkZjQ1NTgzNDVjYzA1NDc0NGUwZDIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjNhNDRkODIyODE5ZDRmYjVjZWFlNzVhNThmMDA0MmNmYTEyODIwY2MwZTgyNDAwZTM4MDY0ZDMyNzY1MzNjZjUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjU3NWMwMDdlNjBkMmZlMmIxZWM5Yzk4ZjcyYmI0OTQ1Y2IwMGRjNGMzNjA5ZWY0MjU4ZmRmMzhkMWE1NjU1ZjAifQ"
-        },
-        {
-          "resource": "repo://src/simulation/simulationsession.cpp#L278-L313",
-          "version": "repo-lines-v1:sha256:31c7d65251d85b3d7c721c4c4daedc100fd7c794075a7d7e97cde7714e277a17:eyJzZWxlY3RlZExpbmVDb3VudCI6MzYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjBkOTYzZDYwMzBiZDQ3MzkyMTg1MjYzZDYwNmZhMzI3YzhlZTkwMzAyODkwNWJkM2JhM2FmZmU3NWUzNTI4NTkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImM5YTg1NzJiODg4YjA4Zjc5Nzk4YTE5YWNhZDFlZmRhZmVkMDI3MDQyNWEzZTFjMjJkODg4ZDEwNmQ2NTY4M2IiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjE4NDc1OWU2MzlhMmRjZmE5NmNiYTVjNmFkYWYwYzRhNzAyNzViYjk5Mjc2YmIwMDRkM2I3MWQzMjA0OGY1MmUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImFkZDlhNDVmZmI1ZWMxMzY3ZDY2MTQxOWU4ZTY2OGNmOWRkN2MxMzg2ZjJhOGQxNTFhNGQwN2Y0YTY0YWIxNjIifQ"
+          "resource": "repo://src/simulation/simulationsession.cpp#L239-L313",
+          "version": "repo-lines-v1:sha256:d0920550daa9a2db743c2abf11fda679bf7131e395df066cc554135e4d88fc77:eyJzZWxlY3RlZExpbmVDb3VudCI6NzUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImViNjBkMDZlNTgyZTE1YWJkNmRhN2IyZmI5NDFlMTM0YWI3MjJkZmMyNzMxODRjY2ZhZmQzNGNmNWVjY2M4MjIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI1YTBiOWRjZmYyNWQ2YzU0M2I0OTExZTJjYWI1ZjBmMzc3YzM5M2FiNzM3YzljZDdmZGQ2NjZiYjg0MDUwNTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImU2MDYzOThkOWI5ZDJjMDU4NjQxMjNmNGRjMmY3YzRmNGE5MmUwMDYzNzBmMjIxYzg4M2VmYThhZTM0NWVhOTciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImM4MzIxODNhODZkZDM4ZjE3NzM0OWU0MWUxMWFkZThhNTE4MWZiMjQwOTMxMGQ1ODlhNmExNDhlNGI4NjMyZTkifQ"
         }
       ]
     },
     {
       "id": "claim_ccb2c1f09d0343b9abdd80c635e45397",
-      "statement": "The client interpolates between snapshots, extrapolates remote motion for at most three ticks, and bounds controlled-ship prediction to eight ticks using replicated state and pending input rather than collision simulation.",
+      "statement": "The client interpolates between snapshots, extrapolates remote position and orientation for at most 50 milliseconds, and bounds controlled-ship prediction to four ticks using replicated state and pending input rather than collision simulation.",
       "evidence": [
         {
-          "resource": "repo://src/client/inputpredictor.cpp#L73-L138",
-          "version": "repo-lines-v1:sha256:d096398d07d864988d4313f468a3bb29510478c00c13fad1a10a34ea1789f542:eyJzZWxlY3RlZExpbmVDb3VudCI6NjYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjMzYWE4ZGY2Mjk2YTNlODA3MzJmMTA3OTU2YzdhODQ5NDUzMGI1YjgwMDk4OWEwMmYxZjBjNGVmNDU3NDhmODIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImE0ZWFjZTQ3M2U2MjhkOGY3ZTQyNGVmMTRkNjA4ODdkYjMwNjA5MDkyNThmYTcxZmQ5ZTlkZWM4YzhmZTFkMGUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImE4NDAwMmFlNDQzOTYzYTZmZmY5Yjg1NTk5MjVkOTc4MmM2ZGQ3ZjEwNGM1MzlkM2FhMGQ5ZGNhYzU1ODU3N2IiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijc4MjI4Mjg0NTgzMjViMTc0OGRmNGRkMDliY2FhMGY0MGM2MzIyMzkwMWMxOTA1MjdkY2EzYzcwYWQ2YjJjZDAifQ"
+          "resource": "repo://src/client/inputpredictor.cpp#L14-L17",
+          "version": "repo-lines-v1:sha256:db2d413f17cbbf8abc32405597f52cda65d62d8205807e9818416fe5b92e84cc:eyJzZWxlY3RlZExpbmVDb3VudCI6NCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZmM0NWZjZjJmMjU4ODIyZGJmMjY3MGNjMmVkY2M5NzI4YmYxMmNhYzQ3YzYxYzM5OWQ3ZGRmMmZiZjY1YjlhMSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMDFiYTQ3MTljODBiNmZlOTExYjA5MWE3YzA1MTI0YjY0ZWVlY2U5NjRlMDljMDU4ZWY4Zjk4MDVkYWNhNTQ2YiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiYzBkMzk3Zjc4YmVkYTY2ZGZkODU1ZTkyOWMxN2NhMzlkYzNlOWU2MDZhZmQ1YjY3MzA3Nzg4MmJmZjFhZDc2ZCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiODJiZGI5NTI1Zjk4YmYwMjcyZmE0NjcxYzk2MDk4NzBjZjFmZjg3NjNiOTUxYTVmYTFhZWY3ZmI2MmM4NWQyYiJ9"
         },
         {
-          "resource": "repo://src/client/snapshotinterpolator.cpp#L75-L123",
-          "version": "repo-lines-v1:sha256:f4194fb01e9b7183e261a44ca8d31be89db1d844ffdb0a3465b9f14d3143a865:eyJzZWxlY3RlZExpbmVDb3VudCI6NDksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImZkYjlmYWY4MTk0Mzg2YTMwYWM1NGI0OTE3MGI4ZmY1ZmRkMGNhMjIwZWRhZjNmNWNhNzdjODU1MTc2MDQ4MGEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI0MWFlZWNmMzU2OTlkYzEzMmIzODQ2Y2JhZGJkZTdkMDkxNjVkMWEyOTcxZTc4N2QxNzc3OGMwMWFhMjM4NjYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImZjZjVkYzI5OGM2ODA2NDgyYWRkNzNhODk5NTJjODZiZmVkNWI5OGRmNTk0MDVhZGQ1ZDBiNGJkMTM1OWY3OGIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjIzOGZjZmE2YWE1YzIyMzZmOTI1YjRkMjVlY2Y3ZWJjOTE3NmQ1ODUwZWQ2NDY2NTg5OTFhMWI0NzQ3YWNiOTIifQ"
+          "resource": "repo://src/client/inputpredictor.cpp#L73-L127",
+          "version": "repo-lines-v1:sha256:888b9e9c94cdc2073277c1fb5fc54d8bbdad68526168b37de957ed3080130fee:eyJzZWxlY3RlZExpbmVDb3VudCI6NTUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImI5YTA2ODZiYzY3ZGQxYjMyNGJlYzBiZDY1YTNmOGYxNGQ4NWRiNjNiZjkyYTkyNjRmMmMxODNlZjIyZjA3NmQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjljODM4MWExY2UwM2Y2OTJmMjk2MmI0YTA1NzgzZTM3YTZlN2U4MWUxMDZiMzAyMDJiNjg1NzFjNGQ2YzA4MjQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImNkYmVlNDM2YWFhM2QyMTQ4ZjU4NzI1NzNmYzI5NWMzYjQwNjg2NGQ4ZjUzMGE2Njg1MWQxMjgwMjk5MThjODkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjBhNDBjODdhNzg0NzliNDM0NTAzNzk5MDlkMzIwODc3MDJlMmVjNDJlNmNjY2Y3YTdkZGQ3ZTk3ZTUzMGQwMWYifQ"
+        },
+        {
+          "resource": "repo://src/client/snapshotinterpolator.cpp#L104-L133",
+          "version": "repo-lines-v1:sha256:40925772690d7884f3539fbf2f7f63d9b39df1cf7c0aa7395b8e2a52bb38e7b6:eyJzZWxlY3RlZExpbmVDb3VudCI6MzAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImFmNzNhNTgxYmNjMzQwZTZiNjRjYjllOGVmZTlmODNlMDdmMDgyMjg1M2M0ZDk1ZGNiYjU0MWVlOTQ4YjY3ZmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjRmMTI3NDkyYWM0NTdmOWNmMWUwNWExZWYwNTM4MjRmMGMxODcxNDRlOTJiM2M5NzEzZjFlZmYyYjE5Yzc1ZDEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImViNWYxNjE0MjliNzYwODVkMzg1ZTNiOGY1YmViZmI5ZTRlZTIyMjkxYjIxYTFlNjE0ZDRlZmNkYTQ0NzQxOGEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImU2NzQwNzk3NDhmZWE4ZDk5ZDkwNzBjZGJhOTgwYTM4M2M0YTUxZTU3NjljNTE0OTE4ZGNkOWFiNTEwYTYwMDcifQ"
         }
       ]
     },
     {
       "id": "claim_60275838b4e842caa448104cd60bde70",
-      "statement": "Resynchronization resets the client replica and server baselines; the client discards old deltas and state-dependent messages until the new baseline is applied.",
+      "statement": "On resynchronization, the client clears its old replica and presentation queues, ignores state-dependent messages and non-full snapshots while waiting, and resumes after applying the new full baseline; the server clears that connection's snapshot and equipment baselines and rate-limits resync requests.",
       "evidence": [
         {
-          "resource": "repo://src/client/tcpclient.cpp#L216-L287",
-          "version": "repo-lines-v1:sha256:b6a7cbb6fe8dc80321178d52514f95a1e2116a405dc54c703b921d5c793df613:eyJzZWxlY3RlZExpbmVDb3VudCI6NzIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImI1ZDg0MTgxY2E2YjcyN2ZiYWFhNDEyZDA4MjM2MjJjYjU3OTlkY2IwNjIwOWU1NzI4Y2FmZDQ2YzYwNjk4ZWIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImIwMzJlMjNiZTYwMzlhMzlkOTdmM2YzMDMxOWRhMTA4ZWFkOWYwY2ExZjlmOTRlMmJmOWExZTgyN2Q4OWVkZWQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijc0ZDEzODY5ODhiYTJmNzk5ZWMyNWMwMDJhYzQxNWZhMzQyMTY4MmFhODM5MDY4MTgwNzZhMTgwMDdkY2U4NzEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImEzNGM4NzMyMzZlZjMwMjJjYzNiNWRlYzI0YTMzNzMzMzQ3ZWE4ZjFhMWM3MmNjZjhmMTFhZmJmMGE2OWJkNWIifQ"
+          "resource": "repo://src/client/tcpclient.cpp#L246-L330",
+          "version": "repo-lines-v1:sha256:b368e699e226512729b59b1e42ae30667271dd7f19e9e313d55249be761b0c7b:eyJzZWxlY3RlZExpbmVDb3VudCI6ODUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU2YjA0NDkxNDY5NzIyZTgzNjNhOTRlNDA0NDUzOGUwMTNhMmEyMTdlMzZiMWU1NjhiYTYwYWNiN2I0YzhmMmUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijg2MTA2MDU2OTZhMjEyY2JjMjNjZTgwZDFlNWQ1ZTgzMWQyOWZjNThhZWU5Mzg3YzRmMGY3MzdlZDA3NmZjZGEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjA5YTNlYjA1ODM4MDJiY2E4ZTZkOGJhYzlhMmE0YTYzMzI2NGYwODI4MTMzNDFiMmU1Y2YyZDQyNmQwNTdmMzMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImNkMDEzMGY4Njk1N2YxYTM2MzBhOGRhYzlmMDRmNjg5YzdkZmEyMGVkNTdjMTdmOWM4MmNlMWNlZDkwOGJiZmQifQ"
         },
         {
-          "resource": "repo://src/client/tcpclient.cpp#L68-L95",
-          "version": "repo-lines-v1:sha256:1367d2ff62a2d20952ce9e59293358b83a5c9cebeb5cbcca9f90f658d2155d17:eyJzZWxlY3RlZExpbmVDb3VudCI6MjgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjBjNjFiMGRiNDUxOTZjZDhhYTQ5MDA5MzIyNDBiMWQwZjQ3ZjJlOGEwNTQ4NTY4YTE1YjE4YzlmMjdhZmEwYzUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjBjYWVjNDI0ZjFhMjFjY2UyMjBhM2E5YmIzYmMyMzBkMjM4ZjdiMjdiODY1MzQxNDZiYzYyODhhN2U3NDBhMTIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImMzMGQyNTdkMjBmYjBlZDRkYWM3MDg1MTgxM2JmODFmYzUzYTczYmIwNjY3MTdiY2RiOGY4NWRiYmIxODA2NTkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjQ4ODlhMDVhZDQwZjk3OTA1MWQ1MTVmNDc5NGU4ZGVmOTRhZTdjNzYxYWE3NmEwMzg1YWQ3M2ZlZWQ3NmRhNDgifQ"
+          "resource": "repo://src/client/tcpclient.cpp#L73-L104",
+          "version": "repo-lines-v1:sha256:3e700432faaada89975fb4cadffdbe2058fc93d25882c49cce5ad9bc3aa0cc4f:eyJzZWxlY3RlZExpbmVDb3VudCI6MzIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjgwMjRlYzk3Y2Y5OGE2N2Q0NWM1MWVkOTljYTFmNmQzMWU1ZWRlZDFkMzA3YWU1NmNmNjhmYmY5ZDVlYjQ0MGQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImVhYjQ0YzNlYTg3ODc2MDgyOWYwOTg1NmNhMmIwMzM1NThjMWNkNmE4ZDNhMGMwZWI1OWJhM2VlODUxZmJkZWUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImIyMjEyMDlkZmVkMDBmYjRhZThjNzgzMjFjYzk4MGViYTk5NjM0ZDNjMzM2MTdiYjljNjJmNGEyZTNkYTQ4NmIifQ"
         },
         {
-          "resource": "repo://src/server/tcpserver.cpp#L308-L325",
-          "version": "repo-lines-v1:sha256:c7043f200c720a88a3f33ecbfbee477941f1eb7888875eacfba62b16c7d21a76:eyJzZWxlY3RlZExpbmVDb3VudCI6MTgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjM1NDQ4MzczMTQzY2YxNWZjNjI0NGI0MjY0YTE1YWE1NjlhZDU1ZWVlMDY3OGNmMTY5OTY1Y2U5NzRjYTdiYmMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijc1Zjc2NGRiNTM2MTM2ODJjYzA3Yzg4ODEzNjBkYjY1NGQyNDJmNjliMGEyMmZhNzJjZmE4MWU5M2MyN2VkZjciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjIxM2NiNTk1ZWE5NTAyOGIyZjdkMDk5ZWVlNzUzNGUxODJhMzJjOTgzZjlhMDdhZTg0MTlhN2Q5YjVmM2RmYTQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjcyZGY5OWI3NGUwZWE5YTc2MGU3YTAwM2E1NThhM2MxN2QyYzA3OGJjYmI3Zjk4NDAyMzM4MDFhZTM0OTdmM2MifQ"
+          "resource": "repo://src/server/tcpserver.cpp#L369-L400",
+          "version": "repo-lines-v1:sha256:0a45adfb98ef1911547418a2709282e95586da2dfe84ddbfe4eff9534c3f9be1:eyJzZWxlY3RlZExpbmVDb3VudCI6MzIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImE5MzFlOWI1OWE1NmM5NmMxMmQ5ZDEwOGM3N2Y5ZjI4NzkzMWY3MDJlZDI0ZDk3MjA4MjdkZDBiMGUyZmIzZGIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjllZTM3ZDJhZGI5YzczNzUxZDE5MGQ2ZWNlMTRkY2ViYzA1MjgwNDA5ODFiMjNjMmE5Mzk5ZDA3MzAxYTZlYWMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzM2FjMGI3MzJlMTk1M2MwZGRmZGE2YTYxMDk1MGE5OTA5ZTZhNzkxOTIxMDM5Mzc5MzQwMTk5N2ZkY2I5NzUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImM0MjRiZTM3YmU4NTI1ZDRlYjQ0ZTM0NjFhNmVjOTU2ZjJmZGM2OGRkMGU2MTg1OTU5ZGViYzlmOWExODY3NDkifQ"
         }
       ]
     },
     {
       "id": "claim_a27c2bc5a1f64d4180a5c11ce7ab15ab",
-      "statement": "The server's listener is bound only to the local host, so this executable path is not a remote internet-hosting endpoint.",
+      "statement": "The server listener binds only to the local host, so this executable path is not a remote internet-hosting endpoint.",
       "evidence": [
         {
-          "resource": "repo://src/server/tcpserver.cpp#L126-L148",
-          "version": "repo-lines-v1:sha256:eae24c6be79fa074d82092d14fc238785b788df18350b5ccfa307122c72faffa:eyJzZWxlY3RlZExpbmVDb3VudCI6MjMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjdlYjcwMjU3NTkzZGEwNmY2ODJhM2RkZGE1NGE5ZDI2MGQ0ZmM1MTRmNjQ1MjM3ZjVjYTc0YjA4ZjhkYTYxYTYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjE0MTlhNmRjYzA0ZTIxM2EzYzdhNzdhNDU2YjAxZTc2ZDFlZjc4Y2QwMGJiZWMxZDhmODE0NThmZTkzZWRjNTYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjE0YzJmOTM5Yzk1OWVjZDA4MzIwNzhiM2IxOTQ5OTViOWFhMTZkYWEwNDcyNTgwY2E1ZmI5N2QzNDYyODRjMDYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjhjYjRlZWIzYWEwODAzYTU4OGU0NTQyNjhhZTk2ZDliMTdjZDhmMGMyMmJmMWJmZDZlNTgwMWRkMTg5MTQxMjIifQ"
+          "resource": "repo://src/server/tcpserver.cpp#L149-L157",
+          "version": "repo-lines-v1:sha256:66496167c539f0844224ea4427f3ada672d8361e92aa136f5eb5d886ecc39b9d:eyJzZWxlY3RlZExpbmVDb3VudCI6OSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYWI0NGEyNzBlZDliODdmMTliNDBiY2VjMmFhODFiODkyMzFlODA0ODQxNjM3ZmUyMjIyMmM4MjEyMmQ4NjU4NSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMjRlZmFiMzdhOGU1MDc2M2NhNWMxMWYzZjIxYTg0Y2FjYjFhMDE4ZWM1MTU2NTI4MTJmMDFmOGViZjczNTNkMiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiYjBiZmE5YzBhNzViY2RhYzQ0MzU1N2RlNzg5NzUwNDVlMGFkNWQ5NWUzYTRkOThkYjAwYzA4OGIyZWI5YzI3YiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiYjUzNDNjZDVlNTMxYWQzOTgwMjA0ZjA1YWRmZmJhMWM3ZDlkZDNkNDhjN2JlODdiYmJmNWM4OTIxYWVhZTBmMiJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_02b4f30bbe2f46dea99849b35ae57a7b",
+      "statement": "With a target-player lobby, the server waits for all configured clients before loading the scenario and starting simulation; it then assigns a unique ship actor to each client and sends initial snapshots.",
+      "evidence": [
+        {
+          "resource": "repo://src/server/main.cpp#L466-L503",
+          "version": "repo-lines-v1:sha256:9faf28d4579dee833bf0c416ca6a2ac4394fcafded44c1b9b4426b402ade0ad2:eyJzZWxlY3RlZExpbmVDb3VudCI6MzgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjViYTIxM2U1ZjY1ZDljNDBlZjgyYzlhMjA1NTllZWQwZDdlOWQ4YjM2ODI1Mjk5YWJkZDlkODgyYzI0NzJmMDQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijg2OTgyNTE3OTI0ZmU4ZDNlMTU2NjcxMTViMWY1YTIwMThlMGQ1NWNlNWEwMDFiMWUyZDVlMzFiOGIyNDEyMmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUwNGIyNmVmMjExNTk1MDY2NGE4YjMzMmYzYmExODU5YmQxZjFlOGFjNjI4MzU1ZTIzNDY4YTNhZDUzYmNhN2YiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUwNDE0NzU3NjY3OTY2OTBkMzQxMWNhYjhlNzRhM2RkN2QwZWNiZjY5OWNkZmIxNTU4ZGE1MmFmYzdiOWU5NWEifQ"
+        },
+        {
+          "resource": "repo://src/server/tcpserver.cpp#L187-L224",
+          "version": "repo-lines-v1:sha256:ba5dae29fcf351d64b473078ff3e48b4feb29c8073ebba420ce8430e1a39de25:eyJzZWxlY3RlZExpbmVDb3VudCI6MzgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjU5NmFhMGQxMzA0Y2I0NTY4NDA1NTM1NzZjNzA2NmJkZDUzMzkzMzQxYmYzYWNlN2Q5YmQyNzMwNDg1Y2U3NTgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjNlNjAwZGZkZWQwOGM1YzRjYTZhMWZhMjgyZTBjYjYyMmNjNjZlMTdjYjZlNzljMTBhZDZjZWUyYmVhMGIzMDIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImNkNjY2MDM0OTFkYjYwZTIyZmI3NjE3YzJmMTEzN2MzY2QyOGQ3ZWIwMjBiNWM5MjEwZjQ1YmI4MWI4NzM1NGQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjkxYTFkYWU2ZDFmZDIxYzExNjIxMzQ2Yzc3MDZkZTBkMDg4NWRiMmUzZmNlOWI4ZTNkNDlmZDUxNzBlNjYzZTQifQ"
+        },
+        {
+          "resource": "repo://test/server/testtcpserver.cpp#L113-L187",
+          "version": "repo-lines-v1:sha256:554e34546ce4dafde79cb212bf7911684e7be058c84ea4431843e55940fe615f:eyJzZWxlY3RlZExpbmVDb3VudCI6NzUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImIyYmEwZjFhM2U5ZmI4ZjYyMjA3OWQzMGNkZmMzNGIyYTU1ZDkwNjQ1YzJmN2ZhZmEwMjRmNDE3ZTA0MjIyZGUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjExMDM3YzA0YmI5ZGNkZmUzMjMyZTJhZDJlMTRkNmExM2RlMTA2MzlmMGRlZWNhNmE2ZjExYzY2ZDlmOTc1NTgiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjcwMDhjNGI0Yjk5N2ExZmI1M2FhZjc2MzlhYWQxMGEwNzIxZTA1Y2EzM2Q4NDYxNzZjYjRkMjFlZDFhNGE5ZGQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjNmYmIzODQxOGMxYTMwNDIwMjlkZjYxNjFhNmJhNWEwZjE3N2VmMzBhMjlmMWVmMzc5NWJkNDkzZWU0MzMxZDEifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_a6d72056232545d5879be2c01f40e08d",
+      "statement": "The CMake-built voxellancer-client executable is a headless transport/integration probe and is distinct from the graphical voxellancer executable.",
+      "evidence": [
+        {
+          "resource": "repo://CMakeLists.txt#L306-L318",
+          "version": "repo-lines-v1:sha256:7a01dff0f41438fefd8a89cb617a2a399e70340ac673e6a1cc24229128981491:eyJzZWxlY3RlZExpbmVDb3VudCI6MTMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAwYjZkMmRmZWMyYWNlNGJiYmEyNjFlMzIxODU1ODJmOWJkNmZjMjA0ZGRhZDExMmUyN2FlNDIxNDJmMTg1ZDIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQ0OGI4NjY0NGU3YmIxNDdkZDllMGQ3YmJmN2QyZTY3NjBmMzFmNTk2MWYxNzU1ZjFiYjcwOTkxMWUzNDgyMzciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImQ1MDU3ZTQwNTdiNWY0ZTQ4NTdiYzhmZTQyMDc3NDI2N2NmYzhiM2ZkNWE4MmJhM2FhODAzNDliMjgxN2JjOTMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjFhNzk4MThmYjUwNWE1OWQzNmI3NmRmMmY4ZmQ3YTAwZjFkYjBhMDA0ZjAyOTk5MjlhYmI5MDEyMGRiOWRlNWQifQ"
+        },
+        {
+          "resource": "repo://src/client/main.cpp#L1-L75",
+          "version": "repo-lines-v1:sha256:81f41375df132b734b171a35018047c0edc3229e38f8d245a95c094b78ccda68:eyJzZWxlY3RlZExpbmVDb3VudCI6NzUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY0ZjYzMWJkMjBmODc1YWUxMzgwOTJmNWRkYWY0YTFmMGMzYTk2MTY4ZGQ5MGI4ZDQ2ZDBhNDBlNzZhZTNkZDgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImI2YmFiNDYxM2FlZWViZjA2NGY5MDdiNTMxOTYyZGMxMWI2ZjNjZjYxNjg0YmEzZjNlMjA1ODVjZTBmMzE3ZWUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjYzMjQ3ZjRhNThhMTYyN2Y0MTY4YjIxNGFhOTZkOGIzZTk3YTNjOTJlNjRhNjllNmExNjE4MGQ5MWQ5OWJmYjcifQ"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.2",
-    "at": "2026-11-05T22:43:09.174Z"
+    "at": "2026-11-19T09:46:20.407Z"
   }
 }

@@ -68,7 +68,8 @@ void Gun::setFireSound(const SoundProperties& fireSound) {
     m_fireSound = fireSound;
 }
 
-void Gun::fireAtPoint(const glm::vec3& point, bool checkFriendlyFire) {
+void Gun::fireAtPoint(const glm::vec3& point, bool checkFriendlyFire,
+    const std::shared_ptr<ShotRecord>& record) {
     if (!canFire()) {
         return;
     }
@@ -87,11 +88,27 @@ void Gun::fireAtPoint(const glm::vec3& point, bool checkFriendlyFire) {
         return;
     }
 
-    Bullet *bullet = WorldObjectBuilder(projectileName(), *world).buildBullet();
-    setupBullet(bullet, point);
-
-    world->god().scheduleSpawn(bullet);
-    BenchmarkProfiler::instance().addCounter(BenchmarkCounter::BulletsScheduled);
+    const auto& profile = m_profile;
+    if (record && record->statistics) ++record->statistics->shots;
+    for (int i = 0; i < profile.pellets; ++i) {
+        Bullet *bullet = WorldObjectBuilder(projectileName(), *world).buildBullet();
+        glm::vec3 aim = point;
+        if (profile.pellets > 1) {
+            const auto forward = safeNormalize(point - hardpoint()->voxel()->position(),
+                glm::vec3(0, 0, -1));
+            const auto right = safeNormalize(glm::cross(forward, glm::vec3(0, 1, 0)),
+                glm::vec3(1, 0, 0));
+            const auto up = glm::cross(right, forward);
+            const float angle = glm::two_pi<float>() * i / profile.pellets;
+            aim += (right * std::cos(angle) + up * std::sin(angle)) *
+                glm::distance(point, hardpoint()->voxel()->position()) *
+                std::tan(glm::radians(4.0f));
+        }
+        setupBullet(bullet, aim);
+        bullet->shotRecord = record;
+        world->god().scheduleSpawn(bullet);
+        BenchmarkProfiler::instance().addCounter(BenchmarkCounter::BulletsScheduled);
+    }
 
 #ifndef VOXELLANCER_HEADLESS_SERVER
     if (world->hasPresentation()) {
@@ -112,7 +129,9 @@ bool Gun::isBulletPathClear(const glm::vec3& point, bool checkFriendlyFire) {
     }
 
     glm::vec3 direction = glm::normalize(point - m_hardpoint->voxel()->position());
-    Capsule capsuleToTarget = Capsule::fromTo(m_hardpoint->voxel()->position() + direction * (m_bulletLength / 2.0f + m_spawnDistance), point, m_bulletMaxWidth / 2);
+    Capsule capsuleToTarget = Capsule::fromTo(m_hardpoint->voxel()->position() +
+        direction * bulletSpawnOffset(),
+        point, m_bulletMaxWidth / 2);
 
     WorldTreeQuery fireDirectionQuery(
         &world->worldTree(),
@@ -147,6 +166,7 @@ void Gun::setupBullet(Bullet* bullet, const glm::vec3& point) {
     Transform bulletTransform(bullet->transform());
 
     WorldObject* firingWorldObject = m_hardpoint->components()->worldObject();
+    bullet->impactBudget *= firingWorldObject->info().weaponDamageMultiplier();
 
     glm::quat worldObjectOrientation = firingWorldObject->transform().orientation();
     glm::vec3 bulletDirection = safeNormalize(point - m_hardpoint->voxel()->position(), glm::vec3(0, 0, -1));
@@ -162,17 +182,26 @@ void Gun::setupBullet(Bullet* bullet, const glm::vec3& point) {
         bulletTransform.rotateWorld(bulletOrientation); //then rotate towards target
     }
 
-    m_spawnDistance = glm::root_two<float>() * bullet->transform().scale();
-    bulletTransform.setPosition(m_hardpoint->voxel()->position() + bulletDirection * (m_bulletLength / 2.0f + m_spawnDistance));
+    bulletTransform.setPosition(m_hardpoint->voxel()->position() +
+        bulletDirection * bulletSpawnOffset());
 
     bullet->setTransform(bulletTransform);
 
+    bullet->launchVelocity = firingWorldObject->physics().speed().directional();
     bullet->physics().setSpeed(Speed(
-        bulletDirection * bulletSpeed() /*+ firingWorldObject->physics().speed().directional()*/,
+        bulletDirection * bulletSpeed() + (bullet->profile.enabled
+            ? bullet->launchVelocity : glm::vec3(0)),
         bulletTransform.orientation() * glm::vec3(0, 0, 5.0f)
     ));
 
     bullet->setCreator(m_hardpoint->components()->worldObject());
+    if (bullet->profile.physical && firingWorldObject->physics().mass() > 0) {
+        const auto speed = firingWorldObject->physics().speed();
+        firingWorldObject->physics().setSpeed(Speed(
+            speed.directional() - bulletDirection * bulletSpeed() *
+                bullet->profile.mass / firingWorldObject->physics().mass(),
+            speed.angular()));
+    }
 }
 
 void Gun::setBulletExtend() {
@@ -187,9 +216,15 @@ void Gun::setBulletExtend() {
 }
 
 void Gun::onProjectileNameChanged() {
+    m_profile = WeaponProfile::load(projectileName());
     setBulletExtend();
 }
 
 float Gun::bulletLifetime() const {
     return m_bulletLifetime;
+}
+
+float Gun::bulletSpawnOffset() const {
+    const float clearance = m_profile.enabled ? m_hardpoint->components()->worldObject()->transform().scale() : 0;
+    return m_bulletLength / 2.0f + m_spawnDistance + clearance;
 }

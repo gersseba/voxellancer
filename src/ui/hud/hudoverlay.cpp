@@ -10,7 +10,7 @@
 
 #include "camera/camera.h"
 #include "display/rendering/screenquad.h"
-#include "ui/voxelfont.h"
+#include "ui/uifont.h"
 
 namespace {
     constexpr float OverlayDistance = 8.0f;
@@ -26,13 +26,15 @@ namespace {
     constexpr float CloseButtonLeft = 0.91f;
     constexpr float CloseButtonWidth = 0.08f;
     constexpr float ControlTop = 0.0f;
-    constexpr float ControlHeight = 0.38f;
+    constexpr float ControlHeight = 0.12f;
     constexpr float MinimizedControlHeight = 1.0f;
     constexpr float TitleBarHeight = 0.12f;
     constexpr float ResizeGripWidth = 0.07f;
     constexpr float ResizeGripHeight = 0.12f;
     constexpr float MinimumPanelWidth = 0.20f;
     constexpr float MinimumPanelHeight = 0.14f;
+    const glm::vec4 PrimaryButton(0.05f, 0.84f, 0.44f, 0.11f);
+    const glm::vec4 HideButton(0.52f, 0.84f, 0.43f, 0.11f);
 
     glm::vec4 panelNdcBounds(const glm::vec4& bounds) {
         return glm::vec4(
@@ -84,6 +86,9 @@ bool HudOverlay::visible() const {
 void HudOverlay::setMinimized(bool minimized) {
     m_minimized = minimized;
     m_interaction = Interaction::None;
+    if (m_minimized) {
+        setFocused(false);
+    }
 }
 
 bool HudOverlay::minimized() const {
@@ -153,7 +158,7 @@ void HudOverlay::setTextLines(const std::vector<std::string>& lines) {
 
     constexpr float firstLineY = 0.16f;
     constexpr float maxLineSpacing = 0.082f;
-    constexpr float availableHeight = 0.74f;
+    const float availableHeight = m_primaryActionLabel.empty() ? 0.74f : 0.60f;
     const float lineSpacing = std::min(
         maxLineSpacing,
         availableHeight / static_cast<float>(lines.size()));
@@ -167,6 +172,14 @@ void HudOverlay::setTextLines(const std::vector<std::string>& lines) {
             relativeFontHeight
         );
     }
+}
+
+void HudOverlay::setPrimaryAction(const std::string& label, bool enabled,
+    const std::function<void()>& callback)
+{
+    m_primaryActionLabel = label;
+    m_primaryActionEnabled = enabled;
+    m_primaryAction = callback;
 }
 
 bool HudOverlay::handleMouseButtonEvent(
@@ -214,6 +227,10 @@ bool HudOverlay::handleMouseButtonEvent(
         MinimizeButtonLeft, ControlTop, MinimizeButtonWidth, controlHeight);
     const bool closeHit = contains(
         CloseButtonLeft, ControlTop, CloseButtonWidth, controlHeight);
+    const bool primaryHit = !m_minimized && !m_primaryActionLabel.empty() &&
+        contains(PrimaryButton.x, PrimaryButton.y, PrimaryButton.z, PrimaryButton.w);
+    const bool hideHit = !m_minimized && !m_primaryActionLabel.empty() &&
+        contains(HideButton.x, HideButton.y, HideButton.z, HideButton.w);
 
     if (action == GLFW_PRESS) {
         m_interactionStartPointer = pointer;
@@ -222,6 +239,10 @@ bool HudOverlay::handleMouseButtonEvent(
             m_interaction = Interaction::MinimizeButton;
         } else if (closeHit) {
             m_interaction = Interaction::CloseButton;
+        } else if (primaryHit) {
+            m_interaction = Interaction::PrimaryButton;
+        } else if (hideHit) {
+            m_interaction = Interaction::HideButton;
         } else if (!m_minimized &&
             pointer.x >= m_bounds.x + m_bounds.z * (1.0f - ResizeGripWidth) &&
             pointer.y >= m_bounds.y + m_bounds.w *
@@ -243,6 +264,11 @@ bool HudOverlay::handleMouseButtonEvent(
         setMinimized(!m_minimized);
     } else if (pressedInteraction == Interaction::CloseButton && closeHit) {
         setVisible(false);
+    } else if (pressedInteraction == Interaction::HideButton && hideHit) {
+        setVisible(false);
+    } else if (pressedInteraction == Interaction::PrimaryButton && primaryHit &&
+        m_primaryActionEnabled && m_primaryAction) {
+        m_primaryAction();
     }
     return true;
 }
@@ -325,6 +351,18 @@ void HudOverlay::drawBackground() {
             headerBounds,
             glm::vec3(0.11f, 0.37f, 0.53f),
             0.96f);
+        if (!m_primaryActionLabel.empty()) {
+            const auto buttonBounds = [this](const glm::vec4& button) {
+                return glm::vec4(m_bounds.x + m_bounds.z * button.x,
+                    m_bounds.y + m_bounds.w * button.y,
+                    m_bounds.z * button.z, m_bounds.w * button.w);
+            };
+            drawPanelRect(buttonBounds(PrimaryButton),
+                m_primaryActionEnabled ? glm::vec3(0.10f, 0.55f, 0.65f)
+                    : glm::vec3(0.12f, 0.26f, 0.32f), 1.0f);
+            drawPanelRect(buttonBounds(HideButton),
+                glm::vec3(0.10f, 0.25f, 0.35f), 1.0f);
+        }
     }
     m_program->release();
 
@@ -359,15 +397,22 @@ void HudOverlay::drawText(const Camera& camera) const {
     const glm::vec3 panelCenter = camera.eye() + screenOrientation *
         glm::vec3(centerX * halfWidth, centerY * halfHeight, -OverlayDistance);
 
-    const auto drawElement = [&](const TextElement& element) {
+    const auto drawElement = [&](const TextElement& element, float width = 1.0f) {
         const float glyphHeight = panelHeight * element.relativeHeight;
-        const float scale = glyphHeight /
-            VoxelFont::instance()->letterHeight(element.size);
+        float scale = glyphHeight /
+            UiFont::instance()->letterHeight(element.size);
+        const float textWidth = element.text.size() *
+            UiFont::instance()->letterWidth(element.size) * scale;
+        const float availableWidth = panelWidth *
+            std::min(width, 0.97f - element.position.x);
+        if (textWidth > availableWidth) {
+            scale *= availableWidth / textWidth;
+        }
         const glm::vec3 localPosition(
             -panelWidth * 0.5f + panelWidth * element.position.x,
             panelHeight * 0.5f - panelHeight * element.position.y,
             0.0f);
-        VoxelFont::instance()->drawString(
+        UiFont::instance()->drawString(
             element.text,
             panelCenter + screenOrientation * localPosition,
             screenOrientation,
@@ -376,20 +421,20 @@ void HudOverlay::drawText(const Camera& camera) const {
             FontAlign::LEFT);
     };
 
-    const float buttonFontHeight = m_minimized ? 0.52f : 0.13f;
+    const float buttonFontHeight = m_minimized ? 0.52f : 0.065f;
     drawElement(TextElement{
         "-",
         glm::vec2(MinimizeButtonLeft + 0.02f, 0.04f),
         buttonFontHeight,
         FontSize::SIZE3x5
     });
+    drawElement(TextElement{
+        "X",
+        glm::vec2(CloseButtonLeft + 0.015f, 0.04f),
+        buttonFontHeight,
+        FontSize::SIZE3x5
+    });
     if (m_focused) {
-        drawElement(TextElement{
-            "X",
-            glm::vec2(CloseButtonLeft + 0.015f, 0.04f),
-            buttonFontHeight,
-            FontSize::SIZE3x5
-        });
         if (!m_minimized) {
             drawElement(TextElement{
                 "///",
@@ -402,6 +447,14 @@ void HudOverlay::drawText(const Camera& camera) const {
     if (!m_minimized) {
         for (const TextElement& element : m_text) {
             drawElement(element);
+        }
+        if (!m_primaryActionLabel.empty()) {
+            drawElement(TextElement{m_primaryActionLabel,
+                glm::vec2(PrimaryButton.x + 0.025f, PrimaryButton.y + 0.03f),
+                0.045f, FontSize::SIZE3x5}, PrimaryButton.z - 0.05f);
+            drawElement(TextElement{"HIDE - TAB",
+                glm::vec2(HideButton.x + 0.025f, HideButton.y + 0.03f),
+                0.045f, FontSize::SIZE3x5}, HideButton.z - 0.05f);
         }
     }
 }

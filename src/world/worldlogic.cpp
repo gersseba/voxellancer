@@ -11,6 +11,8 @@
 #include "god.h"
 #include "helper/splitdata.h"
 #include "voxel/voxel.h"
+#include "equipment/weapons/projectile.h"
+#include "collision/voxelcollision.h"
 
 
 WorldLogic::WorldLogic(World &world):
@@ -48,6 +50,14 @@ void WorldLogic::update(float deltaSecs) {
     {
         BenchmarkCpuScope scope(BenchmarkMetric::CollisionProcessingDamage);
         std::list<VoxelCollision>& collisions = m_mover.voxelCollisions();
+        for (auto& collision : collisions) {
+            auto* a = collision.a().worldObject();
+            auto* b = collision.b().worldObject();
+            if (auto* projectile = dynamic_cast<Projectile*>(a))
+                if (projectile->shotRecord) projectile->shotRecord->recordHit(b);
+            if (auto* projectile = dynamic_cast<Projectile*>(b))
+                if (projectile->shotRecord) projectile->shotRecord->recordHit(a);
+        }
         m_voxelCollisionPairCount += static_cast<std::uint64_t>(collisions.size());
         m_voxelCollisionAccumulator.parse(collisions);
         m_voxelCollisionAccumulator.applyOnCollsionHooks();
@@ -59,6 +69,7 @@ void WorldLogic::update(float deltaSecs) {
         m_impulsor.parse(m_impulseGenerator.worldObjectImpulses());
 
         processDamageImpacts(m_damageImpactGenerator.damageImpacts());
+        m_mover.moveProfiledProjectiles(deltaSecs);
     }
     m_lastUpdateTimings.collisionDamageMs =
         std::chrono::duration<double, std::milli>(Clock::now() - sectionStart).count();

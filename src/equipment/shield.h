@@ -28,6 +28,10 @@ public:
 
     float regeneration() const;
     void setRegeneration(float regeneration);
+    float rechargeDelay() const;
+    float rechargeRemaining() const;
+    void setRechargeDelay(float delay);
+    void refill();
 
     bool depleted() const;
     bool registerHit();
@@ -53,6 +57,7 @@ protected:
     ShieldSlot* m_shieldSlot;
     unsigned int m_hitCount;
     int m_maxHits;
+    float m_rechargeDelay = 0, m_rechargeRemaining = 0;
 
     virtual void onDamageTaken(float damage);
 };

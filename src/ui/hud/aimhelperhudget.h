@@ -23,11 +23,7 @@ public:
     AimHelperHudget(HUD* hud);
     virtual ~AimHelperHudget();
 
-    /**
-     * The point the player should shoot at to hit
-     * his current enemy
-     */
-    const glm::vec3& targetPoint() const;
+    bool isLinedUp(const Ray& ray, const WorldObject& target) const;
 
     virtual void update(float deltaSec) override;
     virtual void draw();

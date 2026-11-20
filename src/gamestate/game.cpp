@@ -11,7 +11,9 @@
 
 #include "gamestate/gameplay/gameplay.h"
 #include "gamestate/gameplay/gameplayscene.h"
+#include "gamestate/gameplay/running/gameplayrunning.h"
 #include "gamestate/intro/intro.h"
+#include "ui/mainmenu.h"
 
 
 Game::Game(bool showIntro):
@@ -49,6 +51,9 @@ const CameraHead& Game::cameraHead() const {
 }
 
 InputHandler& Game::inputHandler() {
+    if (mainMenuVisible()) {
+        return *m_mainMenu;
+    }
     assert(currentSubState());
     GameState* subState = dynamic_cast<GameState*>(currentSubState());
     return subState->inputHandler();
@@ -58,9 +63,60 @@ Viewer& Game::viewer() {
     return *m_viewer;
 }
 
+void Game::enableMainMenu() {
+    m_mainMenu = std::make_unique<MainMenu>();
+    setInitialSubState(m_gamePlay);
+    m_gamePlay->setInitialScenario(99);
+}
+
+bool Game::mainMenuEnabled() const {
+    return m_mainMenu != nullptr;
+}
+
+bool Game::mainMenuVisible() const {
+    return m_mainMenu && m_mainMenu->visible();
+}
+
+void Game::toggleMainMenu() {
+    if (m_mainMenu) {
+        m_mainMenu->toggle();
+        m_gamePlay->refreshMouseCursorMode();
+    }
+}
+
+void Game::setConnectionError(const std::string& error) {
+    m_connectionError = error;
+}
+
 void Game::update(float deltaSec) {
     GameState::update(deltaSec);
 
+    if (m_mainMenu) {
+        const auto& running = m_gamePlay->running();
+        const auto lobby = running.remoteLobbyStatus();
+        const bool ready = running.contractStatus().has_value() &&
+            running.remoteWorldReady() &&
+            lobby && lobby->worldStarted && !running.contractSessionEnded();
+        std::string note = "Connecting to server. Start and Resume are unavailable until setup completes.";
+        if (!m_connectionError.empty()) {
+            note = m_connectionError + " Restart the game to retry.";
+        } else if (!running.remoteConnectionError().empty()) {
+            note = running.remoteConnectionError() + " Start and Resume unavailable. Restart to reconnect.";
+        } else if (ready) {
+            note = "Server connected. Contracts ready.";
+        } else if (running.remotePreviewSnapshot() && !running.contractStatus()) {
+            note = "Server connected, but contracts are not ready. Use a contracts server.";
+        } else if (lobby && !lobby->worldStarted) {
+            note = "Waiting for pilots: " + std::to_string(lobby->connectedPlayers) +
+                "/" + std::to_string(lobby->targetPlayers) +
+                ". Start and Resume unlock when the server is ready.";
+        }
+        m_mainMenu->setConnection(ready, note);
+        if (mainMenuVisible()) {
+            m_mainMenu->update(deltaSec);
+        }
+        m_gamePlay->refreshMouseCursorMode();
+    }
     m_viewer->update(deltaSec);
 }
 
@@ -78,5 +134,9 @@ void Game::draw() {
     m_lastDrawTime = now;
     m_gamePlay->scene().setFps(m_smoothedFps);
 
+    if (mainMenuVisible()) {
+        m_mainMenu->draw();
+        return;
+    }
     m_viewer->draw(scene(), cameraHead());
 }

@@ -23,6 +23,8 @@ class SoundManager;
  * State that is active whenever the the game is actually played and not
  * in some menustate etc.
  */
+class AiComparisonScenario;
+
 class GamePlay: public GameState {
 public:
     GamePlay(Game* game);
@@ -43,6 +45,7 @@ public:
     bool mouseCursorFree() const;
     void setMouseCursorFree(bool free);
     void refreshMouseCursorMode();
+    void resizeInput(unsigned int width, unsigned int height);
 #endif
 
     virtual const Scene& scene() const override;
@@ -54,6 +57,7 @@ public:
 
     void setInitialScenario(int scenario);
     void loadScenario(int i);
+    AiComparisonScenario* aiComparison() const;
 
     virtual void update(float deltaSec) override;
 

@@ -76,13 +76,45 @@ generated from a47d65f
     int setTargetPoint(apikey flyToTask, const glm::vec3& point);
     apikey createFightTask(apikey ship);
     apikey createFightTaskWithArchetype(apikey ship, const std::string& archetype);
+    int setFightTaskShootingSkill(apikey fightTask, float lead, float tracking, float accuracy);
     int addFightTaskTarget(apikey flyToTask, apikey worldObject);
     apikey taskExecutor(apikey aiTask);
 
 `createFightTask(ship)` chooses `fighter` or `cruiser` from the ship's
 `[general] ship_type`. Scenario and mission scripts can override that choice
 with `createFightTaskWithArchetype(ship, "fighter")` or
-`createFightTaskWithArchetype(ship, "cruiser")`.
+`createFightTaskWithArchetype(ship, "cruiser")`. The opt-in
+`createFightTaskWithArchetype(ship, "interceptor")` uses relative-velocity
+range control, braking separation, and damped steering. `interceptor` is a
+flight archetype, not a new `ship_type`.
+
+All three archetypes now use the same gun controller. Its independent,
+normalized skills default to `[aiShooting] lead`, `tracking`, and `accuracy`
+in [config.ini](../data/config.ini), currently 0.5 each. This intentionally
+replaces the former archetype-specific firing accuracy and acquisition delay;
+the default fighter/cruiser **flight** selection remains unchanged.
+
+`setFightTaskShootingSkill(task, lead, tracking, accuracy)` returns 0 on success
+or -1 with a warning for an unknown task or a non-finite/out-of-range value.
+It leaves the previous settings unchanged on failure.
+
+- Lead: 0 aims at current position; 1 uses the perfect constant-velocity
+  projectile intercept. Intermediate values blend those points.
+- Tracking: 0 slews the crosshair at 5 degrees/second; 1 immediately follows
+  the desired aim point. Target switches retain the crosshair position.
+- Accuracy: 0 applies strong symmetric jitter calibrated near 10% hits in
+  stationary reference tests with perfect lead/tracking; 1 adds no jitter.
+  Actual combat rates depend on geometry, motion, weapon spread, and mounts.
+
+```lua
+local task = createFightTaskWithArchetype(ship, "interceptor")
+setFightTaskShootingSkill(task, 0.7, 0.4, 0.6)
+addFightTaskTarget(task, opponent)
+```
+
+These skills apply to guns, not existing homing-rocket guidance. See the
+[AI comparison guide](7_dogfight_ai.md) for the sixteen-pair controlled
+evaluation scenario, calibration, and limitations.
 Ship definitions require `ship_type=fighter` or `ship_type=cruiser` in the
 `[general]` section. Existing assets use their CSV dimension product as an
 upper-bound size estimate, with the legacy 10,000-cell cutoff; this is not a

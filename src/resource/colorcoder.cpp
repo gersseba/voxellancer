@@ -20,6 +20,12 @@ Voxel* ColorCoder::newCodedVoxel(const Voxel& voxel) {
     uint32_t color = voxel.visuals().color();
     uint32_t prefixBits = (color & 0xFFFF00) >> 8;
     int index = color & 0x0000FF;
+    if (prefixBits == Property<uint32_t>("voxels.armor.prefix")) {
+        auto* armor = new Voxel(voxel.cell(), Property<uint32_t>("voxels.armor.color"),
+            Property<float>("voxels.armor.density"), Property<float>("voxels.armor.hp"));
+        armor->setArmored(true);
+        return armor;
+    }
 
     if(prefixBits == m_engineSlotPrefix) {
         return new EngineSlotVoxel(voxel.cell(), index);

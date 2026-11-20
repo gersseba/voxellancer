@@ -11,6 +11,7 @@
 #include "voxel/voxeltree.h"
 #include "collisionfilter.h"
 #include "voxel/voxelclusterbounds.h"
+#include "equipment/weapons/projectile.h"
 
 
 CollisionDetector::CollisionDetector(WorldObject& worldObject) :
@@ -80,6 +81,10 @@ std::list<VoxelCollision>& CollisionDetector::checkCollisions(const std::unorder
     for (WorldTreeGeode* possibleCollider : possibleColliders) {
         assert(possibleCollider->worldObject() != nullptr);
         WorldObject* other = possibleCollider->worldObject();
+        const auto* projectile = dynamic_cast<const Projectile*>(other);
+        const auto* selfProjectile = dynamic_cast<const Projectile*>(&m_worldObject);
+        if ((projectile && projectile->profile.enabled) ||
+            (selfProjectile && selfProjectile->profile.enabled)) continue;
 
         assert(m_worldObject.collisionFilter().isCollideableWith(&other->collisionFilter()));
         checkCollisions(m_voxelTree->root(), other->collisionDetector().voxelTree().root());

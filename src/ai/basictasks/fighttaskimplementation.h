@@ -30,6 +30,8 @@ public:
 
     virtual bool isFinished() override = 0;
     WorldObject* primaryTarget();
+    virtual bool gunsEnabled() const { return true; }
+    virtual WorldObject* rocketTarget() { return nullptr; }
 
 protected:
     std::vector<Handle<WorldObject>> m_targets;

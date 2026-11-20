@@ -5,6 +5,8 @@
 #include "sound/soundproperties.h"
 
 #include "worldobject/worldobject.h"
+#include "equipment/weaponcatalog.h"
+#include "equipment/weapons/shotstatistics.h"
 
 
 class SoundProperties;
@@ -32,6 +34,13 @@ public:
 
     virtual void onCollision() override;
     void onShieldImpact();
+    WeaponProfile profile;
+    float impactBudget = 1.0f;
+    bool impactCalibrated = false;
+    int penetratedVoxels = 0;
+    float distanceTraveled = 0;
+    glm::vec3 launchVelocity{0};
+    std::shared_ptr<ShotRecord> shotRecord;
     virtual void onSpawnFail() override;
 
 

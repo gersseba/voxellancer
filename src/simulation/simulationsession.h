@@ -26,6 +26,7 @@ public:
     );
 
     std::uint32_t advance(double elapsedSeconds);
+    void setPlayerInputEnabled(bool enabled);
     voxellancer::protocol::InputCommandResult submitInputCommand(
         voxellancer::protocol::EntityId actor,
         const voxellancer::protocol::InputCommand& command
@@ -72,6 +73,7 @@ private:
     std::vector<voxellancer::protocol::VoxelRemovalEvent> m_voxelRemovalEvents;
     std::vector<voxellancer::protocol::VoxelDamageEvent> m_voxelDamageEvents;
     std::size_t m_processingInputCommandCount = 0;
+    bool m_playerInputEnabled = true;
 
     void applyInputCommands(std::uint64_t tick);
 };

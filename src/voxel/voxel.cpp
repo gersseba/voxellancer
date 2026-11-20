@@ -33,6 +33,7 @@ Voxel::Voxel(const Voxel& other):
 {
     m_visuals = other.visuals();
     m_hp = other.hp();
+    m_armored = other.armored();
 }
 
 Voxel::~Voxel() {

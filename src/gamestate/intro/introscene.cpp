@@ -6,7 +6,7 @@
 
 #include "display/rendering/skybox.h"
 
-#include "ui/voxelfont.h"
+#include "ui/uifont.h"
 
 #include "voxel/voxelrenderer.h"
 
@@ -17,7 +17,6 @@
 
 IntroScene::IntroScene(Intro& intro):
     m_intro(intro),
-    m_font(VoxelFont::instance()),
     m_voxelRenderer(VoxelRenderer::instance())
 {
 
@@ -35,11 +34,12 @@ void IntroScene::drawImpl(const Camera& camera) const {
     m_voxelRenderer->program()->setUniform("lightdir", glm::vec3(0, 0, 1));
 
     m_voxelRenderer->prepareDraw(camera, false);
-    VoxelFont::instance()->drawString("Voxellancer", glm::vec3(0, 0.5f, -1) * 40.f, glm::quat(), FontSize::SIZE5x7, 0.4f, FontAlign::CENTER);
+    UiFont::instance()->setCamera(camera);
+    UiFont::instance()->drawString("Voxellancer", glm::vec3(0, 0.5f, -1) * 40.f, glm::quat(), FontSize::SIZE5x7, 0.4f, FontAlign::CENTER);
 
     int lineNum = 0;
     for (const std::string& line : m_intro.lines()) {
-        VoxelFont::instance()->drawString(line, glm::vec3(0, 0.1f - lineNum/10.0f, -1) * 40.f, glm::quat(), FontSize::SIZE5x7, 0.2f, FontAlign::CENTER);
+        UiFont::instance()->drawString(line, glm::vec3(0, 0.1f - lineNum/10.0f, -1) * 40.f, glm::quat(), FontSize::SIZE5x7, 0.2f, FontAlign::CENTER);
         lineNum++;
     }
 

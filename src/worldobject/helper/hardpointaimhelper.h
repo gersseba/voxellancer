@@ -1,6 +1,7 @@
 #pragma once
 
 #include <glm/glm.hpp>
+#include <optional>
 
 
 class Hardpoint;
@@ -14,7 +15,11 @@ class WorldObject;
  */
 class HardpointAimHelper {
 public:
-    HardpointAimHelper(Hardpoint* hardpoint, WorldObject* targetObject);
+    HardpointAimHelper(Hardpoint* hardpoint, WorldObject* targetObject,
+        bool accountForSpawnOffset = false);
+    static std::optional<glm::vec3> interceptPoint(const glm::vec3& muzzle,
+        const glm::vec3& targetPosition, const glm::vec3& relativeVelocity,
+        float speed, float lifetime, float range, float spawnOffset = 0.0f);
 
     void aim();
 
@@ -48,6 +53,8 @@ protected:
 
     float m_bulletSpeed;
     float m_bulletLifetime;
+    float m_bulletRange;
+    float m_spawnOffset;
 
     bool m_hitable;
 

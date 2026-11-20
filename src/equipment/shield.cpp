@@ -9,6 +9,7 @@
 #include <stdexcept>
 
 #include "geometry/sphere.h"
+#include "geometry/segment.h"
 #include "shieldslot.h"
 #include "voxel/voxelclusterbounds.h"
 #include "worldobject/worldobject.h"
@@ -46,39 +47,6 @@ namespace {
         return true;
     }
 
-    bool segmentIntersectsVoxel(
-        const glm::vec3& start,
-        const glm::vec3& end,
-        const glm::ivec3& cell,
-        float halfExtent,
-        float& hitParameter
-    ) {
-        const glm::vec3 direction = end - start;
-        float nearParameter = 0.0f;
-        float farParameter = 1.0f;
-        for (int axis = 0; axis < 3; ++axis) {
-            const float minimum = static_cast<float>(cell[axis]) - halfExtent;
-            const float maximum = static_cast<float>(cell[axis]) + halfExtent;
-            if (std::abs(direction[axis]) < 1.0e-6f) {
-                if (start[axis] < minimum || start[axis] > maximum) {
-                    return false;
-                }
-                continue;
-            }
-            float first = (minimum - start[axis]) / direction[axis];
-            float second = (maximum - start[axis]) / direction[axis];
-            if (first > second) {
-                std::swap(first, second);
-            }
-            nearParameter = std::max(nearParameter, first);
-            farParameter = std::min(farParameter, second);
-            if (nearParameter > farParameter) {
-                return false;
-            }
-        }
-        hitParameter = nearParameter;
-        return farParameter >= 0.0f && nearParameter <= 1.0f;
-    }
 }
 
 
@@ -136,6 +104,21 @@ float Shield::regeneration() const {
     return m_regeneration;
 }
 
+float Shield::rechargeDelay() const { return m_rechargeDelay; }
+float Shield::rechargeRemaining() const { return m_rechargeRemaining; }
+
+void Shield::setRechargeDelay(float delay) {
+    if (!std::isfinite(delay) || delay < 0)
+        throw std::invalid_argument("Shield recharge delay must be finite and nonnegative.");
+    m_rechargeDelay = delay;
+}
+
+void Shield::refill() {
+    m_hp = m_maxHP;
+    m_hitCount = 0;
+    m_rechargeRemaining = 0;
+}
+
 void Shield::setRegeneration(float regeneration) {
     m_regeneration = regeneration;
 }
@@ -152,6 +135,7 @@ bool Shield::registerHit() {
     ++m_hitCount;
     m_hp = std::max(
         0.0f, m_hp - m_maxHP / static_cast<float>(m_maxHits));
+    onDamageTaken(m_maxHP / static_cast<float>(m_maxHits));
     return true;
 }
 
@@ -287,10 +271,12 @@ void Shield::update(float deltaSec) {
         m_hp = 0.0f;
         return;
     }
-    m_hp += regeneration() * deltaSec;
+    const float blocked = std::min(deltaSec, m_rechargeRemaining);
+    m_rechargeRemaining -= blocked;
+    m_hp += regeneration() * (deltaSec - blocked);
     m_hp = std::min(m_hp, maxHP());
 }
 
 void Shield::onDamageTaken(float damage) {
-
+    if (damage > 0) m_rechargeRemaining = m_rechargeDelay;
 }

@@ -1,96 +1,108 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:ed5f8ab05d81806c345ceee1aad188f30a23816972163d7aaea5dd631fa18a79",
+  "pageVersion": "sha256:d41effd251374bbaea1b99484952ca9f3abe3abecaeb70e1c99ca07d9bbff349",
   "claims": [
     {
       "id": "claim_d0d31fe52c8d4e5ba9ad026d4ad1eb1d",
       "statement": "World owns shared simulation services including world logic, scripts, spatial and lifecycle management, faction, event, and mission systems; client mode additionally owns player, skybox, and particle services. World updates increment the simulation tick and run shared systems in order, conditionally including presentation-only updates.",
       "evidence": [
         {
-          "resource": "repo://src/world/world.cpp#L182-L243",
-          "version": "repo-lines-v1:sha256:748816431566989abc4db42c7528c7c790c584e7e0bdcc59b7f520e58024d3fd:eyJzZWxlY3RlZExpbmVDb3VudCI6NjIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjEwM2Q3MzU5MTk4MDdkNTZmNzYzYjFlNTZkNWQ3YTYzZDQ5ZTJmY2JlMTc0ZDExZTEzOTE4NDJiNmExOGYzYzAiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjBlMzhiMmVhYjIxY2YyYTU0YmI5ODY2ZjA4MmE0ZTJkOTE2MGMxZTU2ZDM3Mzg4YTE5NjRhNTQxOWIzMmMyMzkiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjJlNTIxZjA0MWNkYTM4NDBhNGMzMjJhNDdiYWNjYjM4MTQxYWI3MzgzODY5YTIwNmQ5YjI3YTM5MTI5NDkxZjQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijc0OWZlM2Q3ZjA0Y2JmNjU5YjFmYWQ0ODdiMmMwOTE0NTI0MTA3Y2RiMzBmYTQ1YWEyYjZiZjY2ZjMxMDNmYTkifQ"
+          "resource": "repo://src/world/world.cpp#L182-L249",
+          "version": "repo-lines-v1:sha256:d31a5ec0026cfbb739bfbda0e906fc15c36ef3705c4fa1641ecde489c89e58c4:eyJzZWxlY3RlZExpbmVDb3VudCI6NjgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImE2ZjQ3MGM3NGE1NmFlMDU4NDFjZGI3NDliYzZlZjEwNTBkNGM1NGMzYmNiOWZjOWUyNjA0MzYxMWJkOWM5MTEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijg1M2Y2NGNhNWUxZDZjMTE0MjM2YmI1MGRjODFlOGQyZTMzYzNlYWZiZDdiYTdmYmRiZDg0NGM0MWRiZDE3ODEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjRjMmI0Y2IwYjczNDFmNjgwNWNmODE3ZjY0NmVmNTlmMjk1YWMwNjJhNTMwZGQ0ZDlmYzA2MjlkMjBhMGE3ZWMifQ"
         },
         {
           "resource": "repo://src/world/world.cpp#L48-L94",
-          "version": "repo-lines-v1:sha256:7d2a8b3431ac9b2071be3c1fe8cd00ca54f36d97be1746c1f904d6ea432c892f:eyJzZWxlY3RlZExpbmVDb3VudCI6NDcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjhhMzQzMmM4NGMxZWI3MjQ2YTdjN2U5ZGM2ODExYTg5ODU0NGI0YWEwMGFhYWJiMmVkMjU4NTRkM2U3ZThiZDYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjlmZmE1ZjQ0ZjVhZDIwODU3MzE2YmU1ZDY1ODQxMDZhNTc2MWZkZGIwYWRkNGYwNjY0NWQxM2EzMTZjMGY1NDEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjBhZWVmNmM4ZmQwMmQ0YjBmYmVhZWU0YjFmYmQzMmQ3ZTA4ZDE2ZTE2MDgxYzY5YmRlMzg4ZmRjNDc5MzBmNmYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijk4ZTJmNjQxOGZjNGE2ZDAwNDFjNjZhNTMwMjA4NWUyYzgzNDQyMjZjZjIxYjJmOTg2Mjc1OTM5N2VhYzQyNGMifQ"
+          "version": "repo-lines-v1:sha256:871ad0f138e0a60ae4aa11ad17ca2bf3ff9175c885b6da139892577e8ae4acfd:eyJzZWxlY3RlZExpbmVDb3VudCI6NDcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjA1ZjJiNmE4MTE2MzQxNWZkM2JkY2Q0N2E5YWMxMDlmNGNlNWU5ZmUzMmU2ZDM1ZGIwMzQzNWU1OTJkYzNlM2UiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImYyYmQ2NDFiYTFlYjNmZjc3YmNiNmIxODI1NjdmYWFmNTlhNmQxMmE5YmNkMmRlZDllNTljODljZTYzMzdlN2MiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjYwNTM2YTNjZTJjN2Q2NWZlNmM2ODJhNWRhYmMyMjlhY2I1NTk3ZGNkYTY5MTM4MTUxYWM0ODJkZDBmMTU3YmEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjJlODY1Y2FlNjk2MjY2MGMzOGVkZWNhODc5MTI0ZDQ3Y2E4ZGExMThhMjhmMmMwNjc0YzgyOGE0YWUxMWNlNTEifQ"
         }
       ]
     },
     {
       "id": "claim_448807a771a34c1baa1a046530a9ffe1",
-      "statement": "WorldLogic moves objects, resolves collisions into damage and impulses, iterates forwarded damage until drained, then schedules splitting, wreckage, and garbage lifecycle changes.",
+      "statement": "WorldLogic brackets each mechanics update with lifecycle removal and spawning; between those boundaries it moves objects, processes collisions and impacts, forwards damage until drained, then splits disconnected clusters and schedules wreckage and garbage lifecycle changes.",
       "evidence": [
         {
-          "resource": "repo://src/world/worldlogic.cpp",
-          "version": "repo-file-v1:sha256:d2ecf0fb63c86821e7b3c893d741eb1d8ab1f72366361d198af38a914af9cf7b"
+          "resource": "repo://src/world/worldlogic.cpp#L198-L241",
+          "version": "repo-lines-v1:sha256:f7a4d1a5760bbc2a2af6766ea86a3b74fb6486b1ae31f59394ef227ae64cf7fa:eyJzZWxlY3RlZExpbmVDb3VudCI6NDQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImM0Y2FhNmUxM2EzMzc3OGYxNzVmOTFhZjFhYWE3NzE2ZDZlNjYxZTgzOGE2ZDJjN2I2ZWJmYzJiZDgxYTQwNzMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImY1NTdjMjM1OWY5Mzc3OTU2NTY5NjU5MTAxODFkYWIwMmE1OWE3YmM4OTM2Zjk0MWEyYWZjODY0YjBlY2NlZWUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        },
+        {
+          "resource": "repo://src/world/worldlogic.cpp#L25-L98",
+          "version": "repo-lines-v1:sha256:9892cd04b9ff40f577f08ae611e172ff7472ea6e00677a4975302433d507b180:eyJzZWxlY3RlZExpbmVDb3VudCI6NzQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjBkYjAzZmMzMjIxZGMyZDQxOWY5YTI1ZjM4OTAwYmFjNDg0ZmVmYzA0N2YzNzNkYzQ0OWJiZjUyMGVjYmQ5NDUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjA5YzdiMzdjOGQzM2MxY2I3Yjk5MzE1NjFiZmUwNTYzZTM1MDExZTYwOGFmZWU2ZTI0NWUzYWVkZjk0MDkwN2YiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjBmYzVkOGVjN2Q1M2E5MTkzMzI1NjYzZGMwZTdjYmZiZDgzZTg3ZGY3N2UxYzk2NmI2NjU3ZmU2NTc4NDBlMGQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImRhNzRhODY4MTk1N2M5MjY5MGY5ZTA5MjBkODljOTI3YWY1NzY3ZTNmZDA3OThhYTI3MTJlM2FkNjJmNDcyMTUifQ"
         }
       ]
     },
     {
       "id": "claim_c70333a70aca4fe69c751b4f0c80b3da",
-      "statement": "God queues lifecycle work: it inserts spawn candidates into the spatial tree and rejects colliding candidates, while removal detaches, unregisters, and deletes scheduled objects.",
+      "statement": "God queues lifecycle work: it inserts spawn candidates into the spatial tree and rejects colliding candidates, while removal detaches, unregisters, and deletes scheduled objects; duplicate removals are ignored and mark the object RemovalScheduled.",
       "evidence": [
         {
-          "resource": "repo://src/world/god.cpp",
-          "version": "repo-file-v1:sha256:cd6320966337f4f23f5185678061385a8d154da96b57d844b2c19e93e91d87ee"
+          "resource": "repo://src/world/god.cpp#L28-L103",
+          "version": "repo-lines-v1:sha256:35589405b14d34978129f6bb6830999aa742ec9748ff35df0cdaae96d91fdd29:eyJzZWxlY3RlZExpbmVDb3VudCI6NzYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjE4Yzc4MzdhZDJhMmJhNTcyMjQ0ZmJkNzVkMWFmNGE5N2RkNzQ4NGVkNmQ5ZjU3ZTBmODEzNDFmZThkNmZlNDkiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImY1ZDA1Y2FhOGM4MmVmMTQxMzc2NzZmYTRjZGFmYjIzOTMzMTYzNDUzZGNmYzRiMDJkNTVhNjBlZDYwOGRiZTkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjVjMjdkZmI2N2JhZTkyZGRjNTlhZjc2NTI0MGI3Y2FmZmJhN2FiODBjYWRlODk3YTk5M2Y3MTQ1NTc1ODUzM2YifQ"
         }
       ]
     },
     {
       "id": "claim_4cdd30cb870a4a18b0f123fd63a03965",
-      "statement": "WorldObject synchronizes voxel additions and removals with its physics and collision representations, and Ship extends the base object with character and board-computer updates.",
+      "statement": "WorldObject synchronizes voxel additions and removals with its physics and collision representations, and Ship extends the base object with character and board-computer updates; character AI runs every six simulation ticks at a per-ship phase assigned during world registration.",
       "evidence": [
         {
-          "resource": "repo://src/worldobject/ship.cpp",
-          "version": "repo-file-v1:sha256:2f674668b97285a7e4b86c278e2f3bcff6de61c33d7689c588e81d5a877248d8"
+          "resource": "repo://src/world/world.cpp#L329-L361",
+          "version": "repo-lines-v1:sha256:15bedb1aef579675f8e98d2224f273e900cb1c6487314ba8b94185c20aea8ab4:eyJzZWxlY3RlZExpbmVDb3VudCI6MzMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijc5ZjFmMTZlNzAyMzg1MjA5YmM0ZTcwNmNmODUwYTUzNjQ5NzYyMDQ3MjljZDM0MmRhMjQ0MTBhOGIwOTNmZGIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjIyMDdkMzNmY2ExNTgwZmU2MWNmMDBlNDNlMWQzYzVhM2Y1Y2Y0NTY0NDg2ODIzNDhlODYyODUwZmExODI0N2YiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImZlMDVkMTFhMmRkZmU0ZDViZWViYmJlYjg1MzkwNGM0YmU5OGMxOTcwMzk3MmVmOTk2ZTIyZTU1MzY2YmUyN2UifQ"
         },
         {
-          "resource": "repo://src/worldobject/worldobject.cpp",
-          "version": "repo-file-v1:sha256:7d6766ef17877e9f7962b3d724cd5dcc1d51bad9d7a5e75277b6532b7c92cd9f"
+          "resource": "repo://src/worldobject/ship.cpp#L35-L45",
+          "version": "repo-lines-v1:sha256:8dc79392088006b534e1f04250b3a0a695e439c63e93d427e5d0577bb7b92d52:eyJzZWxlY3RlZExpbmVDb3VudCI6MTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjkxOGFiNWQ5NzBiZjYxZmZkOGVlMjI5NTVjYWY4OTAxNWY4NGZhNjFmNDhlNDFmMjUyZDZhMjhmMTg4OGJjY2UiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImJiYjg4NTQzMGM3MTllMDA5OTg5MDE5ZGFiM2E0MjE5YWIyZGI4OTM4YzZhMTJjYmNmMTlmYTQ5N2VjMDg4YTgiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjdjYTNiOWQyOGIwMWE5ZDhkOGUxNjM0ODIyN2MyMDIyMzNjMTdkYWI3ZDUyNjI1ZGFiZDY1ZWExN2E0ZDY2NGYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjNhOGU0YTZlMTRlODJiNmE4MjU5YmI0N2Q5Mjk2YTc1YmQ4NzhmY2M2YWU5OTU3NWJmNWI2NmEwYjBlYjQ1NWUifQ"
+        },
+        {
+          "resource": "repo://src/worldobject/ship.h#L29-L44",
+          "version": "repo-lines-v1:sha256:614fe598b43a73fa8730bb8dd91efbfef8828d4aa28f21fdebe09565a9bfddee:eyJzZWxlY3RlZExpbmVDb3VudCI6MTYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjNhMWZjNmNlNmNlMmVhNTA3OWU0OTUwMWZjNmVkOGMzZWFkZGQ1NzRmY2UxMGFmMDVjNzY2MDQ5YWUxMDJjMWEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY2ZDkwZDIyZmU2ZTk0Y2VlYTAxODNjYmU1YzFkOGY1YTYwNmVmNzNkNTExN2QxMWMyZTVmZjdiOTIxM2RmYjkiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImFmYzk4YTZlZGI3ZmVmNzE5M2ExMTdhZmQ4OWQ3Y2Q2MDJmMWNkYWFhZTJjODMwYTc1NGQ4NDNiNmU3NWQwMzUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijg5YzgyNzc0NmJjODk3ODIwZTA4NDM1ODUxMmE4ZGZkNDNlNWYwZGEwMmFmMzA5YTcwN2ViYzIwZDRiYzU4MTgifQ"
+        },
+        {
+          "resource": "repo://src/worldobject/worldobject.cpp#L108-L136",
+          "version": "repo-lines-v1:sha256:aa6646a5c5fb89589189b205428cd007c1e5f19d251b6ab23a421d220e401d00:eyJzZWxlY3RlZExpbmVDb3VudCI6MjksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjFiOTUyZTNkN2JmZjMxYmMxM2ViZTEyNDI1ZDk0MTRhMDM0Yjg1ZTZmMTJlZTkyMThjZjNjMmU5NDI5NTA2NjIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjZhNzBlYjUxNjVjMDRmZTJhMzEyZjg5ZjY2NDllMmY2YmYxNmQ5MGQxYzdlZTViNTY1YjcyZWEwZjJkMTcwYzMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImU3Zjc0ZmMzNGM1YjY5ZTY5MDcwYTgxYmNmZGYwZWM4N2QxYzE0OGU4YmFmMDZjZGUzZWFiODE0ZjE2MDQyZWEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijg1NGY3OWQwOGIyODIxZjMyMWQ4NzQ4YmZhY2M3ODYyN2Q0NWUzOWFkNzkyYzViYTY1ZWM3YzQ0NWUyMzZkMzcifQ"
         }
       ]
     },
     {
       "id": "claim_5d9fe1e690e84c8b9a3b041cc9719592",
-      "statement": "GamePlay clears the previous scenario before selecting another. BaseScenario stores the World passed to its constructor, populates that world, flushes initial spawns, and starts its script engine; the standalone battle server uses the scenario's player ship as the preferred actor and as an AI target even without presentation.",
+      "statement": "GamePlay clears the previous scenario before selecting another. BaseScenario stores its World, populates it, flushes initial spawns, and starts its script engine; the standalone battle server uses the scenario's player ship as the preferred actor and as an AI target even without presentation.",
       "evidence": [
         {
-          "resource": "repo://src/gamestate/gameplay/gameplay.cpp#L118-L164",
-          "version": "repo-lines-v1:sha256:42c60d4c6dd825c40fde3290884843f49bf144edf7e075a809d713112e054457:eyJzZWxlY3RlZExpbmVDb3VudCI6NDcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQ2ZGIwYjI5MWYyNWU1NWFkNGE1YjM1ZTNlZjUzNjU5Y2QyMjdkYjQ1NWRiOGFlMjI4YjMwZTc2NWY0OGRkYzQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImUyMmZhYTUzNWJkMmVhM2Q1MmU3NDFlZDQ1NDQzNWI3ZmU0OWU4MzU4NmU5NDNkOThkODJiYmZiMjRkMWY1YzUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImQ5OWFiZTNiMGQ2NzM0MGYwODUwNTU1ODEzNmE0MmFiMTU0ZWY0MTAzZDIxYWIxYmRiNzQ5OWMwMDkyOTMwNjEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImViMzg4YWZhZjJiMmVhOTk5NTk5ZjFkZDQ4ZWIzMDgyZGI2ODI4ZjE3OGZkNDE1MzY3OWNmYTFhMjkzZTkyZjQifQ"
+          "resource": "repo://src/gamestate/gameplay/gameplay.cpp#L185-L218",
+          "version": "repo-lines-v1:sha256:c3eecd48c1e581e09b10f2216b94a86a14fda68f38afcaff39dd60e302d2106b:eyJzZWxlY3RlZExpbmVDb3VudCI6MzQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImM3ZTI1ZDI0Y2QxZDkxYjE2OGQwNjVkMWI1OTNkMTRmNWU4NjlkZWZhOTA3ZDM4NzU1ZTFiYTg1MWMzYWYyM2UiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjVhYzE5ZTBmNmI3ZjlmOTllMmY3YTY4MDVmNzM0OTM0OTE3YzBhMTYwM2JmZGQ5MGU4OTJiMjkxNWMyMjJkMDciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImQ3OGU4MzA3ZWQ3NjJmMDI4MDk4MjdlYjk5NDQxMTc2ZTViM2FhMTFhYjI1NDk1MzU1OTdhZTViYmJlYmMyODEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImJhN2UwYTAxZDI2OTc2MmIzNTM1OGE3NTRiYmI3MmQxMDBhZWNmZjgzODI5NDI4Zjk4MDA4ZGUzZTkzNmQ5ZWQifQ"
         },
         {
-          "resource": "repo://src/scenarios/basescenario.cpp#L15-L32",
-          "version": "repo-lines-v1:sha256:d84d0bf51ba6a49396672d0a7398474e24ab93f647c4589b92d37b8917aa9572:eyJzZWxlY3RlZExpbmVDb3VudCI6MTgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjhhMGExMGVmZmY2ZjBjYWY1NzBkNmUxMTIxZjI4OTZkMzUwZDA5MWY4YzBmMjZlNTQwNjQ2ZmJiYzhiZTNlMmUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImFkYzViNjViMzAzZTk0ZDU0M2IxMDEyMjFmOTU5MGY3YjI1ZTRhYzRhNGVkNDUxMWU1OTRiZTQ5ZTRhZGYxNTMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjA4MmVlOWM3YjQwMjdiMGFlNWZiOTQ0YzAxYjllYTdhN2UxNDBiZTgwNmFlYzEzNTk3NjJiNjc5N2VjYzEwNzQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUxZTEzZDdiZGY4Y2E5OTFmNWRhZjkwNDcxNzBmNTE0ZDY5MzhlZDE5MmQyMDA5N2RmZGFjMmZhMDU1Y2Y4MWUifQ"
+          "resource": "repo://src/scenarios/basescenario.cpp#L15-L46",
+          "version": "repo-lines-v1:sha256:88aa8fd6dfdfb31e8161f75eeb40161d0bdc293e8363e6806922239e687a11a7:eyJzZWxlY3RlZExpbmVDb3VudCI6MzIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijc1Y2MxNmUzNmQyYjc1NTBjYjI0NGMwNmQzMzI5NTNiMDg3YmExZTI4Mjc2NTJiOTEwMGY1NDY0YTg2MTRiZDUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjY0NTBmY2I1ZGExNmY1NGQ2M2JkNjVhYWUxNDdkM2Y1YjY5ZjRiYzI4NzFkYjllZTYzNDY5MjZiYzA4ZmY0ODkiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjA2M2JlYTczYjYyOWU2NzFkOTVmZDEyNGYxYjY5MGVmMmI5OGY5NGJkOWFkZjMzMzY0ZmFjNTExY2ZmZDY5Y2EiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjBmYzVkOGVjN2Q1M2E5MTkzMzI1NjYzZGMwZTdjYmZiZDgzZTg3ZGY3N2UxYzk2NmI2NjU3ZmU2NTc4NDBlMGQifQ"
         },
         {
           "resource": "repo://src/scenarios/battlescenario.cpp#L133-L145",
-          "version": "repo-lines-v1:sha256:8fdb1113bdecf84bcdd0967aabb57f675638abe953b0ce388d376091f59dc5a0:eyJzZWxlY3RlZExpbmVDb3VudCI6MTMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImZlYWZmZWIzNWFhODJjMTc4YzFmY2ViZWRkNDM1MzRkNzQ1NWYzMTdhMTYzN2MyNjM1MGYwMDZmYWM1YjhmMDYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjE0MTlhNmRjYzA0ZTIxM2EzYzdhNzdhNDU2YjAxZTc2ZDFlZjc4Y2QwMGJiZWMxZDhmODE0NThmZTkzZWRjNTYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImM0ZWE5ZGQ0ZmVmZDQyMGZlNGIyMGVlYTJjMmU1ZTVlNmRkZWU5NzVhZjkwZTQyNmZkM2IwZWFjZDdjMTFmNTkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjoxLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUyMmZhYTUzNWJkMmVhM2Q1MmU3NDFlZDQ1NDQzNWI3ZmU0OWU4MzU4NmU5NDNkOThkODJiYmZiMjRkMWY1YzUifQ"
+          "version": "repo-lines-v1:sha256:d0edcb4c13e19550cf1f40445da7360fb932fbd14fc75a48f5a39a8c78cb45d6:eyJzZWxlY3RlZExpbmVDb3VudCI6MTMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImFlMWE3NDg0NDMyZWIxOGJjMDVhZDM2ODQ3NDQ4NzM0YTk3OGQ3OTdjYjBiMGM5OTAyZmFhNjk2OTYxMDU3NDciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ4OTNmNDBlMzc4MWViODk2YzgyZDA0NmEwODA2N2ExMWUzNWNkZjJmMWRmYWYyNmZlYTkwYjhkYjY2NzY0MTMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjRlOGRkOTI4ZTc2ODgxYzUzMjdjNzQwNjRkNjIyYTFmMzk2M2U3ZjhiOTNmNzYwYjY2OWJkNDAxMWM1MWJkYmMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjoxLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEifQ"
         },
         {
-          "resource": "repo://src/server/main.cpp#L129-L137",
-          "version": "repo-lines-v1:sha256:61ea3c76365fb10052a8704f0b29c68a74990dd83366a86ebb4da0af1a796d64:eyJzZWxlY3RlZExpbmVDb3VudCI6OSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZGJhZjRlYjk2MjhlNTMyZDkxNWIyZGE4ZjY1OGUxMzRhZjMzNWE5MzBiYzc3MTZiZmNjZTMyY2IxZjA4ZmNlMSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNTI2ZDNmMzI4Y2FmMGFiZDJiYTVjODVjYzY2OGMyOTk2OGM5MmQxNzg2ZTdlZWZmYzM4NWVmMWUwOTBlNzI1YiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMzU1MGE3M2M5MmNiZDY1NzIyZWY1OTEyMGM5MGNmNmYzZWI4NjA3NGZmMTk1NTNhODUyOTE3NjYwZjgyMmNiYiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMDllZWJlNjcyMzk5OTcyYTVlODUwOWYxMzJlYTljMzQyYjdiMzkxOWQxNWI5NzUyZDhkMGJhMTM3MjE1N2U2YyJ9"
+          "resource": "repo://src/server/main.cpp#L480-L503",
+          "version": "repo-lines-v1:sha256:ea3833ff0bab8c16c488cea69e7e65e40b790155e8ab641da3fbfc408fdb0391:eyJzZWxlY3RlZExpbmVDb3VudCI6MjQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImI0NTlhZjUzNjJlOTdjYTg2OTMyMDM0OGVhZWQ3YmNhMzkwOWEzYmJiZTMzZTdhNTE1OTFiNWVkMTY2ZmEwNjkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijg2OTgyNTE3OTI0ZmU4ZDNlMTU2NjcxMTViMWY1YTIwMThlMGQ1NWNlNWEwMDFiMWUyZDVlMzFiOGIyNDEyMmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImZmZDUwMmIzMjQwZWE4YmEzZDA3NWU1NjdmYzdiMWI4MDBkMGMwZjZmYjJjZTFmMzE2ZjUzYmUwNDdmZmU5Y2EiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUwNDE0NzU3NjY3OTY2OTBkMzQxMWNhYjhlNzRhM2RkN2QwZWNiZjY5OWNkZmIxNTU4ZGE1MmFmYzdiOWU5NWEifQ"
         },
         {
-          "resource": "repo://test/server/testtcpserver.cpp#L65-L91",
-          "version": "repo-lines-v1:sha256:bf8b90527cfa97b79b5579bb00aadcfb3a0fe1ce349803becd90da9d418c41fa:eyJzZWxlY3RlZExpbmVDb3VudCI6MjcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU4ZjBlZDA1ODEwODRlZTdmMmMzNGZlODExMjYwM2Y3N2ZjNjU0NzY5NmYwYzc1ODZhYmY2NDA0OGMwMzQ5ZDEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImVkM2E1Nzc4OWZkODY0Yjk4ZmFkZDRmODgxMzU1OWI1NWFmMDJhNjc3NDZhZDc0MjViZjY4NjJjOGI3YmE4M2QiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImFjYjc0MGYyMzc5NjY0Yzg1ZGNiZWY4MjU3YWIyZjZmNjgzZmE1MzI3YTBkM2I2N2VhYjEyODBkNWQ2YmUyMjgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImI0YjkyZjE3MjExYzcyZTE2MTE4NWJmYWQ2YWM0ZWYxMDQ3OTAxZjNiMjVkMDY4YTFiZDE1OTg3MThmNDI5YzEifQ"
+          "resource": "repo://test/server/testtcpserver.cpp#L65-L104",
+          "version": "repo-lines-v1:sha256:01b660d0381cb9997f551319ddf69463488741f4b172f311a23b688ffea3cb1d:eyJzZWxlY3RlZExpbmVDb3VudCI6NDAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjU1OTNlYjkyZDNiMzVmNWRkNDBhODFiNGFkYWU2NTAyMTBhZDg5MjdlNTQxYzEzYzcxNGFhOGQzNmNlZTVhMmMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjhjMjYzMmIxNTQyYjhjNmRlNWU2Y2JkYzg5ZGFmMWM2OWRiMmU4OTNlOTIyNmQ5MmQyM2YzZThkNmNhNWY0MDgiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImMzNmI1NGRlYWFkMTk4MTQ2NGNjMDY3ZGRiN2UxMDEzOTc2OGIxYTU1YWE3MTY1YzgxMjI3NGY3Nzc5MTE5ZjEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjVjYTI5ZmMzMWI5ZjdjNzM2YzQwZTBmODQwODJhYjBhMWJmZmQ4ZGE3YTU3OTUzMTY2ODBiNTM3ZTJkZWI4NjAifQ"
         }
       ]
     },
     {
       "id": "claim_ec342159fc7f41f3a1f301f985c71caf",
-      "statement": "SimulationSession advances its World through a 60 Hz SimulationTickRunner, applies queued input before each world update, caps catch-up at five ticks per advance, and retains remaining time in the accumulator; the standalone server advances the session before polling TCP networking.",
+      "statement": "SimulationSession advances its World through a 30 Hz SimulationTickRunner, applies queued input before each world update, caps catch-up at five ticks per advance, and retains remaining time in the accumulator; the standalone server advances the session before polling TCP networking.",
       "evidence": [
         {
-          "resource": "repo://src/server/main.cpp#L154-L164",
-          "version": "repo-lines-v1:sha256:cb4d117dffd90c25c258543bfbe49fe12567caff851e935e163403b04b6d523b:eyJzZWxlY3RlZExpbmVDb3VudCI6MTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAyNDRhMDI2MzRjOWFlYTYxNjQ1NTI1M2I0ODUzMmZkMTMwYTJmMTkzMzNjNDczNmViOTIxOTUyMWU1YjM3MWYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImVjOWI3NGUzNWZkMjU1ZTZhMWMzYWI1NDQxZjJlZGJmYTBlNjY2ZmZiNjI3MzhjNjVlN2I4MjJlMzdiNGI1NjIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjU2YjM0OTAxYjc2Mjk0OWJlZDkzZjhjN2EwODdhMmQ5MzMyOTUzOTEzMzEyMGEzNjhlMmRhZWVlZTZjNjA2OTkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjVkNWExYjk3OWExZmJmMjFiN2Y4NzdjMGNiYmRmYTA4ODg4YWJhNmMxYmYyOGRlMTJlNDc1NWU1ZWEwMDhmNjgifQ"
+          "resource": "repo://src/server/main.cpp#L420-L450",
+          "version": "repo-lines-v1:sha256:454bfe309268c76b7869e2050ade8a5cdca2ac0d18a061743666505799e6796a:eyJzZWxlY3RlZExpbmVDb3VudCI6MzEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImI1ZWMyYTllNGQwZmVmY2EwMjFmMmU0NjBhMzc4ZGZiOTM3ODY5ODk2ZTBmMDljOGFhNzNlNTFlOTI5ZjY5NzYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImY0YWQ2YWI2NTk2YTM4Yjc1Y2EzMDNiNThmM2I4ZDdjYjJiYTlkNjViZmI4MWFhNTBiMTBhMWM0Yzg0Y2U5YjYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjRhYTEyZDI2ZDdhYjBkNTZlZTEzNzEzNjJhMjdlYWE3MDRjN2M4ZDhiMTQzNjI0N2MwMzc0ZDI2NjdmOTNmY2EifQ"
         },
         {
-          "resource": "repo://src/simulation/simulationsession.cpp#L92-L109",
-          "version": "repo-lines-v1:sha256:057dbe366318dcb159357cb7bd2050034cf22c883c5ce821b880b24917915d03:eyJzZWxlY3RlZExpbmVDb3VudCI6MTgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImJmZWIwZjZmNWI5ZjkzYmQ2Yzg5Y2Y3YzlhMDJlMTlkYzRlM2U1ZjdiODBiNmI5ODMyMzBiOTc5YTdhMmNjYTYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjcyMzQwYmIzNDkyMzRiNGU2ZDc0NWVmZTIxMDYxZTkzYTY2ZjExMGIyMzQ1YjRiODViMWFiY2QwN2QyN2I2ODYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjBhZWVmNmM4ZmQwMmQ0YjBmYmVhZWU0YjFmYmQzMmQ3ZTA4ZDE2ZTE2MDgxYzY5YmRlMzg4ZmRjNDc5MzBmNmYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjQ2ZWVjZTZlZmU2MzQ1MDViZDE1ZDNiZGQwMzcwMGZiNjNjODZiYjA0NTA0ZTMyMmY0MjQyNzFmMGQwMGFmNGUifQ"
+          "resource": "repo://src/simulation/simulationsession.cpp#L92-L110",
+          "version": "repo-lines-v1:sha256:3daea066125e95a81ed6994cdb802949acfcd5abaf1ccde2d3a13ab3da4b5f8d:eyJzZWxlY3RlZExpbmVDb3VudCI6MTksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQyNmNmODg2YjZmYTE4YjQwZjY3MDRmYjM5ZWQyYmMxNDZhNDFjZTM1NjlhODBjYjA4OGFmMDRjNzA5ZGRmZjIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjVkZWViNDc3OTNkMDE4NDIyYzNkMmUzNTA5NDA1OTE2ZmZmYmU2YjFlZjAxZDdhY2UyMDc3OTQ5MTJiZDY1MmYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjYwNTM2YTNjZTJjN2Q2NWZlNmM2ODJhNWRhYmMyMjlhY2I1NTk3ZGNkYTY5MTM4MTUxYWM0ODJkZDBmMTU3YmEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjMzM2U0NTJhOGQyYWUwODdmNmJlYmI1NzUzNDA0MGZhNmRkZGY5YmQ0NTFiMDNjYzI2MWNhZWU4YjE5ZTIwMTIifQ"
         },
         {
-          "resource": "repo://src/utils/simulationtickrunner.h#L7-L35",
-          "version": "repo-lines-v1:sha256:481b95d93ad067c70cfc378f840e6a50db6c242a6f19f556b78f7f75c69d6841:eyJzZWxlY3RlZExpbmVDb3VudCI6MjksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjRhYWEzMzNlMDQ1ZDQzZTIwOTUxYWNlOGY4OGE4ZWJiYTJhOWY1Y2Y2M2MyMDZlNDUzMTZkMzE4OGFkYTE1OGMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImViOTYyYzk3NjJlNTM5MDYyNzhkMzNiZjU1NDViYzk0NDMwYjdjZGNmYzYxMTk5MWRiZWIzNGYzNjkwODExZTciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjlmMzQxZjQyYjkwMzczZDkyYWU2MTMxY2M3NGQ1NmVlOTg1NTA1NDVhMzUxYzczNDMwOTIzNzZhNTg5MWEyZTEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjExZjNlZTA1YmM4YjVlMzliY2RjMzE3M2RkNWNhZGIzNGNhMDQyODNlMWJiNDBlNjlkYTU0YzY1NDMxOTQ1MWMifQ"
+          "resource": "repo://src/utils/simulationtickrunner.h#L8-L39",
+          "version": "repo-lines-v1:sha256:286dc89c29c09016b4e965a065c43cc36364356c320626a8c75a47e4e75f03c4:eyJzZWxlY3RlZExpbmVDb3VudCI6MzIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjFjOGNlMTdlMTdjNmY0MjVhMTlmNjkwNTA4Zjc0YjJiZWNkMGRlZjcyYTE3ZmNjMzQyYWI3MTUzMTU0ODliM2EiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjU1MjJjNDJjZDE5YzZkMDNkODA4YzQ1MjcyMDU1MjgyNWI3ZWExYzViNDkxYjIxODUxMWNhYzc0MTVjZjlkOWIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImE0ODZhMWFhM2FhZDc2MmVjMTBlNzhjNmMyNDBiZTMxM2RmMDlhOGY1NGEyMGFlYzljMmMwZDRhNjMyNTMxNWEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjE3OTQ0NjVkZTQzZTQwNmFhMThlNDA5MzQxZGUzODFkNzU1OTNhZWU4YTYzZDU4MTIzYzRhNGE1YWRiYTViNDYifQ"
         }
       ]
     },
@@ -99,18 +111,46 @@
       "statement": "The graphical running state advances its local SimulationSession only when remote preview is inactive; with remote preview, it polls the TCP client and displays replicated state rather than advancing the local world.",
       "evidence": [
         {
-          "resource": "repo://src/gamestate/gameplay/running/gameplayrunning.cpp#L218-L238",
-          "version": "repo-lines-v1:sha256:145ddb9e3e7490a87aa19c89b56d36db98149b3ef8255160cfb67b93d762433a:eyJzZWxlY3RlZExpbmVDb3VudCI6MjEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQzZmU1ZDE4ZDZhMjEyYTM3M2VmMTIzMDY0ODAyZTU0MGRmZTBkZjZhY2Y1NmQ5MzMxNDJmOTQxN2I3MGEyNzciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjVhM2EzZjdmZDI1M2NkODFjNmZlZTU5YjA1OWE2NzIyY2JiMTE2MjQxMTFjMGEwODMzNTgzNTRhMTczNjczNDUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjJmZTFmMjgzZTBiYWY1MzQzYzQwYzUzM2RjZTg5OWM4NjczOTM4ODIyNzAzYTA0ZjQ2MmYwNGJiNDc1ZjI1MTAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImU4ZmQ1YjE1ZTk5NTAwNjM1YzVhNmZiNjMxMmZmOTEzODc0ZWJlZGJkN2U0Y2NmODZlYTJmYTE3Y2UxOGQ1ZDkifQ"
+          "resource": "repo://src/gamestate/gameplay/running/gameplayrunning.cpp#L242-L380",
+          "version": "repo-lines-v1:sha256:afbb934b39fefa953ade3e2109481ccd975e53c9c1ea6b27c7eb522bf7db6149:eyJzZWxlY3RlZExpbmVDb3VudCI6MTM5LCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiJmYTA3N2QxMjcxZDQ4ZDI4MmI5MWVjNjY2ZjIzZmMzYWQ5YmRiNjYzZWMwNWFmOGRmMzI2YTEzYzMwZTk5OTBmIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiIyMDRkN2RiMDczOGI5NTdkZjc4MWRjY2VkNjA5MjRkMTdjMzk3YjUzMGIwMTc4OWY4MTZjMjdmNDk2MGNkMjhjIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiI2YmRiMDBmNzdjMmFhMGMyNjBlMDI0MDRkNjhkM2U3MzJhNjVmN2QxOTMzOWM3MmRkMTZkMDUzYmJmZDA5MGMzIiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiI2OGM3OGQ4Y2UwNzY5ZjdjZTEwMDBiYmQ4MzU5Y2NkZGIwOTZkNmY1ZTQ3MWI3N2RmYzI1MTZiZjUxYzI1NWIxIn0"
+        }
+      ]
+    },
+    {
+      "id": "claim_b4e327902ffa4d07a1dc80210d995008",
+      "statement": "World assigns generation-protected entity IDs when objects are registered and releases them when objects are removed, so a reused ID index receives a new generation.",
+      "evidence": [
+        {
+          "resource": "repo://src/world/world.cpp#L329-L378",
+          "version": "repo-lines-v1:sha256:5efff952ade5ecc58f20e4276e2651667bbdab7d9859ad339b019ce12a27eb23:eyJzZWxlY3RlZExpbmVDb3VudCI6NTAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijc5ZjFmMTZlNzAyMzg1MjA5YmM0ZTcwNmNmODUwYTUzNjQ5NzYyMDQ3MjljZDM0MmRhMjQ0MTBhOGIwOTNmZGIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjBkNDJiMDY1MzQyZTZhMGQ5ZmU5MTU3ZWNlOTkxYWVmYjExZTQ0M2ZkNWM4MTUyZGE2MTAyYjAwNGMwYWMzYmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjIyMDdkMzNmY2ExNTgwZmU2MWNmMDBlNDNlMWQzYzVhM2Y1Y2Y0NTY0NDg2ODIzNDhlODYyODUwZmExODI0N2YiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImEyNmJkNDllNmJkYmNlOWQ0ZTdhMWVmMzc5MTVjNzgxMGQyYWMzNmI5MDVkY2I4Yzk0NzgxODE1MjM1MDJjM2IifQ"
         },
         {
-          "resource": "repo://src/gamestate/gameplay/running/gameplayrunning.cpp#L260-L380",
-          "version": "repo-lines-v1:sha256:bc1943632a1137e363f10207ba49b84be0c97442a9a7f0722724ff630447ba57:eyJzZWxlY3RlZExpbmVDb3VudCI6MTIxLCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiJjOWE4NTcyYjg4OGIwOGY3OTc5OGExOWFjYWQxZWZkYWZlZDAyNzA0MjVhM2UxYzIyZDg4OGQxMDZkNjU2ODNiIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiJiYWYxMzI3N2VkMTk3YWFiMGNlOTAwNTdkNzhiNDJlMTk5ZDM1MzAzOTFlZWIyZThmZmI0MjlmZjMxZGYzMmUxIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiIxZWJkZmRlZTEwNzk4ZjM1ODNiZjhhZTE2ZGEwYmVkMjFhM2U3ODY2ZmY3M2FiZWJiZmQ4ZDQ0M2Q2NGEzMjM3IiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiJiOWJlZWExNGY2MmJiNmQyZjdhNjJjN2ViZTk5ZjAxNWIwNjA2NzFjNDVhNjM2MDljNWY5MTYzNzkzYjc1M2MwIn0"
+          "resource": "repo://test/simulation/testsimulationsession.cpp#L79-L111",
+          "version": "repo-lines-v1:sha256:501ae5de6fc28e7f66906416c71641e26a1aed4be872a69e94f7bee635f38597:eyJzZWxlY3RlZExpbmVDb3VudCI6MzMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjIxZTdkMDRkNzljYTQ4ZGRlNzlmMDhhNDgwNmNmYmQwOWY0Y2VhYmIxNTBhMTMzNWE0ZjgwNGI5OGQzNTlkYjYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjA2MjI1MDUxYzJkNjVlZjA0ODgwZWI0ZDZkYmU3NmE2NzRhYWNlNWU2N2M1MmUwM2VjOTAxYjg0YTEyYzBjN2QiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImYzODUyOGUzMTk5NjAxODU5NTE1ZDk0ZmI3YzJiYjc4ZWRiMGNlZDEwMWI2MmU0Njk5NDIwMTJmNDVlMjRmNTQifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_a68c491be0d04c48a5effb09c028b463",
+      "statement": "BaseScenario clearing calls World::clear, which destroys that world's objects and rebuilds its simulation services in place rather than replacing the global World singleton.",
+      "evidence": [
+        {
+          "resource": "repo://src/scenarios/basescenario.cpp#L35-L45",
+          "version": "repo-lines-v1:sha256:de32c465f5d48cef5fe5557eb23a828e8f8696e2877288d1f5131588dcfe7558:eyJzZWxlY3RlZExpbmVDb3VudCI6MTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijc2NTlkYzc3ZDM0MTZiYWM2NzQxYThkZTJjNGMzODc1YWUzZDVhM2JiM2MzMmZhNzRiNGQ3ZDUyNGEyY2MyNmUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImI1MTU3ZDJhMTVmM2YzOTA0MGU4ZGI3NWVmNjFjNThmOWYzZWNlOWU2Y2QzNDM4MjAxYTVjNmRmMDcxYTA2NGUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjZlODg1NTYyNzY0ZDgzMWE5NTQ3ZTE0OGRhNjlhOTJmN2ExZWVjNzg1MDQ4MDc5MzUxMTZlNDk5ZjVhMzk4YmQifQ"
+        },
+        {
+          "resource": "repo://src/world/world.cpp#L251-L289",
+          "version": "repo-lines-v1:sha256:60b1bba104c6130039602677754bf6737f91f0d6e8d2157e0fe691152226b31c:eyJzZWxlY3RlZExpbmVDb3VudCI6MzksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjY3ZDIxMjA3MzcyM2RhMzljNjgwNzJmZTJlNDZmMDY4ZDNhNDY0NjIyYjUyYzQ0NmY5MDQ0YjM1YWRmZDlhNDIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjFiMTk5ZjNjNmVjYzIwN2UxOTgwYjhmMjRjNTU5NzE1ODUxMjQ3ZWE3YTYxYmM3MzRlMWI3YjhhYzU0YjU3OTIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjFhMTJlNTM4ZGIzYWRjMWVkOTRlNTBiNjM5ODUwN2ZkNmVhMjI0NTBiY2Q3ZDc2NDkzYmI2MDNmODMzNmFkMzAifQ"
+        },
+        {
+          "resource": "repo://src/world/world.cpp#L303-L319",
+          "version": "repo-lines-v1:sha256:7846a7abb8ff336a7807b849328f82a3567b9a0fb40179da308cc3cf8828a1bd:eyJzZWxlY3RlZExpbmVDb3VudCI6MTcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU3YmEwODA2NmI1OWYyYjViOWQyMGNiNjU5MjhhNzExNDM2ZmY2ODgxMjZmYWJlNGJjNWQ1YzExMDEzMzgwN2EiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUxZjVlYTAxMzQ4YjU3MTU0ZDk3NjlhMmY2NThiZDIyNTdhYzljNWMzNzJlODk1MjRiZDRlNzc1Zjg5NWU0YmYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImU5MGEyNWNjN2JjNmM1NGRjYjYxYzc2MzhiYzAyZDRhNmQzOWJhNzY2Yzg5NTc5NWJkNDIwOWE1MDQzYWFkMjgifQ"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.2",
-    "at": "2026-11-05T22:43:09.174Z"
+    "at": "2026-11-19T09:46:20.407Z"
   }
 }

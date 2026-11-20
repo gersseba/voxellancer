@@ -41,17 +41,17 @@ void CruiserFightTask::update(float deltaSec) {
             boardComputer()->moveTo(primaryTarget->transform().position());
         }
 
-        if (targetDistance() < m_maxRocketDistance) {
-            boardComputer()->shootRockets(primaryTarget);
-        }
-
-        boardComputer()->shootBullet(m_targets);
         break;
     }
 }
 
 bool CruiserFightTask::isFinished() {
     return m_state == State::IDLE;
+}
+
+WorldObject* CruiserFightTask::rocketTarget() {
+    return m_state == State::ENGAGE && targetDistance() < m_maxRocketDistance ?
+        m_primaryTarget.get() : nullptr;
 }
 
 void CruiserFightTask::selectPrimaryTarget() {

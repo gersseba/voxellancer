@@ -15,6 +15,7 @@ class Camera;
 class RenderPass {
 public:
     RenderPass(const std::string& name);
+    virtual ~RenderPass() = default;
 
     virtual void apply(FrameBuffer& frameBuffer, const RenderMetaData& metadata) = 0;
     const std::string& name() const;
