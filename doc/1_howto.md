@@ -21,14 +21,20 @@ checkpoint, including combat and salvage before the next base, are lost.
 Co-op runs do not use this checkpoint.
 
 Choose **Play Contracts with Local Server (macOS)** in VS Code to build and
-launch the menu. At a base, **Enter / M** opens the branching sector map.
+launch the menu. At a base, **Enter / H** opens the branching sector map.
 Click a connected node or use the arrow keys to select it, then **TRAVEL / Enter**
 confirms your destination. Every surviving co-op pilot must confirm; changing the shared
-destination resets all readiness. **M / Esc** returns to the base from its map.
+destination resets all readiness. **Esc** returns to the base from its map.
 
 Attack nodes contain a Raider Patrol (100 credits), Debris Crossfire (150), or
 Fortified Blockade (200), with different enemies, formations, and destructible
-cover. Enemy counts scale with surviving pilots. Clear the hostiles to choose
+cover. Each sortie announces its name and objective across the HUD for a few
+seconds. Each sortie randomly picks one of the cover layouts suited to the
+level (open space, an asteroid field, an asteroid belt, a debris cluster, or a
+huge derelict hulk), and its asteroids and wreckage are generated fresh; use
+them to break line of fire. Enemies start out of range and hold position until you
+close to about 900 units (1.5× the Pulse Repeater's range) or hit one, then the
+whole squad engages. Enemy counts scale with surviving pilots. Clear the hostiles to choose
 one personal reward: the listed credits, a disclosed random gun, or a run-only
 upgrade. Click a card's **CLAIM** button, use **1 / 2 / 3**, or select with
 **Left/Right** and press **Enter**. Upgrades add 15% gun damage or 20% shield
@@ -38,7 +44,7 @@ returning to the **map**. Payload stacks also add 15% reactor regeneration
 after the normal pause; shield stacks reduce gun energy cost by 10% each
 (up to 40%) while shields are at least 90% charged.
 Base nodes offer a shop, free shield and energy refills,
-and paid hull repair (**H** or the repair button). Repair restores HP on surviving
+and paid hull repair (the repair button). Repair restores HP on surviving
 blocks only; lost blocks and mounts stay lost. **?** nodes offer derelict salvage
 or an optional fight. The map previews the signal, known opposition, and reward.
 In **Distress Call**, a friendly **WINGMAN** fights alongside you. Clear the
@@ -57,17 +63,22 @@ There are **no revives**: dead pilots spectate for the rest of the run, includin
 base visits. They receive no rewards and cannot shop or confirm travel, but
 can join everyone in the next fresh run.
 
-At bases, **B** buys the current personal random gun offer into inventory, and
-**N** opens shield builds. Use **1/2/3**, **Left/Right**, or click to select
+At bases, the overview highlights sections on hover: **A/E** opens Armory,
+**M** opens Market, **B** opens Bar, and **H** opens Hangar. Gambling in the
+bar is not implemented. In the market, click **BUY** or press **Enter** to
+store the current personal random gun offer. Select a stored weapon and click
+**SELL** or press **S** to sell one for half its catalog price, rounded down.
+Fitted weapons cannot be sold. **N** opens shield builds. Use **1/2/3**, **Left/Right**, or click to select
 Balanced Mk2, Bulwark, or Flux, then **Enter / Buy and Equip** to purchase.
 Balanced costs 100 credits; Bulwark and Flux cost 150. The old shield is replaced
 without a refund; **N** or **Esc** returns to the base. Only one gun may be
 bought per base visit (100–200 credits); reaching another base
 refreshes the offer. Fighting alone does not reopen a sold offer.
-**E** opens equipment: click a numbered mount on the hollow ship, select a stored
+In the armory, click a numbered mount on the hollow ship, select a stored
 weapon, then **FIT WEAPON / Enter**. The replaced weapon goes back to inventory.
 **Left/Right** selects mounts, **Up/Down** selects inventory, and **Q/R** rotates
-the preview. **Esc** or **E** returns to station services. Weapon cards compare
+the preview. **Esc** returns to station services. Inventory lists only stored
+weapons. Weapon cards compare
 velocity, range, shield, armor, and normal-block damage; splash/volley values are
 totals, including your run's damage bonus. Cards also show energy per shot.
 Inventory and fitted weapons last only for this run.
@@ -77,10 +88,14 @@ the base does not launch: press Enter to open the map. **O** restores the
 station/objective panel. See the [contract guide](../README.md#station-contracts-first-progression-slice)
 for local co-op startup and current limitations.
 
+The starter ship has five weapon mounts, two fitted with Pulse I guns. The
+reactor recharges while you fire, so both guns can fire nonstop. An identical
+starter shield breaks after about five seconds of that fire when all shots hit.
 The flight HUD shows **shield HP** on the left and **weapon energy** on the
-right, including recharge countdowns. Contract guns share 100 energy, recovering
-35/s after 0.4 s without a successful shot. An unaffordable gun does not fire;
-release fire to refill. Scatter spends once for the whole volley. Shields
+right, including shield recharge countdowns. Contract guns share 100 energy,
+recovering 40/s at all times. Stronger guns and extra mounts can spend faster
+than that; an unaffordable gun does not fire until the reserve recovers.
+Scatter spends once for the whole volley. Shields
 recharge independently after their build's hit delay, including after depletion.
 Bulwark favors capacity, Flux favors recovery, and Balanced sits between them.
 Bases refill both reserves for free; hull repair is a separate purchase. These meters follow
@@ -96,13 +111,18 @@ these markers. Enemy marking identifies a contact; it does not auto-lock guns.
 * W,A,S,D - direction
 * Left Mouse - fire toward the crosshair (within the guns' aiming limits);
   mouse aiming is independent of ship steering in solo and co-op.
-  Line up the lead marker before firing and each gun will lead the target
+  Empty-space fire converges at the shortest equipped gun range; a nearer
+  voxel under the crosshair takes priority, excluding your own ship. Gun
+  limits, obstacles, projectile lifetime, and movement may prevent a hit.
+  Otherwise, line up the lead marker before firing and each gun will lead the target
   independently. Standalone scenarios show the marker for your selected
   target; networked contracts show a cyan `+` for the enemy lead point
-  nearest the crosshair, changing to `(+)` when lined up. The first run's
-  opening attack also shows a lead-alignment prompt and a burst-fire reminder.
+  nearest the crosshair, changing to `(+)` when lined up. The cue aims near the
+  center of mass at a surviving hull voxel; sudden movement or rotation can
+  still make a shot miss. The first run's
+  opening attack also shows a lead-alignment prompt and an energy reminder.
 * Right Mouse - click to select target / hold to change direction
-* M - route map/back at a base; free mouse cursor during flight
+* M - market at a base; free mouse cursor during flight
 * Space - change to fight controls
 * Q, E - roll
 * R - Rocket

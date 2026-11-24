@@ -20,19 +20,20 @@
    Do not change generated documentation outputs under `doc/*.html`.
 3. Run the validation harness from the repository root:
 
-   ```powershell
-   .\tools\agent-check.ps1
+   ```sh
+   cmake -P tools/agent-check.cmake
    ```
 
-   The harness requires `VCPKG_ROOT` to point to a bootstrapped vcpkg checkout.
-   It selects the installed Visual Studio generator when available, resolves the
+   The harness is a CMake script that runs unchanged on Windows, macOS, and
+   Linux. It locates a bootstrapped vcpkg checkout (`VCPKG_ROOT`, an existing
+   build's toolchain, or standard locations such as `~/vcpkg`), resolves the
    manifest dependencies, builds `all_tests`, then runs the tests. It defaults
-   to Release; pass `-Configuration Debug` to use Debug or
-   `-BuildDirectory <path>` to choose another build directory. See the build
-   instructions for vcpkg setup.
-   In VS Code, **Terminal: Run Task** offers the four runtime tasks for starting
-   a server/client or running local/multiplayer large-combat benchmarks. Use
-   `.\tools\agent-check.ps1 -Mode Test` for test validation.
+   to Release; pass `-DCONFIG=Debug` to use Debug or `-DBUILD_DIR=<path>` to
+   choose another build directory. Use `-DMODE=Run -DRUN=<task>` for runtime
+   tasks, starting `StartServer` before `StartClient`. See the
+   [build instructions](doc/3_buildinstructions.md#build-test-and-run-harness)
+   for all options and vcpkg setup. **Terminal: Run Task** in VS Code offers
+   the same tests and runtime tasks.
 4. If the harness cannot run because prerequisites are unavailable, report the
    exact blocker rather than treating an unrun test as a pass.
 

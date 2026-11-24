@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include <glm/glm.hpp>
 #include <memory>
 
@@ -50,6 +51,7 @@ protected:
     float m_bulletLength;
     float m_bulletMaxWidth;
     float m_bulletLifetime;
+    std::uint32_t m_scatterSequence = 0;
 
 
     void setupBullet(Bullet* bullet, const glm::vec3& point);

@@ -1,5 +1,7 @@
 #include "hudelements.h"
 
+#include <algorithm>
+
 #include "utils/safenormalize.h"
 
 #include "voxel/voxelrenderer.h"
@@ -69,12 +71,12 @@ void HUDElements::setShieldStatus(const std::string& shieldStatus) {
     m_shieldLabel->setText(shieldStatus);
 }
 
-void HUDElements::showMissionInfo(const std::string& title, const std::string& caption) {
+void HUDElements::showMissionInfo(const std::string& title, const std::string& caption, float durationSec) {
     m_missionTitle->setText(title);
-    m_missionTitleHider->hideIn(10);
+    m_missionTitleHider->hideIn(durationSec);
 
     m_missionCaption->setText(caption);
-    m_missionCaptionHider->hideIn(9.5f);
+    m_missionCaptionHider->hideIn(std::max(0.0f, durationSec - 0.5f));
 }
 
 void HUDElements::showMissionMessage(const std::string& message) {

@@ -104,6 +104,16 @@ void Gun::fireAtPoint(const glm::vec3& point, bool checkFriendlyFire,
                 glm::distance(point, hardpoint()->voxel()->position()) *
                 std::tan(glm::radians(4.0f));
         }
+        if (profile.scatter > 0) {
+            const auto origin = hardpoint()->voxel()->position();
+            const auto cell = hardpoint()->voxel()->cell();
+            const std::uint32_t seed = m_scatterSequence++ * 0x9e3779b9U ^
+                static_cast<std::uint32_t>(cell.x) * 73856093U ^
+                static_cast<std::uint32_t>(cell.y) * 19349663U ^
+                static_cast<std::uint32_t>(cell.z) * 83492791U;
+            aim = origin + scatterDirection(aim - origin, profile.scatter, seed) *
+                glm::distance(origin, aim);
+        }
         setupBullet(bullet, aim);
         bullet->shotRecord = record;
         world->god().scheduleSpawn(bullet);

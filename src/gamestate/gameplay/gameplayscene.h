@@ -10,6 +10,7 @@
 #include <glm/glm.hpp>
 
 #include "display/scene.h"
+#include "geometry/voxelray.h"
 
 #include "property/property.h"
 
@@ -48,6 +49,8 @@ public:
     bool stationMouse(int button, int action, glm::vec2 pointer);
     bool closeEquipment();
     std::optional<voxellancer::protocol::EntityId> remoteLeadTarget() const;
+    std::optional<CrosshairAim> remoteAimPoint(
+        const glm::vec3& origin, const glm::vec3& direction) const;
 #endif
 
 
@@ -73,6 +76,7 @@ protected:
     bool m_remoteContentSyncNeeded = true;
     bool m_contractOverlayActive = false;
     bool m_contractWasStation = false;
+    std::optional<voxellancer::protocol::ContractPhase> m_particlePhase;
     struct RemoteLeadCue {
         voxellancer::protocol::EntityId actor;
         voxellancer::protocol::EntityId target;
@@ -99,6 +103,7 @@ protected:
     void updateRemoteInfoOverlay();
     void drawRemoteContacts(const Camera& camera) const;
     void updateShieldShimmer(float deltaSec);
+    void announceMission(const voxellancer::protocol::ContractStatus& contract);
     float nextShieldShimmerRandom();
 #endif
 

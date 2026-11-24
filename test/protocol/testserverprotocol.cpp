@@ -2,12 +2,73 @@
 #include <limits>
 
 #include "protocol/serverprotocol.h"
+#include "sound/combatcuebudget.h"
 
 using namespace bandit;
 using namespace voxellancer::protocol;
 
 go_bandit([]() {
+    describe("Combat audio budget", []() {
+        it("keeps personal hits ahead of a fleet volley and coalesces repeated impacts", []() {
+            CombatCueBudget batch;
+            for (std::uint64_t id = 1; id <= 500; ++id) {
+                batch.submit({id, CombatCueKind::Fire, {}, false, float(2000 + id)});
+                for (int pellet = 0; pellet < 8; ++pellet)
+                    batch.submit({id, CombatCueKind::Shield, {}, false, float(3000 + id + pellet)});
+            }
+            batch.submit({501, CombatCueKind::Fire, {}, false, 700.0f * 700.0f});
+            batch.submit({502, CombatCueKind::Shield, {}, true, 0});
+            batch.submit({502, CombatCueKind::Shield, {}, true, 1});
+            batch.prioritize();
+            AssertThat(batch.begin()->emitter, Equals(std::uint64_t(502)));
+            AssertThat(std::count_if(batch.begin(), batch.end(),
+                [](const auto& cue) { return cue.emitter == 502; }), Equals(std::ptrdiff_t(1)));
+            AssertThat(batch.end() - batch.begin() <= 24, IsTrue());
+        });
+
+        it("reserves cockpit headroom across frames and replaces world cues only for closer sources", []() {
+            struct Voice { CombatCue cue; };
+            std::vector<Voice> active;
+            auto submit = [&](CombatCue cue) {
+                auto replace = active.end();
+                if (!CombatCueBudget::admit(cue, active.begin(), active.end(), replace)) return false;
+                if (replace == active.end()) active.push_back({cue});
+                else replace->cue = cue;
+                return true;
+            };
+            for (std::uint64_t id = 1; id <= 500; ++id)
+                submit({id, CombatCueKind::Fire, {}, false, 10000.0f});
+            AssertThat(active.size(), Equals(std::size_t(8)));
+            AssertThat(submit({501, CombatCueKind::Fire, {}, false, 9000}), IsFalse());
+            AssertThat(submit({502, CombatCueKind::Fire, {}, false, 100}), IsTrue());
+            AssertThat(active.size(), Equals(std::size_t(8)));
+            AssertThat(submit({503, CombatCueKind::Shield, {}, true, 0}), IsTrue());
+            AssertThat(submit({503, CombatCueKind::Shield, {}, true, 0}), IsFalse());
+            for (std::uint64_t id = 504; id <= 508; ++id)
+                submit({id, CombatCueKind::Hull, {}, true, 0});
+            AssertThat(active.size(), Equals(std::size_t(12)));
+            AssertThat(std::count_if(active.begin(), active.end(),
+                [](const auto& voice) { return voice.cue.personal; }), Equals(std::ptrdiff_t(6)));
+        });
+    });
     describe("server protocol values", []() {
+        it("round trips valid stored-weapon sales and rejects malformed sales", []() {
+            ContractAction action{9, 2, ContractActionKind::SellGun, 3};
+            ContractActionPacket packet{};
+            AssertThat(encodeContractAction(action, packet), IsTrue());
+            ContractAction decoded;
+            AssertThat(decodeContractAction(packet.data(), packet.size(), decoded), Equals(DecodeError::None));
+            AssertThat(decoded.kind, Equals(ContractActionKind::SellGun));
+            AssertThat(decoded.weapon, Equals(std::uint8_t(3)));
+            action.weapon = 0;
+            AssertThat(encodeContractAction(action, packet), IsFalse());
+            action.weapon = ContractWeaponKinds + 1;
+            AssertThat(encodeContractAction(action, packet), IsFalse());
+            action.weapon = 1;
+            action.cell = glm::ivec3(1);
+            AssertThat(encodeContractAction(action, packet), IsFalse());
+        });
+
         it("round trips shield choices and live resources and rejects invalid resource values", []() {
             ContractStatus state;
             state.players = 1;

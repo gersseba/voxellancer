@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <cmath>
 #include <iterator>
+#include <limits>
 #include <stdexcept>
 
 #include "equipment/engineslot.h"
@@ -13,6 +14,8 @@
 #include "equipment/weapon.h"
 #include "equipment/weapons/gun.h"
 #include "equipment/weapons/rocketlauncher.h"
+#include "physics/physics.h"
+#include "voxel/specialvoxels/hardpointvoxel.h"
 #include "worldobject/helper/componentsinfo.h"
 #include "worldobject/helper/hardpointaimhelper.h"
 #include "worldobject/worldobject.h"
@@ -104,12 +107,17 @@ void WorldObjectComponents::fireAtPoint(const glm::vec3& point, bool checkFriend
     fireGuns(point, nullptr, checkFriendlyFire);
 }
 
+void WorldObjectComponents::fireGunsAtCrosshair(const glm::vec3& point, bool checkFriendlyFire) {
+    fireGuns(point, nullptr, checkFriendlyFire, true);
+}
+
 void WorldObjectComponents::fireGunsWithLead(WorldObject& target, bool checkFriendlyFire) {
     if (&target != m_worldObject && target.info().canLockOn())
         fireGuns(glm::vec3(0), &target, checkFriendlyFire);
 }
 
-void WorldObjectComponents::fireGuns(const glm::vec3& point, WorldObject* leadTarget, bool checkFriendlyFire) {
+void WorldObjectComponents::fireGuns(const glm::vec3& point, WorldObject* leadTarget,
+    bool checkFriendlyFire, bool compensateVelocity) {
     if (m_hardpoints.empty()) return;
     // Rotate after spending, not empty attempts, so recharge timing cannot starve the same mount.
     const float energyBefore = m_weaponEnergy;
@@ -120,8 +128,15 @@ void WorldObjectComponents::fireGuns(const glm::vec3& point, WorldObject* leadTa
         if (hardpoint->weapon() && hardpoint->weapon()->type() == WeaponType::Gun) {
             Gun& gun = dynamic_cast<Gun&>(*hardpoint->weapon().get());
             if (leadTarget) {
-                HardpointAimHelper aim(hardpoint.get(), leadTarget, true);
+                HardpointAimHelper aim(hardpoint.get(), leadTarget, true, true);
                 if (aim.isHittable()) gun.fireAtPoint(aim.point(), checkFriendlyFire);
+            } else if (compensateVelocity && gun.profile().enabled) {
+                const auto aim = HardpointAimHelper::interceptPoint(
+                    hardpoint->voxel()->position(), point,
+                    -m_worldObject->physics().speed().directional(), gun.bulletSpeed(),
+                    std::numeric_limits<float>::infinity(), std::numeric_limits<float>::infinity(),
+                    gun.bulletSpawnOffset());
+                gun.fireAtPoint(aim ? *aim : point, checkFriendlyFire);
             } else {
                 gun.fireAtPoint(point, checkFriendlyFire);
             }

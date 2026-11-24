@@ -4,10 +4,12 @@
 #include <cmath>
 #include <iomanip>
 #include <sstream>
+#include <stdexcept>
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 #include <glow/Buffer.h>
 #include <glow/Program.h>
+#include <glow/Texture.h>
 #include <glow/VertexArrayObject.h>
 #include <glow/VertexAttributeBinding.h>
 #include <glowutils/global.h>
@@ -16,6 +18,7 @@
 #include "equipment/weaponcatalog.h"
 #include "equipment/shieldcatalog.h"
 #include "property/property.h"
+#include "resource/ddstexture.h"
 #include "simulation/contractlevel.h"
 #include "ui/uifont.h"
 #include "utils/simulationtickrunner.h"
@@ -71,6 +74,8 @@ void StationOutfitter::update(const std::optional<ContractStatus>& state,
         m_visible = station;
         m_equipment = false;
         m_defense = false;
+        m_market = false;
+        m_bar = false;
         m_mount = -1;
         m_pending = 0;
         m_sendFailed = false;
@@ -139,7 +144,7 @@ void StationOutfitter::layout() {
             idle && m_status.alive && !m_status.ready && m_status.selectedNode != NoRouteNode &&
                 m_status.phase != ContractPhase::Complete});
         if (m_status.phase == ContractPhase::Station && m_status.alive)
-            m_buttons.push_back({{0.065f,0.855f,0.23f,0.06f},"BACK TO BASE - M",10,true});
+            m_buttons.push_back({{0.065f,0.855f,0.23f,0.06f},"BACK TO BASE - ESC",10,true});
         for (std::size_t i = 0; i < m_status.route.size(); ++i) {
             const auto& node = m_status.route[i];
             const auto p = nodePosition(node);
@@ -158,43 +163,60 @@ void StationOutfitter::layout() {
                 m_shieldSelection == id ? "SELECTED" : "SELECT - "+std::to_string(id),
                 29+id,idle});
         const auto selected = catalogShield(m_shieldSelection);
-        m_buttons.push_back({{0.065f,0.855f,0.23f,0.06f},"BACK TO BASE - N",3,true});
+        m_buttons.push_back({{0.065f,0.855f,0.23f,0.06f},"BACK TO BASE - ESC",3,true});
         m_buttons.push_back({{0.64f,0.855f,0.29f,0.06f},
             m_status.shieldBuild == m_shieldSelection ? "CURRENTLY EQUIPPED" :
             "BUY AND EQUIP - "+std::to_string(selected.price)+" CR",33,
             idle && m_status.alive && m_status.shieldBuild != m_shieldSelection &&
                 m_status.credits >= selected.price});
-    } else if (!m_equipment) {
+    } else if (m_bar) {
+        m_buttons.push_back({{0.065f,0.855f,0.23f,0.06f},"BACK TO BASE - ESC",45,true});
+    } else if (m_market) {
         unsigned count = 0;
         for (auto quantity : m_status.inventory) count += quantity;
-        m_buttons.push_back({{0.085f,0.65f,0.32f,0.06f},"EQUIPMENT - E",2,true});
-        m_buttons.push_back({{0.085f,0.73f,0.32f,0.055f},
-            "SHIELDS / ENERGY - N",3,true});
-        m_buttons.push_back({{0.085f,0.56f,0.32f,0.06f},
-            m_status.repairPrice == 0 ? "NO REPAIR NEEDED" :
-                "REPAIR - H / "+std::to_string(m_status.repairPrice)+" CR",34,
-            idle && m_status.alive && !m_status.ready && m_status.repairPrice > 0 &&
-                m_status.credits >= m_status.repairPrice});
-        m_buttons.push_back({{0.51f,0.68f,0.395f,0.065f},
+        m_buttons.push_back({{0.085f,0.70f,0.36f,0.065f},
             m_status.gun ? "SOLD - NEXT OFFER AT ANOTHER BASE" :
-            "BUY - " + std::to_string(m_status.gunPrice) + " CR",4,
+            "BUY - ENTER / " + std::to_string(m_status.gunPrice) + " CR",4,
             idle && !m_status.gun && count < ContractInventoryCapacity &&
             m_status.credits >= m_status.gunPrice});
-        m_buttons.push_back({{0.69f,0.855f,0.24f,0.06f},
-            "ROUTE MAP - ENTER",5,idle});
+        int row = 0;
+        for (int i = 0; i < WeaponCatalogSize; ++i) {
+            if (!m_status.inventory[i]) continue;
+            m_buttons.push_back({{0.53f,0.32f+row++*0.055f,0.37f,0.049f},
+                catalogWeapon(i+1).name + "  x" + std::to_string(m_status.inventory[i]),
+                100+i, idle});
+        }
+        m_buttons.push_back({{0.53f,0.70f,0.37f,0.065f},
+            m_weapon > 0 ? "SELL - S / " + std::to_string(catalogWeapon(m_weapon).price/2) + " CR" :
+                "SELECT A STORED WEAPON TO SELL",44,
+            idle && m_weapon > 0 && m_status.inventory[m_weapon-1] > 0});
+        m_buttons.push_back({{0.065f,0.855f,0.23f,0.06f},"BACK TO BASE - ESC",45,true});
+    } else if (!m_equipment) {
+        m_buttons.push_back({{0.075f,0.28f,0.41f,0.20f},"ARMORY - A",40,true});
+        m_buttons.push_back({{0.515f,0.28f,0.41f,0.20f},"MARKET - M",41,true});
+        m_buttons.push_back({{0.075f,0.51f,0.41f,0.20f},"BAR - B",42,true});
+        m_buttons.push_back({{0.515f,0.51f,0.41f,0.20f},"HANGAR - H",43,true});
+        m_buttons.push_back({{0.075f,0.75f,0.36f,0.055f},"SHIELDS / ENERGY - N",3,true});
+        m_buttons.push_back({{0.515f,0.75f,0.41f,0.055f},
+            m_status.repairPrice == 0 ? "HULL INTACT" :
+                "REPAIR / "+std::to_string(m_status.repairPrice)+" CR",34,
+            idle && m_status.alive && !m_status.ready && m_status.repairPrice > 0 &&
+                m_status.credits >= m_status.repairPrice});
     } else {
-        m_buttons.push_back({{0.065f,0.855f,0.22f,0.06f},"BACK TO BASE - E",2,true});
+        m_buttons.push_back({{0.065f,0.855f,0.22f,0.06f},"BACK TO BASE - ESC",2,true});
         m_buttons.push_back({{0.30f,0.855f,0.09f,0.06f},"Q - TURN",6,true});
         m_buttons.push_back({{0.40f,0.855f,0.09f,0.06f},"R - TURN",7,true});
         const bool canEquip = idle && m_mount >= 0 && m_weapon > 0 &&
             m_status.inventory[m_weapon-1] > 0 &&
             m_status.mounts[m_mount].weapon != m_weapon;
         m_buttons.push_back({{0.70f,0.855f,0.23f,0.06f},"FIT WEAPON - ENTER",8,canEquip});
+        int row = 0;
         for (int i = 0; i < WeaponCatalogSize; ++i) {
+            if (!m_status.inventory[i]) continue;
             const auto weapon = catalogWeapon(i+1);
-            m_buttons.push_back({{0.63f,0.31f+i*0.052f,0.275f,0.047f},
+            m_buttons.push_back({{0.63f,0.31f+row++*0.052f,0.275f,0.047f},
                 weapon.name + "  x" + std::to_string(m_status.inventory[i]),
-                100+i, m_status.inventory[i] > 0 && idle});
+                100+i, idle});
         }
     }
     m_mountPositions.clear();
@@ -222,7 +244,7 @@ void StationOutfitter::activate(int id) {
     if (button == m_buttons.end() || !button->enabled) return;
     if (id == 1) { m_visible = false; m_equipment = false; }
     if (id == 2) m_equipment = !m_equipment;
-    if (id == 3) { m_defense = !m_defense; m_equipment = false; }
+    if (id == 3) { m_defense = !m_defense; m_equipment = false; m_market = false; m_bar = false; }
     if (id == 4) request(ContractActionKind::BuyGun);
     if (id == 5) m_map = true;
     if (id == 9) request(ContractActionKind::Ready);
@@ -237,6 +259,16 @@ void StationOutfitter::activate(int id) {
     if (id == 33) request(ContractActionKind::BuyShield,0,glm::ivec3(0),
         NoRouteNode,RewardChoice::None,m_shieldSelection);
     if (id == 34) request(ContractActionKind::RepairHull);
+    if (id >= 40 && id <= 43) {
+        m_equipment = id == 40;
+        m_market = id == 41;
+        m_bar = id == 42;
+        m_map = id == 43;
+        m_defense = false;
+        m_weapon = 0;
+    }
+    if (id == 44) request(ContractActionKind::SellGun, static_cast<std::uint8_t>(m_weapon));
+    if (id == 45) { m_market = false; m_bar = false; }
     if (id == 6) m_rotation -= 0.4f;
     if (id == 7) m_rotation += 0.4f;
     if (id >= 100 && id < 200) m_weapon = id - 99;
@@ -248,6 +280,12 @@ void StationOutfitter::activate(int id) {
 }
 
 bool StationOutfitter::closeEquipment() {
+    if (visible() && (m_market || m_bar)) {
+        m_market = false;
+        m_bar = false;
+        layout();
+        return true;
+    }
     if (visible() && m_defense) {
         m_defense = false;
         layout();
@@ -286,10 +324,25 @@ bool StationOutfitter::key(int key) {
         return true;
     }
     if (!m_status.alive) return true;
+    if (m_status.phase == ContractPhase::Station &&
+        (key == GLFW_KEY_A || key == GLFW_KEY_E || key == GLFW_KEY_M ||
+            key == GLFW_KEY_B || key == GLFW_KEY_H)) {
+        m_visible = true;
+        m_defense = false;
+        m_equipment = key == GLFW_KEY_A || key == GLFW_KEY_E;
+        m_market = key == GLFW_KEY_M;
+        m_bar = key == GLFW_KEY_B;
+        m_map = key == GLFW_KEY_H;
+        m_weapon = 0;
+        layout();
+        return true;
+    }
     if (key == GLFW_KEY_N && m_status.phase == ContractPhase::Station && !m_map) {
         m_visible = true;
         m_defense = !m_defense;
         m_equipment = false;
+        m_market = false;
+        m_bar = false;
         layout();
         return true;
     }
@@ -302,9 +355,6 @@ bool StationOutfitter::key(int key) {
         layout();
         if (key == GLFW_KEY_ENTER) activate(33);
         return true;
-    }
-    if (key == GLFW_KEY_M && m_status.phase == ContractPhase::Station) {
-        m_visible = true; m_map = !m_map; m_equipment = false; layout(); return true;
     }
     if (m_map || m_status.phase != ContractPhase::Station) {
         if (key == GLFW_KEY_ENTER) activate(9);
@@ -321,11 +371,22 @@ bool StationOutfitter::key(int key) {
         }
         return true;
     }
-    if (key == GLFW_KEY_E) { m_visible = true; m_equipment = !m_equipment; layout(); return true; }
+    if (m_bar) return true;
+    if (m_market) {
+        if (key == GLFW_KEY_UP || key == GLFW_KEY_DOWN) {
+            const int step = key == GLFW_KEY_UP ? WeaponCatalogSize-1 : 1;
+            for (int i = 0; i < WeaponCatalogSize; ++i) {
+                m_weapon = (m_weapon + step + WeaponCatalogSize-1) % WeaponCatalogSize + 1;
+                if (m_status.inventory[m_weapon-1]) break;
+            }
+        }
+        layout();
+        if (key == GLFW_KEY_ENTER) activate(4);
+        if (key == GLFW_KEY_S) activate(44);
+        return true;
+    }
     if (!m_equipment) {
         if (key == GLFW_KEY_ENTER) { m_map = true; m_visible = true; layout(); }
-        if (key == GLFW_KEY_B) request(ContractActionKind::BuyGun);
-        if (key == GLFW_KEY_H) activate(34);
     } else {
         if (key == GLFW_KEY_Q) activate(6);
         if (key == GLFW_KEY_R) activate(7);
@@ -385,6 +446,21 @@ void StationOutfitter::initialize() {
     m_wire = new glow::Program();
     m_wire->attach(glowutils::createShaderFromFile(GL_VERTEX_SHADER,"data/shader/ui/wire.vert"),
         glowutils::createShaderFromFile(GL_FRAGMENT_SHADER,"data/shader/ui/wire.frag"));
+    m_backgroundProgram = new glow::Program();
+    m_backgroundProgram->attach(
+        glowutils::createShaderFromFile(GL_VERTEX_SHADER,"data/shader/ui/stationbackground.vert"),
+        glowutils::createShaderFromFile(GL_FRAGMENT_SHADER,"data/shader/ui/stationbackground.frag"));
+    const char* names[]{"overview", "armory", "market", "bar", "hangar"};
+    for (std::size_t i = 0; i < m_backgrounds.size(); ++i) {
+        const std::string path = std::string("data/ui/station/") + names[i] + ".dds";
+        m_backgrounds[i] = new glow::Texture(GL_TEXTURE_2D);
+        if (!DdsTexture::loadImage2d(m_backgrounds[i], path))
+            throw std::runtime_error("Could not load station background: " + path);
+        m_backgrounds[i]->setParameter(GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        m_backgrounds[i]->setParameter(GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        m_backgrounds[i]->setParameter(GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        m_backgrounds[i]->setParameter(GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    }
     m_buffer = new glow::Buffer(GL_ARRAY_BUFFER);
     m_array = new glow::VertexArrayObject();
     auto* binding = m_array->binding(0);
@@ -394,11 +470,20 @@ void StationOutfitter::initialize() {
     m_array->enable(0);
 }
 
-void StationOutfitter::rectangle(glm::vec4 b, glm::vec3 color) {
+void StationOutfitter::rectangle(glm::vec4 b, glm::vec3 color, float opacity) {
     m_panel->use();
     m_panel->setUniform("panelBounds",glm::vec4(b.x*2-1,1-(b.y+b.w)*2,b.z*2,b.w*2));
     m_panel->setUniform("panelColor",color);
-    m_panel->setUniform("panelOpacity",1.0f);
+    m_panel->setUniform("panelOpacity",opacity);
+    m_quad->draw();
+}
+
+void StationOutfitter::background(std::size_t index, glm::vec4 b) {
+    m_backgroundProgram->use();
+    m_backgroundProgram->setUniform("panelBounds",glm::vec4(b.x*2-1,1-(b.y+b.w)*2,b.z*2,b.w*2));
+    m_backgroundProgram->setUniform("background",0);
+    glActiveTexture(GL_TEXTURE0);
+    m_backgrounds.at(index)->bind();
     m_quad->draw();
 }
 
@@ -464,8 +549,8 @@ glm::vec2 StationOutfitter::nodePosition(const RouteNode& node) const {
 }
 
 void StationOutfitter::drawRoute() {
-    rectangle({0.065f,0.26f,0.57f,0.55f},Surface*0.65f);
-    rectangle({0.66f,0.26f,0.275f,0.55f},Surface*0.65f);
+    rectangle({0.065f,0.26f,0.57f,0.55f},Surface*0.65f,0.86f);
+    rectangle({0.66f,0.26f,0.275f,0.55f},Surface*0.65f,0.86f);
     text("1 PATROL / 2 CROSSFIRE / 3 BLOCKADE / BASE SERVICES / SIGNAL ?",
         {0.085f,0.285f},0.013f,Muted,0.53f);
     for (int pass = 0; pass < 2; ++pass) {
@@ -551,7 +636,7 @@ void StationOutfitter::drawRewards() {
         text(weapon.name,{0.38f,0.49f},0.021f,glm::vec3(1),0.24f);
         text(weapon.role,{0.38f,0.525f},0.013f,Accent,0.24f);
         drawStats(m_status.rewardWeapon,{0.38f,0.565f},0,0.8f);
-        text(number(weapon.energyCost)+" ENERGY / SHOT / FIT AT BASE",
+        text(number(weapon.energyCost,1)+" ENERGY / SHOT / FIT AT BASE",
             {0.38f,0.695f},0.010f,Muted,0.24f);
     }
     const bool damage = m_status.rewardUpgrade == 1;
@@ -565,7 +650,7 @@ void StationOutfitter::drawRewards() {
         const auto rate = m_status.weaponEnergyRegeneration;
         const auto next = rate * (1 + PayloadRegenBonusPerStack /
             (1 + m_status.damageUpgrades * PayloadRegenBonusPerStack));
-        text(number(rate)+" > "+number(next)+" ENERGY/S AFTER PAUSE",
+        text(number(rate)+" > "+number(next)+" ENERGY/S RECHARGE",
             {0.67f,0.52f},0.012f,Muted,0.24f);
     } else {
         const auto current = std::min(MaxShieldedEnergyDiscount,
@@ -574,7 +659,7 @@ void StationOutfitter::drawRewards() {
         text(number(100*current)+" > "+number(100*next)+"% LESS GUN ENERGY",
             {0.67f,0.52f},0.012f,Muted,0.24f);
     }
-    text(damage ? "REACTOR RECHARGES FASTER BETWEEN BURSTS" : "ACTIVE AT 90% SHIELDS OR HIGHER",
+    text(damage ? "REACTOR RECHARGES FASTER, EVEN WHILE FIRING" : "ACTIVE AT 90% SHIELDS OR HIGHER",
         {0.67f,0.57f},0.012f,Muted,0.24f);
     text("ACTIVE: "+std::to_string(m_status.damageUpgrades)+" PAYLOAD / "+
         std::to_string(m_status.shieldUpgrades)+" SHIELD",{0.67f,0.63f},0.013f,Muted,0.24f);
@@ -642,8 +727,7 @@ void StationOutfitter::drawDefense() {
     text("FITTED: "+current.name+" / "+number(m_status.shieldCapacity)+" HP",
         {0.085f,0.74f},0.016f,Accent,0.84f);
     text("REACTOR  "+number(m_status.weaponEnergyCapacity)+" ENERGY / "+
-        number(m_status.weaponEnergyRegeneration)+" E/S / "+
-        number(Property<float>("contractship.general.weaponEnergyDelay"),1)+" S AFTER FIRING",
+        number(m_status.weaponEnergyRegeneration)+" E/S, RECHARGING WHILE FIRING",
         {0.085f,0.775f},0.015f,glm::vec3(1),0.84f);
 }
 
@@ -684,11 +768,11 @@ void StationOutfitter::drawFlightResources() {
         ? "WAIT "+number(m_status.weaponEnergyRechargeRemaining,1)+" S"
         : m_status.weaponEnergy < m_status.weaponEnergyCapacity
             ? "+"+number(m_status.weaponEnergyRegeneration)+" E/S" : "FULL RESERVE";
-    bar(0.66f,low ? "ENERGY LOW / RELEASE FIRE" : "WEAPON ENERGY",
+    bar(0.66f,low ? "ENERGY LOW / EASE OFF" : "WEAPON ENERGY",
         m_status.weaponEnergy,m_status.weaponEnergyCapacity,energyDetail,
         low ? glm::vec3(1,0.72f,0.3f) : glm::vec3(0.65f,0.65f,1));
     if (!low && m_status.run == 1 && m_status.attacksCleared == 0)
-        text("FIRE IN BURSTS / RELEASE TO RECHARGE",
+        text("TWO PULSE GUNS FIRE NONSTOP",
             {0.672f,0.916f},0.013f,Muted,0.275f);
 }
 
@@ -696,8 +780,8 @@ void StationOutfitter::draw() {
     const bool flight = m_status.phase == ContractPhase::Mission && m_status.alive &&
         Property<bool>("vfx.drawhud").get();
     if (!visible() && !flight) return;
-    if (!m_panel) initialize();
     GLint program, array, buffer, sourceRgb, destinationRgb, sourceAlpha, destinationAlpha;
+    GLint activeTexture, texture;
     glGetIntegerv(GL_CURRENT_PROGRAM, &program);
     glGetIntegerv(GL_VERTEX_ARRAY_BINDING, &array);
     glGetIntegerv(GL_ARRAY_BUFFER_BINDING, &buffer);
@@ -705,6 +789,10 @@ void StationOutfitter::draw() {
     glGetIntegerv(GL_BLEND_DST_RGB, &destinationRgb);
     glGetIntegerv(GL_BLEND_SRC_ALPHA, &sourceAlpha);
     glGetIntegerv(GL_BLEND_DST_ALPHA, &destinationAlpha);
+    glGetIntegerv(GL_ACTIVE_TEXTURE, &activeTexture);
+    glActiveTexture(GL_TEXTURE0);
+    glGetIntegerv(GL_TEXTURE_BINDING_2D, &texture);
+    if (!m_panel) initialize();
     const bool depth = glIsEnabled(GL_DEPTH_TEST), blend = glIsEnabled(GL_BLEND), cull = glIsEnabled(GL_CULL_FACE);
     glDisable(GL_DEPTH_TEST); glDisable(GL_CULL_FACE);
     glEnable(GL_BLEND); glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
@@ -720,9 +808,17 @@ void StationOutfitter::draw() {
     rectangle({0.065f,0.23f,0.87f,0.002f},Surface*2.0f);
     const bool summary = m_status.phase == ContractPhase::Complete || m_status.phase == ContractPhase::Defeat;
     const bool rewards = m_status.phase == ContractPhase::Reward;
+    if (!summary && !rewards && !m_defense) {
+        const std::size_t image = m_map ? 4 : m_market ? 2 : m_bar ? 3 : m_equipment ? 1 : 0;
+        background(image, image == 0 ? glm::vec4(0.075f,0.28f,0.85f,0.43f)
+                                     : glm::vec4(0.065f,0.26f,0.87f,0.55f));
+        if (image != 0 && image != 3)
+            rectangle({0.065f,0.26f,0.87f,0.55f},Panel,0.35f);
+    }
     text(summary ? "RUN "+std::to_string(m_status.run)+" / DEBRIEF" : rewards ? "CHOOSE YOUR SALVAGE" :
-        m_map ? "SECTOR ROUTE" :         m_defense ? "SHIELDS / REACTOR" :
-        m_equipment ? "SHIP EQUIPMENT" : "STATION SERVICES",
+        m_map ? "HANGAR / SECTOR ROUTE" : m_defense ? "SHIELDS / REACTOR" :
+        m_market ? "STATION MARKET" : m_bar ? "STATION BAR" :
+        m_equipment ? "ARMORY / SHIP EQUIPMENT" : "STATION SERVICES",
         {0.065f,0.12f},0.031f,Accent,0.52f);
     text("BALANCE  "+std::to_string(m_status.credits)+" CR",{0.65f,0.175f},0.02f,glm::vec3(1),0.28f);
     if (m_status.damageUpgrades || m_status.shieldUpgrades)
@@ -734,37 +830,39 @@ void StationOutfitter::draw() {
         !m_status.alive ? "SHIP LOST. SPECTATING THE SURVIVORS - NO REVIVES THIS RUN." :
         m_defense ? "BUY AND EQUIP A BUILD. REPLACES THE OLD SHIELD; NO REFUND. ENERGY IS SEPARATE." :
         m_map ? "CHOOSE A CONNECTED NODE. SURVIVING PILOTS CONFIRM BEFORE TRAVEL."
+        : m_market ? "BUY THE STATION OFFER OR SELL STORED WEAPONS FOR HALF PRICE."
+        : m_bar ? "TAKE A BREAK BETWEEN SORTIES."
         : m_equipment ? "SELECT A WEAPON MOUNT, THEN CHOOSE A STORED WEAPON"
-        : "REARM. REFIT. RETURN TO THE FIGHT.",{0.065f,0.183f},0.016f,Muted,0.55f);
-    if (!m_map && !summary && !rewards && !m_defense) {
-        rectangle({0.065f,0.26f,m_equipment ? 0.53f : 0.37f,0.55f},Surface*0.65f);
-        rectangle({m_equipment ? 0.615f : 0.485f,0.26f,m_equipment ? 0.32f : 0.45f,0.55f},Surface*0.65f);
+        : "SELECT A STATION SECTION OR USE ITS HOTKEY.",{0.065f,0.183f},0.016f,Muted,0.55f);
+    if (!m_map && !summary && !rewards && !m_defense && (m_equipment || m_market)) {
+        rectangle({0.065f,0.26f,m_equipment ? 0.53f : 0.37f,0.55f},Surface*0.65f,0.84f);
+        rectangle({m_equipment ? 0.615f : 0.485f,0.26f,m_equipment ? 0.32f : 0.45f,0.55f},Surface*0.65f,0.84f);
     }
     if (summary) drawSummary();
     else if (rewards) drawRewards();
     else if (m_defense) drawDefense();
     else if (m_map) {
         drawRoute();
-    } else if (!m_equipment) {
+    } else if (m_bar) {
+        rectangle({0.065f,0.26f,0.87f,0.55f},Surface*0.65f,0.55f);
+        text("THE LAST PORT",{0.10f,0.34f},0.032f,Accent,0.65f);
+        text("GAMBLING IS NOT AVAILABLE YET.",{0.10f,0.44f},0.022f,glm::vec3(1),0.70f);
+        text("NO CREDITS WILL BE SPENT.",{0.10f,0.49f},0.016f,Muted,0.70f);
+    } else if (m_market) {
         const auto offer = catalogWeapon(m_status.offer);
-        text("SAFE HARBOR",{0.085f,0.29f},0.018f,Accent,0.3f);
-        text("CHOOSE YOUR NEXT STOP",{0.085f,0.35f},0.022f,glm::vec3(1),0.30f);
-        text("ATTACK / BASE / UNKNOWN SIGNAL",{0.085f,0.40f},0.016f,Muted,0.32f);
-        text("ENTER - OPEN THE ROUTE MAP",{0.085f,0.45f},0.018f,glm::vec3(1),0.31f);
-        text("SURVIVING BLOCKS ONLY / "+std::to_string(m_status.missingHullBlocks)+" LOST",
-            {0.085f,0.51f},0.014f,Muted,0.32f);
-        text("ONE PERSONAL WEAPON OFFER PER VISIT",{0.51f,0.285f},0.016f,Accent,0.39f);
-        UiFont::instance()->drawWeaponIcon(m_status.offer,{0.51f,0.325f,0.09f,0.14f});
-        text(offer.name,{0.62f,0.34f},0.022f,glm::vec3(1),0.28f);
-        text(offer.role,{0.62f,0.385f},0.014f,Accent,0.28f);
-        text(offer.profile.pellets > 1 ? "8 PELLETS / VOLLEY TOTALS" :
-            offer.profile.radius > 0 ? "SPLASH / SHARED TOTAL BUDGET" : "REFERENCE IMPACT DAMAGE",
-            {0.62f,0.42f},0.013f,Muted,0.28f);
-        drawStats(m_status.offer,{0.51f,0.49f});
-        text("ENERGY / SHOT  "+number(offer.energyCost),
-            {0.51f,0.645f},0.015f,Accent,0.39f);
-        text("PURCHASES GO TO INVENTORY. EQUIP BEFORE LAUNCH.",{0.51f,0.77f},0.012f,Muted,0.40f);
-    } else {
+        text("BUY / ONE OFFER PER VISIT",{0.085f,0.285f},0.016f,Accent,0.34f);
+        UiFont::instance()->drawWeaponIcon(m_status.offer,{0.085f,0.325f,0.09f,0.12f});
+        text(offer.name,{0.19f,0.34f},0.022f,glm::vec3(1),0.22f);
+        text(offer.role,{0.19f,0.385f},0.014f,Accent,0.22f);
+        drawStats(m_status.offer,{0.085f,0.46f});
+        text("ENERGY / SHOT  "+number(offer.energyCost,1),
+            {0.085f,0.625f},0.015f,Accent,0.34f);
+        unsigned stored = 0;
+        for (auto quantity : m_status.inventory) stored += quantity;
+        text("SELL / INVENTORY  "+std::to_string(stored)+"/64",{0.53f,0.285f},0.016f,Accent,0.37f);
+        if (!stored) text("NO STORED WEAPONS",{0.53f,0.38f},0.018f,Muted,0.37f);
+        text("EQUIPPED WEAPONS CANNOT BE SOLD",{0.53f,0.66f},0.013f,Muted,0.37f);
+    } else if (m_equipment) {
         drawShip();
         unsigned stored = 0;
         for (auto quantity : m_status.inventory) stored += quantity;
@@ -782,7 +880,7 @@ void StationOutfitter::draw() {
                 profile.radius > 0 ? "SPLASH / SHARED TOTAL BUDGET" : "REFERENCE IMPACT DAMAGE",
                 {0.63f,0.628f},0.011f,Muted,0.28f);
             drawStats(static_cast<std::uint8_t>(m_weapon),{0.63f,0.65f},mounted);
-            text("ENERGY / SHOT  "+number(catalogWeapon(m_weapon).energyCost),
+            text("ENERGY / SHOT  "+number(catalogWeapon(m_weapon).energyCost,1),
                 {0.63f,0.808f},0.012f,Accent,0.28f);
             UiFont::instance()->drawWeaponIcon(m_weapon,{0.50f,0.70f,0.075f,0.10f});
         } else {
@@ -798,6 +896,30 @@ void StationOutfitter::draw() {
         const bool visited = routeNode && (m_status.visitedNodes & (1u << node));
         const bool selected = button.id == m_hover || (rewards && button.id == 20+m_rewardSelection) ||
             (button.id>=100 && button.id<200 && button.id==m_weapon+99);
+        if (button.id >= 40 && button.id <= 43) {
+            const glm::vec3 colors[]{
+                {0.22f,0.57f,0.68f}, {0.54f,0.47f,0.22f},
+                {0.45f,0.29f,0.52f}, {0.24f,0.46f,0.39f}};
+            const char* descriptions[]{
+                "FIT WEAPONS TO YOUR SHIP", "BUY AND SELL EQUIPMENT",
+                "GAMBLING / COMING SOON", "CHOOSE YOUR NEXT DESTINATION"};
+            const auto color = colors[button.id-40];
+            const auto border = selected ? color : color*0.45f;
+            rectangle({button.bounds.x,button.bounds.y,button.bounds.z,0.004f},border);
+            rectangle({button.bounds.x,button.bounds.y+button.bounds.w-0.004f,button.bounds.z,0.004f},border);
+            rectangle({button.bounds.x,button.bounds.y,0.003f,button.bounds.w},border);
+            rectangle({button.bounds.x+button.bounds.z-0.003f,button.bounds.y,0.003f,button.bounds.w},border);
+            rectangle(button.bounds+glm::vec4(0.003f,0.004f,-0.006f,-0.008f),Panel,
+                selected ? 0.08f : 0.30f);
+            rectangle({button.bounds.x+0.003f,button.bounds.y+0.12f,
+                button.bounds.z-0.006f,0.076f},Panel,0.90f);
+            rectangle({button.bounds.x+0.012f,button.bounds.y+0.13f,0.005f,0.055f},color);
+            text(button.label,{button.bounds.x+0.027f,button.bounds.y+0.127f},0.022f,
+                selected ? glm::vec3(1) : color*1.6f,0.35f);
+            text(descriptions[button.id-40],{button.bounds.x+0.027f,button.bounds.y+0.163f},
+                0.012f,Muted,0.35f);
+            continue;
+        }
         if (routeNode) rectangle(button.bounds+glm::vec4(-0.002f,-0.003f,0.004f,0.006f),
             chosen ? glm::vec3(1,0.68f,0.3f) : visited ? Accent : Muted*0.3f);
         rectangle(button.bounds,button.enabled && selected ? Accent*0.6f : Surface);
@@ -816,14 +938,18 @@ void StationOutfitter::draw() {
     text(summary ? "ENTER NEW RUN   ESC MAIN MENU   TAB HIDE" :
         rewards ? "1 / 2 / 3 CLAIM   LEFT / RIGHT SELECT   ENTER CLAIM   TAB HIDE" :
         m_defense ? "1 / 2 / 3 SELECT   LEFT / RIGHT SELECT   ENTER BUY   N / ESC BACK" :
-        m_map ? "ARROWS SELECT NEXT STOP   ENTER CONFIRM   M BACK AT BASE   TAB HIDE"
+        m_map ? "ARROWS SELECT NEXT STOP   ENTER CONFIRM   ESC BACK AT BASE   TAB HIDE"
+        : m_market ? "UP / DOWN SELECT   ENTER BUY   S SELL   ESC BACK"
+        : m_bar ? "ESC BACK TO BASE"
         : m_equipment ? "LEFT / RIGHT MOUNT   UP / DOWN INVENTORY   ENTER FIT   ESC BACK"
-        : "B BUY WEAPON   N SHIELD BUILDS   E EQUIPMENT   ENTER ROUTE MAP   TAB HIDE",
+        : "A ARMORY   M MARKET   B BAR   H HANGAR   N SHIELDS   TAB HIDE",
         {0.30f,0.93f},0.012f,Muted,0.62f);
     }
     glUseProgram(program);
     glBindVertexArray(array);
     glBindBuffer(GL_ARRAY_BUFFER, buffer);
+    glBindTexture(GL_TEXTURE_2D, texture);
+    glActiveTexture(activeTexture);
     glBlendFuncSeparate(sourceRgb, destinationRgb, sourceAlpha, destinationAlpha);
     if (depth) glEnable(GL_DEPTH_TEST);
     if (!blend) glDisable(GL_BLEND);
@@ -831,5 +957,7 @@ void StationOutfitter::draw() {
 }
 
 void StationOutfitter::beforeContextDestroy() {
-    m_panel = nullptr; m_wire = nullptr; m_buffer = nullptr; m_array = nullptr;
+    m_panel = nullptr; m_wire = nullptr; m_backgroundProgram = nullptr;
+    for (auto& background : m_backgrounds) background = nullptr;
+    m_buffer = nullptr; m_array = nullptr;
 }

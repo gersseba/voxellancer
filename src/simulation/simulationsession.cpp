@@ -172,6 +172,16 @@ bool SimulationSession::requestActorRemoval(
     return true;
 }
 
+bool SimulationSession::actorRemovalPending(
+    voxellancer::protocol::EntityId actor
+) const {
+    std::lock_guard<std::mutex> lock(m_inputQueueMutex);
+    return std::find(
+        m_pendingActorRemovals.begin(),
+        m_pendingActorRemovals.end(),
+        actor) != m_pendingActorRemovals.end();
+}
+
 bool SimulationSession::createSnapshotFrame(
     std::uint64_t sequence,
     std::uint64_t baselineSequence,
@@ -319,7 +329,7 @@ void SimulationSession::applyInputCommands(std::uint64_t tick) {
                     if (auto* target = m_world.worldObject(command->target))
                         ship->components().fireGunsWithLead(*target, false);
                 } else {
-                    ship->components().fireAtPoint(
+                    ship->components().fireGunsAtCrosshair(
                         ship->position() + ship->orientation() * command->firePoint, false);
                 }
             }

@@ -87,6 +87,13 @@ void VoxelParticleEngine::removeParticle(int index) {
     particleChanged(index);
 }
 
+void VoxelParticleEngine::clear() {
+    for (int index = 0; index < particleDataCount(); ++index) {
+        if (m_cpuParticleBuffer[index].status != VoxelParticleData::Status::Removed)
+            removeParticle(index);
+    }
+}
+
 void VoxelParticleEngine::update(float deltaSec) {
     m_time += deltaSec;
     m_remover->update(deltaSec);

@@ -2,48 +2,21 @@
     "version": "2.0.0",
     "tasks": [
         {
-            "label": "AI Dogfight Comparison (macOS)",
-            "type": "shell",
-            "command": "cmake --build build/macos --target voxellancer && ./build/macos/voxellancer -scenario ai-comparison -nointro",
-            "options": {
-                "cwd": "${workspaceFolder}"
-            },
-            "problemMatcher": ["$gcc"],
-            "presentation": {
-                "reveal": "always",
-                "panel": "shared"
-            }
-        },
-        {
-            "label": "Play Contracts with Local Server (macOS)",
+            "label": "Run Tests",
             "type": "process",
-            "command": "/bin/bash",
+            "command": "cmake",
             "args": [
-                "${workspaceFolder}/tools/run-local-macos.sh",
-                "-scenario",
-                "contracts",
-                "-nointro"
+                "-P",
+                "${workspaceFolder}/tools/agent-check.cmake"
             ],
             "options": {
                 "cwd": "${workspaceFolder}"
             },
-            "problemMatcher": ["$gcc"],
-            "presentation": {
-                "reveal": "always",
-                "panel": "shared"
-            }
-        },
-        {
-            "label": "Start Client with Local Server (macOS)",
-            "type": "process",
-            "command": "/bin/bash",
-            "args": [
-                "${workspaceFolder}/tools/run-local-macos.sh"
+            "problemMatcher": [
+                "$gcc",
+                "$msCompile"
             ],
-            "options": {
-                "cwd": "${workspaceFolder}"
-            },
-            "problemMatcher": ["$gcc"],
+            "group": "test",
             "presentation": {
                 "reveal": "always",
                 "panel": "shared"
@@ -52,40 +25,108 @@
         {
             "label": "Start Server",
             "type": "process",
-            "command": "powershell.exe",
+            "command": "cmake",
             "args": [
-                "-NoProfile",
-                "-ExecutionPolicy",
-                "Bypass",
-                "-File",
-                "${workspaceFolder}\\tools\\agent-check.ps1",
-                "-Mode",
-                "Run",
-                "-Benchmark",
-                "StartServer"
+                "-DMODE=Run",
+                "-DRUN=StartServer",
+                "-P",
+                "${workspaceFolder}/tools/agent-check.cmake"
             ],
-            "problemMatcher": [],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": [
+                "$gcc",
+                "$msCompile"
+            ],
+            "presentation": {
+                "reveal": "always",
+                "panel": "dedicated"
+            }
+        },
+        {
+            "label": "Start Client",
+            "type": "process",
+            "command": "cmake",
+            "args": [
+                "-DMODE=Run",
+                "-DRUN=StartClient",
+                "-P",
+                "${workspaceFolder}/tools/agent-check.cmake"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": [
+                "$gcc",
+                "$msCompile"
+            ],
+            "presentation": {
+                "reveal": "always",
+                "panel": "dedicated"
+            }
+        },
+        {
+            "label": "Start Client with Local Server",
+            "type": "process",
+            "command": "cmake",
+            "args": [
+                "-DMODE=Run",
+                "-DRUN=LocalServer",
+                "-P",
+                "${workspaceFolder}/tools/agent-check.cmake"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": [
+                "$gcc",
+                "$msCompile"
+            ],
             "presentation": {
                 "reveal": "always",
                 "panel": "shared"
             }
         },
         {
-            "label": "Start Client",
+            "label": "Play Contracts with Local Server",
             "type": "process",
-            "command": "powershell.exe",
+            "command": "cmake",
             "args": [
-                "-NoProfile",
-                "-ExecutionPolicy",
-                "Bypass",
-                "-File",
-                "${workspaceFolder}\\tools\\agent-check.ps1",
-                "-Mode",
-                "Run",
-                "-Benchmark",
-                "StartClient"
+                "-DMODE=Run",
+                "-DRUN=LocalContracts",
+                "-P",
+                "${workspaceFolder}/tools/agent-check.cmake"
             ],
-            "problemMatcher": [],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": [
+                "$gcc",
+                "$msCompile"
+            ],
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
+            }
+        },
+        {
+            "label": "AI Dogfight Comparison",
+            "type": "process",
+            "command": "cmake",
+            "args": [
+                "-DMODE=Run",
+                "-DRUN=AiComparison",
+                "-P",
+                "${workspaceFolder}/tools/agent-check.cmake"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": [
+                "$gcc",
+                "$msCompile"
+            ],
             "presentation": {
                 "reveal": "always",
                 "panel": "shared"
@@ -94,19 +135,20 @@
         {
             "label": "Start Shield Showcase Scenario",
             "type": "process",
-            "command": "powershell.exe",
+            "command": "cmake",
             "args": [
-                "-NoProfile",
-                "-ExecutionPolicy",
-                "Bypass",
-                "-File",
-                "${workspaceFolder}\\tools\\agent-check.ps1",
-                "-Mode",
-                "Run",
-                "-Scenario",
-                "ShieldShowcase"
+                "-DMODE=Run",
+                "-DRUN=ShieldShowcase",
+                "-P",
+                "${workspaceFolder}/tools/agent-check.cmake"
             ],
-            "problemMatcher": [],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": [
+                "$gcc",
+                "$msCompile"
+            ],
             "presentation": {
                 "reveal": "always",
                 "panel": "shared"
@@ -115,19 +157,20 @@
         {
             "label": "Start Local Client with Integrated Server (Large Combat Benchmark)",
             "type": "process",
-            "command": "powershell.exe",
+            "command": "cmake",
             "args": [
-                "-NoProfile",
-                "-ExecutionPolicy",
-                "Bypass",
-                "-File",
-                "${workspaceFolder}\\tools\\agent-check.ps1",
-                "-Mode",
-                "Run",
-                "-Benchmark",
-                "LocalLargeCombat"
+                "-DMODE=Run",
+                "-DRUN=LocalLargeCombat",
+                "-P",
+                "${workspaceFolder}/tools/agent-check.cmake"
             ],
-            "problemMatcher": [],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": [
+                "$gcc",
+                "$msCompile"
+            ],
             "presentation": {
                 "reveal": "always",
                 "panel": "shared"
@@ -136,19 +179,20 @@
         {
             "label": "Start Server and Two Clients (Large Combat Benchmark)",
             "type": "process",
-            "command": "powershell.exe",
+            "command": "cmake",
             "args": [
-                "-NoProfile",
-                "-ExecutionPolicy",
-                "Bypass",
-                "-File",
-                "${workspaceFolder}\\tools\\agent-check.ps1",
-                "-Mode",
-                "Run",
-                "-Benchmark",
-                "MultiplayerLargeCombat"
+                "-DMODE=Run",
+                "-DRUN=MultiplayerLargeCombat",
+                "-P",
+                "${workspaceFolder}/tools/agent-check.cmake"
             ],
-            "problemMatcher": [],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": [
+                "$gcc",
+                "$msCompile"
+            ],
             "presentation": {
                 "reveal": "always",
                 "panel": "shared"

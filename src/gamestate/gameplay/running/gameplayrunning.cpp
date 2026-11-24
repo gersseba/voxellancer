@@ -27,6 +27,9 @@
 #include "player.h"
 #include "worldobject/ship.h"
 #include "sound/soundmanager.h"
+#include "ui/hud/hud.h"
+#include "ui/hud/crosshair.h"
+#include "utils/safenormalize.h"
 
 #ifndef VOXELLANCER_HEADLESS_SERVER
 namespace {
@@ -251,17 +254,27 @@ void GamePlayRunning::submitRemoteInput(
             glow::warning("Cannot aim remote fire without a presentation ship.");
             return;
         }
-        command.firePoint = glm::inverse(ship->orientation()) *
-            (World::instance()->player().aimPoint() - ship->position());
+        auto& player = World::instance()->player();
+        const auto origin = player.cameraHead().position();
+        const auto direction = safeNormalize(player.hud().crossHair().worldPosition() - origin,
+            player.cameraHead().orientation() * glm::vec3(0, 0, -1));
+        const auto aimPoint = m_gamePlay->scene().remoteAimPoint(origin, direction);
+        if (!aimPoint) {
+            glow::warning("Cannot aim remote fire before ship content arrives.");
+            return;
+        }
+        command.firePoint = glm::inverse(ship->orientation()) * (aimPoint->point - ship->position());
         const float distance = glm::length(command.firePoint);
         if (std::isfinite(distance) &&
             distance > voxellancer::protocol::MaxFirePointDistance) {
             command.firePoint *= voxellancer::protocol::MaxFirePointDistance / distance;
         }
         command.buttons |= voxellancer::protocol::FirePrimary;
-        if (const auto target = m_gamePlay->scene().remoteLeadTarget()) {
-            command.buttons |= voxellancer::protocol::FireWithLead;
-            command.target = *target;
+        if (!aimPoint->hitVoxel) {
+            if (const auto target = m_gamePlay->scene().remoteLeadTarget()) {
+                command.buttons |= voxellancer::protocol::FireWithLead;
+                command.target = *target;
+            }
         }
     }
     const bool inputChanged = !m_lastRemoteInputCommand ||

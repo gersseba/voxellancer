@@ -26,13 +26,14 @@ Bandit-based `all_tests` target. Set up vcpkg as described in the
 [build instructions](doc/3_buildinstructions.md), then run the build-and-test
 harness from the repository root:
 
-```powershell
-.\tools\agent-check.ps1
+```sh
+cmake -P tools/agent-check.cmake
 ```
 
-The first run configures a Visual Studio build under
-`build/agent-vcpkg-vs<major>-stable` when Build Tools are installed, resolves the
-manifest dependencies, builds `all_tests`, and runs the tests.
+The harness is a CMake script and works on Windows, macOS, and Linux. It finds
+vcpkg in standard locations (setting `VCPKG_ROOT` is optional), configures a
+build directory (`build/macos` on macOS, `build/agent-vcpkg-stable` elsewhere),
+resolves the manifest dependencies, builds `all_tests`, and runs the tests.
 See [AGENTS.md](AGENTS.md) for the development workflow and
 [doc/5_engine_architecture.md](doc/5_engine_architecture.md) for where to look
 when changing a subsystem.
@@ -45,16 +46,19 @@ cmake --build build/agent-vcpkg-vs18-stable --target protocol_tests --config Rel
 .\build\agent-vcpkg-vs18-stable\Release\protocol_tests.exe
 ```
 
-In VS Code, **Terminal: Run Task** contains runtime tasks to start the server or
-client, start the **Shield Showcase Scenario**, or run either large-combat
-benchmark. The shield showcase task builds and launches the graphical client
-directly in the showcase.
-Run `.\tools\agent-check.ps1 -Mode Test` to build and execute the test suite.
+In VS Code, **Terminal: Run Task** contains platform-independent tasks to run
+the tests, start the server or client, play locally, start the **Shield
+Showcase Scenario**, or run either large-combat benchmark. They call the same
+harness, for example
+`cmake -DMODE=Run -DRUN=StartServer -P tools/agent-check.cmake`; start the
+server before its clients. See the
+[build instructions](doc/3_buildinstructions.md#build-test-and-run-harness)
+for all options.
 
 ### Compare dogfight AIs
 
-The original AI remains the default. Run the new **AI Dogfight Comparison
-(macOS)** VS Code task, or launch a built client from the repository root:
+The original AI remains the default. Run the **AI Dogfight Comparison** VS
+Code task, or launch a built client from the repository root:
 
 ```sh
 ./build/macos/voxellancer -scenario ai-comparison -nointro
@@ -108,7 +112,7 @@ and atlas details are in [data/ui/fonts](data/ui/fonts/README.md).
 Benchmarks, shield showcase, and the developer server preview still bypass
 the main menu.
 
-At the starting base, click **ROUTE MAP** or press **Enter / M** to open the
+At the starting base, click **HANGAR** or press **Enter / H** to open the
 branching sector map. Select a connected node with the mouse or arrow keys,
 then click **TRAVEL** or press **Enter**. In co-op, everyone confirms the same
 shared destination; changing it clears the party's readiness. Only the server
@@ -120,10 +124,29 @@ paths, randomized intermediate node types/attack variants, and a final blockade 
 | Node | Behavior |
 |---|---|
 | Attack 1: Raider Patrol | Light patrol in open space; 100-credit reward option. |
-| Attack 2: Debris Crossfire | Autocannon/scatter ambush with destructible barriers; 150-credit option. |
-| Attack 3: Fortified Blockade | Shielded pulse/plasma defenders and more barriers; 200-credit option. |
+| Attack 2: Debris Crossfire | Autocannon/scatter ambush in a dense wreck field; 150-credit option. |
+| Attack 3: Fortified Blockade | Shielded pulse/plasma defenders behind an asteroid belt; 200-credit option. |
 | Base | Shop, equipment fitting, and a full shield refill. |
 | ? Encounter | Investigate a derelict cache, a distress call, or a decoy ambush. Save the friendly wingman during Distress Call for +75 CR on the credit choice. |
+
+Each sortie opens with the encounter name and its objective across the HUD for
+five seconds. Arenas use one of five procedurally generated cover layouts,
+each produced by its own placement algorithm from destructible asteroids and
+wreckage (hull plates, girders, torn hull sections, derelict hulks):
+
+| Layout | Arrangement |
+|---|---|
+| `none` | Open space. |
+| `asteroidfield` | 10–14 mixed-size rocks scattered through the whole arena. |
+| `asteroidline` | A bowed, slanted belt of rocks across the approach with one or two fly-through gaps. |
+| `debriscluster` | A tight knot of 7–10 wreckage pieces near mid-lane. |
+| `debrischunk` | One huge derelict hulk ringed by a few shed fragments. |
+
+Each level lists the layouts that fit its theme, and one is picked at random
+per sortie; the pieces themselves are regenerated every time. Hostiles start beyond weapon range and hold position, tracking you,
+until a pilot closes to 1.5× the base Pulse Repeater range (900 units) or a
+shot hits one of them; then the whole squad attacks. A distress wingman waits
+the same way.
 
 Enemy counts scale with surviving pilots. Clear every hostile to open
 **Salvage**: each surviving pilot chooses exactly one personal reward using
@@ -148,25 +171,32 @@ opens the victory debrief. Losing every ship opens the defeat debrief.
 Every connected co-op pilot must confirm. It resets ships, money, inventory,
 equipment, run bonuses, statistics, and the map; saved settings are retained.
 
-Each station visit offers **one personal random gun**, costing 100–200 credits.
-Click **BUY** or press **B** to store it in your inventory; buying does not equip
-it automatically. The offer stays sold until reaching a different base.
-Inventory holds up to 64 stored weapons, in addition to fitted weapons.
+The station overview has hover-highlighted **Armory (A/E)**, **Market (M)**,
+**Bar (B)** and **Hangar (H)** sections. The bar's gambling is not implemented.
+Each section has its own illustrated background; artwork details are in
+[data/ui/station](data/ui/station/README.md).
+In the market, each visit offers **one personal random gun**, costing 100–200
+credits. Click **BUY** or press **Enter** to store it; buying does not equip it.
+The offer stays sold until reaching a different base. Select a stored weapon
+and click **SELL** or press **S** to sell one for half its catalog price,
+rounded down. Fitted weapons cannot be sold. The inventory lists only owned
+weapons and holds up to 64 stored weapons, in addition to fitted weapons.
 
-Click **EQUIPMENT** or press **E** to open the hollow-ship preview. Only numbered
+Open the **Armory** to see the hollow-ship preview. Only numbered
 weapon mounts are selectable. Click a mount, choose a stored weapon, compare
 its combat statistics and energy cost, then click **FIT WEAPON** or press **Enter**. The previous
 weapon returns to inventory. Use **Left/Right** to select mounts, **Up/Down**
-to select stored weapons, and **Q/R** to rotate the preview. **Esc** or **E**
+to select stored weapons, and **Q/R** to rotate the preview. **Esc**
 returns to station services. Purchases and fitting wait for server confirmation.
-**N** opens **Shields / Energy**. Choose Balanced Mk2 (30,000 HP, 450 HP/s,
-2 s recovery, 100 CR), Bulwark (45,000 HP, 300 HP/s, 5 s, 150 CR), or Flux
-(16,000 HP, 1,600 HP/s, 1 s, 150 CR), then **Enter** to buy and equip.
+**N** opens **Shields / Energy**. Choose Balanced Mk2 (300 HP, 30 HP/s,
+2 s recovery, 100 CR), Bulwark (450 HP, 20 HP/s, 5 s, 150 CR), or Flux
+(150 HP, 50 HP/s, 1 s, 150 CR), then **Enter** to buy and equip. The Starter
+shield has 200 HP, 20 HP/s and 2 s recovery.
 Recovery begins after the last shield hit, even when depleted. Replacing a
 shield has no refund; switching builds costs the full price. Run capacity
 upgrades apply to every build. Purchases and fitting clear your ready state.
 Press **Enter** from station services to return to the route map.
-**M** or **Esc** returns from that map to the base while you are docked.
+**Esc** returns from that map to the base while you are docked.
 
 The six weapons include pulse repeaters, an autocannon, railgun, plasma mortar,
 and scatter cannon. Cards show reference velocity, range, and damage against
@@ -174,11 +204,15 @@ shields, armor, and normal blocks; plasma/scatter values are shared shot/volley
 totals, not damage per affected block. See the [damage reference](doc/6_weapons_and_shields_concept.md)
 and [icon provenance](data/ui/weapons/README.md).
 
+The starter ship has five weapon mounts, with two Pulse I guns fitted initially.
+Pulse I is the balance baseline: 10 shield and 10 hull damage per shot, 10
+energy, one shot every 0.5 s. Both guns can fire nonstop, and an identical
+starter shield (200 HP) breaks after about five seconds of that fire.
 Contract ships share **100 weapon energy** across their guns. Energy regenerates
-at **35/s**, starting **0.4 s after the last successful shot**. Pulse I/II,
-autocannon, railgun, mortar, and scatter cost respectively **4/7/3/22/26/15**
-per trigger; scatter pays once for its entire volley. Insufficient energy
-prevents firing; release fire to refill quickly. Shield recharge uses no weapon
+at **40/s**, including while firing. Pulse I/II, autocannon, railgun, mortar,
+and scatter cost respectively **10/12/8/30/25/16** per trigger; scatter pays
+once for its entire volley. Heavier loadouts drain the reserve faster than it
+recharges, and insufficient energy prevents firing. Shield recharge uses no weapon
 energy. Flight HUD bars show both reserves and recharge timers; base visits
 refill both without repairing the hull. Shield purchases and reactors are
 personal, server-authoritative, and reset on New Run.
@@ -212,8 +246,13 @@ on the next fresh run. The debrief records attacks, party kills, bases, time,
 and personal earned credits, salvaged weapons, and upgrades.
 Progress lasts for the current run only. There are no disk saves, physical loot drops,
 companions, random-encounter events, or remote/internet hosting yet.
-Shop settings live in `data/config.ini` under `[contracts]`; the three attacks
-are authored under `[contractlevel1]` through `[contractlevel3]`.
+Shop settings live in `data/config.ini` under `[contracts]`, including the
+engagement rule (`baseWeapon`, `engageRangeFactor`). Attacks are authored under
+`[contractlevel1]` through `[contractlevel4]` and encounters under
+`[contractsignal1]` through `[contractsignal3]`; each sets its announced
+`objective`, enemy `formation` (1–3), and the allowed cover `layouts`
+(comma-separated). Piece generators live in `src/procedural/covergenerator.cpp`
+and layout algorithms in `src/procedural/coverlayout.cpp`.
 
 ## Headless simulation server
 
@@ -245,7 +284,7 @@ waits in a lobby before creating the selected scenario and assigning player
 ships. Without a target it starts the scenario immediately, except contracts,
 which default to a one-pilot lobby and accept at most four pilots. Normal server
 operation prints per-client byte and visibility counters once per second.
-The version 19 protocol defines generation-protected entity IDs, tick-stamped
+The version 31 protocol defines generation-protected entity IDs, tick-stamped
 input commands, versioned snapshot deltas with entity kind and shield/hull
 fractions, uniform scale, and maximum mass, full voxel content, initial
 equipment slot/key state for newly visible entities, stable ship-definition
@@ -284,7 +323,7 @@ server simulation intervals. The integrated task starts the authoritative server
 the graphical executable. The multiplayer task starts the server first, opens
 two visible clients side-by-side, and begins the benchmark after both join.
 Each run writes a server report and distinct `client-1`/`client-2` reports to
-`benchmark-results\`, all sharing a run ID. Client frame recording begins on
+`benchmark-results/`, all sharing a run ID. Client frame recording begins on
 the first started-world snapshot, so the client's observed tick span may be
 slightly shorter than the server's full run.
 
@@ -329,7 +368,8 @@ callbacks, scenario population, and scriptable cleanup are covered by the full
 test suite. Scenario clear/reset now rebuilds the simulation state in its
 owning world without deleting the global client world. Voxel debris, explosion,
 and engine-trail effects also use their creator's presentation world.
-Each connection receives entities within 650 world units of its assigned ship;
+Each connection receives entities within 650 world units of its assigned ship
+(2200 in contracts, whose hostiles start beyond weapon range);
 entering and leaving that radius creates snapshot additions and removals. This
 initial proximity rule is a prototype, not camera visibility or team-aware
 relevance. Voxel-removal events are sent reliably over TCP only for entities

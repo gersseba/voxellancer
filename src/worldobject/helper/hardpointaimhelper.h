@@ -16,7 +16,7 @@ class WorldObject;
 class HardpointAimHelper {
 public:
     HardpointAimHelper(Hardpoint* hardpoint, WorldObject* targetObject,
-        bool accountForSpawnOffset = false);
+        bool accountForSpawnOffset = false, bool aimAtVoxel = false);
     static std::optional<glm::vec3> interceptPoint(const glm::vec3& muzzle,
         const glm::vec3& targetPosition, const glm::vec3& relativeVelocity,
         float speed, float lifetime, float range, float spawnOffset = 0.0f);
@@ -57,6 +57,7 @@ protected:
     float m_spawnOffset;
 
     bool m_hitable;
+    bool m_hasTargetPoint = true;
 
     glm::vec3 m_direction;
     glm::vec3 m_point;

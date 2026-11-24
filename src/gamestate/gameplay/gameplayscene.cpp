@@ -20,6 +20,7 @@
 #include "camera/camera.h"
 #include "camera/camerahead.h"
 #include "client/remotevoxelvisuals.h"
+#include "client/remotevoxelgeometry.h"
 
 #include "display/rendering/starfield.h"
 #include "display/rendering/skybox.h"
@@ -30,13 +31,17 @@
 #include "equipment/shieldtype.h"
 #include "equipment/weaponcatalog.h"
 #include "gamestate/gameplay/gameplay.h"
+#include "gamestate/gameplay/input/gameplayfreecaminput.h"
 #ifndef VOXELLANCER_HEADLESS_SERVER
 #include "gamestate/gameplay/running/gameplayrunning.h"
 #endif
 
 #include "geometry/viewport.h"
 #include "geometry/sphere.h"
+#include "geometry/ray.h"
+#include "geometry/voxelray.h"
 
+#include "resource/clustercache.h"
 #include "sound/soundmanager.h"
 
 #include "ui/hud/hud.h"
@@ -52,6 +57,7 @@
 
 #include "voxel/voxelrenderer.h"
 #include "voxel/voxelclusterbounds.h"
+#include "voxel/voxelaimselection.h"
 #include "voxeleffect/voxelparticleengine.h"
 #include "voxeleffect/voxelparticlesetup.h"
 #ifndef VOXELLANCER_HEADLESS_SERVER
@@ -81,6 +87,7 @@ struct GamePlayScene::RemoteVoxelProxy {
     std::unique_ptr<VoxelCluster> cluster;
     std::vector<voxellancer::protocol::EntityVoxelState> voxelStates;
     std::vector<voxellancer::protocol::EntityEquipmentState> equipmentStates;
+    std::unordered_map<std::string, float> projectileOffsets;
 };
 #endif
 
@@ -130,11 +137,33 @@ void GamePlayScene::update(float deltaSec) {
     } else if (servicesWereVisible) {
         m_gamePlay.setMouseCursorFree(false);
     }
-    updateShieldShimmer(deltaSec);
+    if (contract) {
+        if (!m_particlePhase || *m_particlePhase != contract->phase) {
+            World::instance()->particleEngine().clear();
+            announceMission(*contract);
+        }
+        m_particlePhase = contract->phase;
+    } else {
+        m_particlePhase.reset();
+    }
+    if (!contract || contract->phase == voxellancer::protocol::ContractPhase::Mission)
+        updateShieldShimmer(deltaSec);
 #endif
 }
 
 #ifndef VOXELLANCER_HEADLESS_SERVER
+void GamePlayScene::announceMission(const voxellancer::protocol::ContractStatus& contract) {
+    using voxellancer::protocol::RouteNodeKind;
+    if (contract.phase != voxellancer::protocol::ContractPhase::Mission ||
+        contract.selectedNode >= contract.route.size())
+        return;
+    const auto& node = contract.route[contract.selectedNode];
+    if (node.kind == RouteNodeKind::Base) return;
+    const auto level = node.kind == RouteNodeKind::Attack
+        ? contractLevel(node.level) : contractSignal(node.level);
+    World::instance()->player().hud().showMissionInfo(level.name, "OBJECTIVE: " + level.objective, 5.0f);
+}
+
 bool GamePlayScene::stationKey(int key) {
     const bool captured = m_outfitter->key(key);
     if (captured) m_gamePlay.setMouseCursorFree(m_outfitter->visible());
@@ -173,6 +202,27 @@ void GamePlayScene::updateRemoteVoxelProxies() {
     for (const auto& snapshot : snapshots) {
         snapshotsById.emplace(remoteEntityKey(snapshot.id), &snapshot);
     }
+    CombatCueBudget combatCues;
+    const auto actor = running.remotePreviewSnapshot();
+    const auto contract = running.contractStatus();
+    const bool cockpit = actor && !m_gamePlay.freecamActive() && (!contract || contract->alive);
+    const glm::vec3 listener = m_gamePlay.freecamActive() ?
+        m_gamePlay.freecamInput().cameraHead().position() :
+        World::instance()->player().cameraHead().position();
+    const auto queueCue = [&](voxellancer::protocol::EntityId id, CombatCueKind kind,
+                             const glm::vec3& localPosition) {
+        const auto key = remoteEntityKey(id);
+        const auto snapshot = snapshotsById.find(key);
+        const auto proxy = m_remoteVoxelProxyIndex.find(key);
+        if (snapshot == snapshotsById.end() || proxy == m_remoteVoxelProxyIndex.end() ||
+            !proxy->second->cluster) return;
+        const auto& state = *snapshot->second;
+        const glm::vec3 position = state.position +
+            state.orientation * ((localPosition - proxy->second->cluster->transform().center()) * state.scale);
+        const auto offset = position - listener;
+        const bool personal = cockpit && id == actor->id;
+        combatCues.submit({key, kind, position, personal, glm::dot(offset, offset)});
+    };
 
     const auto updateProxyContent = [this, &snapshotsById](
         const voxellancer::protocol::EntityContentSnapshot& content)
@@ -226,6 +276,7 @@ void GamePlayScene::updateRemoteVoxelProxies() {
                 proxyVoxel->applyDamage(voxel.maxHP - voxel.hp);
                 cluster->addVoxel(proxyVoxel);
             }
+            cluster->transform().setCenter(remoteVoxelCenter(content.voxels));
             proxy.cluster = std::move(cluster);
         } else {
             for (const auto& voxel : content.voxels) {
@@ -320,6 +371,8 @@ void GamePlayScene::updateRemoteVoxelProxies() {
 
     const auto damageEvents =
         running.drainRemoteVoxelDamageEvents();
+    if (remotePreviewActive) for (const auto& event : damageEvents)
+        queueCue(event.entity, CombatCueKind::Hull, glm::vec3(event.cell));
     constexpr std::size_t MaxVoxelDamageFlashesPerFrame = 64;
     const std::size_t firstDamageEvent = damageEvents.size() >
         MaxVoxelDamageFlashesPerFrame
@@ -334,8 +387,11 @@ void GamePlayScene::updateRemoteVoxelProxies() {
         }
 
         const auto& state = *snapshot->second;
+        const auto proxy = m_remoteVoxelProxyIndex.find(remoteEntityKey(event.entity));
+        if (proxy == m_remoteVoxelProxyIndex.end() || !proxy->second->cluster) continue;
         const glm::vec3 impactPosition = state.position +
-            state.orientation * (glm::vec3(event.cell) * state.scale);
+            state.orientation * ((glm::vec3(event.cell) -
+                proxy->second->cluster->transform().center()) * state.scale);
         VoxelExplosionGenerator flash(nullptr, World::instance());
         flash.setPosition(impactPosition);
         flash.setRadius(state.scale * 0.02f);
@@ -349,6 +405,8 @@ void GamePlayScene::updateRemoteVoxelProxies() {
     }
 
     const auto shieldHitEvents = running.drainShieldHitEvents();
+    if (remotePreviewActive) for (const auto& event : shieldHitEvents)
+        queueCue(event.entity, CombatCueKind::Shield, event.localImpactPosition);
     constexpr std::size_t MaxShieldHitFlashesPerFrame = 8;
     const std::size_t firstShieldHitEvent = shieldHitEvents.size() >
         MaxShieldHitFlashesPerFrame
@@ -369,17 +427,15 @@ void GamePlayScene::updateRemoteVoxelProxies() {
             }
 
             const auto& state = *snapshot->second;
-            center = state.position;
-            impactPosition = state.position + state.orientation *
-                (event.localImpactPosition * state.scale);
-            scale = state.scale;
             const auto proxy = m_remoteVoxelProxyIndex.find(
                 remoteEntityKey(event.entity));
-            if (proxy != m_remoteVoxelProxyIndex.end() &&
-                proxy->second->cluster) {
-                shieldRadius = proxy->second->cluster->bounds().sphere(
-                    proxy->second->cluster->transform()).radius();
-            }
+            if (proxy == m_remoteVoxelProxyIndex.end() || !proxy->second->cluster) continue;
+            const auto& transform = proxy->second->cluster->transform();
+            const Sphere sphere = proxy->second->cluster->bounds().sphere(transform);
+            center = sphere.position();
+            impactPosition = transform.applyTo(event.localImpactPosition);
+            scale = state.scale;
+            shieldRadius = sphere.radius();
         } else {
             WorldObject* impactedObject =
                 World::instance()->worldObject(event.entity);
@@ -466,6 +522,13 @@ void GamePlayScene::updateRemoteVoxelProxies() {
 
     const auto weaponEvents =
         running.drainRemoteWeaponFiredEvents();
+    if (remotePreviewActive) {
+        for (const auto& event : weaponEvents)
+            queueCue(event.entity, CombatCueKind::Fire, glm::vec3(event.cell));
+        m_gamePlay.soundManager().playCombatCues(combatCues);
+    } else {
+        m_gamePlay.soundManager().stopCombatCues();
+    }
     constexpr std::size_t MaxWeaponMuzzleFlashesPerFrame = 32;
     const std::size_t firstEvent = weaponEvents.size() >
         MaxWeaponMuzzleFlashesPerFrame
@@ -479,8 +542,11 @@ void GamePlayScene::updateRemoteVoxelProxies() {
         }
 
         const auto& state = *snapshot->second;
+        const auto proxy = m_remoteVoxelProxyIndex.find(remoteEntityKey(event.entity));
+        if (proxy == m_remoteVoxelProxyIndex.end() || !proxy->second->cluster) continue;
         const glm::vec3 firingPosition = state.position +
-       state.orientation * (glm::vec3(event.cell) * state.scale);
+            state.orientation * ((glm::vec3(event.cell) -
+                proxy->second->cluster->transform().center()) * state.scale);
         VoxelExplosionGenerator flash(nullptr, World::instance());
         flash.setPosition(firingPosition);
         flash.setRadius(0.03f);
@@ -769,6 +835,48 @@ std::optional<voxellancer::protocol::EntityId> GamePlayScene::remoteLeadTarget()
     return std::nullopt;
 }
 
+std::optional<CrosshairAim> GamePlayScene::remoteAimPoint(
+    const glm::vec3& origin, const glm::vec3& direction) const {
+    const auto actor = m_gamePlay.running().remotePreviewSnapshot();
+    if (!actor) return std::nullopt;
+    const auto& contents = m_gamePlay.running().remoteEntityContents();
+    const auto content = std::find_if(contents.begin(), contents.end(),
+        [&actor](const auto& entry) { return entry.id == actor->id; });
+    if (content == contents.end()) return std::nullopt;
+
+    float range = std::numeric_limits<float>::infinity();
+    for (const auto& slot : content->equipment) {
+        if (slot.kind != voxellancer::protocol::EquipmentSlotKind::Weapon ||
+            Property<std::string>::get(slot.equipmentKey + ".general.type") != "gun") continue;
+        const std::string bullet = Property<std::string>(slot.equipmentKey + ".general.bullet");
+        const float travel = Property<float>(bullet + ".general.speed").get() *
+            Property<float>(bullet + ".general.lifetime").get();
+        const auto profile = WeaponProfile::load(bullet);
+        range = std::min(range, profile.enabled ? std::min(travel, profile.range) : travel);
+    }
+    if (!std::isfinite(range)) range = Property<float>("general.infinityAimDistance");
+    const Ray ray(origin, direction);
+    float nearest = range;
+    float aimDistance = range;
+    for (const auto& snapshot : m_gamePlay.running().remoteReplicaSnapshots()) {
+        if (snapshot.id == actor->id) continue;
+        const auto proxy = m_remoteVoxelProxyIndex.find(remoteEntityKey(snapshot.id));
+        if (proxy == m_remoteVoxelProxyIndex.end() || !proxy->second->cluster) continue;
+        auto& cluster = *proxy->second->cluster;
+        if (!ray.intersects(cluster.bounds().sphere(cluster.transform()))) continue;
+        const auto& transform = cluster.transform();
+        for (const auto& entry : cluster.voxelMap()) {
+            const auto hit = voxelRayInterval(origin, direction, transform.position(),
+                transform.orientation(), transform.scale(), transform.center(), entry.first, range);
+            if (hit && hit->x < nearest) {
+                nearest = hit->x;
+                aimDistance = (hit->x + hit->y) * 0.5f;
+            }
+        }
+    }
+    return CrosshairAim{origin + direction * aimDistance, nearest < range};
+}
+
 void GamePlayScene::drawRemoteContacts(const Camera& camera) const {
     m_remoteLeadCue.reset();
     if (!Property<bool>("vfx.drawhud")) {
@@ -786,9 +894,12 @@ void GamePlayScene::drawRemoteContacts(const Camera& camera) const {
             contract->phase == voxellancer::protocol::ContractPhase::Mission));
     struct GunCue {
         glm::vec3 muzzle;
+        glm::vec3 direction;
+        float fieldOfAim;
         float speed;
         float lifetime;
         float range;
+        float spawnOffset;
         bool inheritsVelocity;
     };
     std::vector<GunCue> guns;
@@ -796,7 +907,10 @@ void GamePlayScene::drawRemoteContacts(const Camera& camera) const {
         const auto& contents = m_gamePlay.running().remoteEntityContents();
         const auto content = std::find_if(contents.begin(), contents.end(),
             [&actor](const auto& entry) { return entry.id == actor->id; });
-        if (content != contents.end()) {
+        const auto proxy = m_remoteVoxelProxyIndex.find(remoteEntityKey(actor->id));
+        if (content != contents.end() && proxy != m_remoteVoxelProxyIndex.end() &&
+            proxy->second->cluster) {
+            const glm::vec3 center = proxy->second->cluster->transform().center();
             for (const auto& slot : content->equipment) {
                 if (slot.kind != voxellancer::protocol::EquipmentSlotKind::Weapon ||
                     Property<std::string>::get(slot.equipmentKey + ".general.type") != "gun") {
@@ -806,8 +920,24 @@ void GamePlayScene::drawRemoteContacts(const Camera& camera) const {
                 const float speed = Property<float>(bullet + ".general.speed");
                 const float lifetime = Property<float>(bullet + ".general.lifetime");
                 const auto profile = WeaponProfile::load(bullet);
-                guns.push_back({actor->position + actor->orientation * (glm::vec3(slot.cell) * actor->scale),
-                    speed, lifetime, profile.enabled ? profile.range : speed * lifetime, profile.enabled});
+                auto& offsets = proxy->second->projectileOffsets;
+                auto offset = offsets.find(bullet);
+                if (offset == offsets.end()) {
+                    VoxelCluster projectile(1.0f);
+                    const std::string file = Property<std::string>(bullet + ".general.voxelcluster");
+                    ClusterCache::instance()->fillCluster(&projectile, "data/voxelcluster/" + file);
+                    const float scale = Property<float>(bullet + ".general.scale", 1.0f);
+                    const float length = projectile.bounds().minimalGridAABB().extent(ZAxis) * scale;
+                    offset = offsets.emplace(bullet, length / 2.0f + glm::root_two<float>() * scale).first;
+                }
+                const std::string group = content->definitionKey + ".hardpointGroup" +
+                    std::to_string(slot.group) + ".";
+                guns.push_back({
+                    actor->position + actor->orientation * ((glm::vec3(slot.cell) - center) * actor->scale),
+                    actor->orientation * glm::normalize(Property<glm::vec3>(group + "direction").get()),
+                    Property<float>(group + "fieldOfAim"),
+                    speed, lifetime, profile.enabled ? profile.range : speed * lifetime,
+                    offset->second + (profile.enabled ? actor->scale : 0.0f), profile.enabled});
             }
         }
     }
@@ -854,6 +984,7 @@ void GamePlayScene::drawRemoteContacts(const Camera& camera) const {
         const auto distance = std::lround(glm::distance(actor->position, contact.position));
         const auto content = std::find_if(contents.begin(), contents.end(),
             [&contact](const auto& entry) { return entry.id == contact.id; });
+        const auto proxy = m_remoteVoxelProxyIndex.find(remoteEntityKey(contact.id));
         const auto root = content != contents.end() ? content->definitionKey + ".general." : std::string();
         const auto name = root.empty() ? std::string("ENEMY") :
             Property<std::string>::get(root + "contactName", "ENEMY");
@@ -864,7 +995,8 @@ void GamePlayScene::drawRemoteContacts(const Camera& camera) const {
                 marker.position.y + 0.02f),
             0.017f, color, FontAlign::CENTER, 0.28f);
 
-        if (showLead && marker.onScreen && distance < 450 && !root.empty()) {
+        if (showLead && marker.onScreen && distance < 450 && !root.empty() &&
+            proxy != m_remoteVoxelProxyIndex.end() && proxy->second->cluster) {
             const int projector = Property<int>::get(root + "shieldProjectorGroup", -1);
             if (projector >= 0) {
                 const bool projectorOnline = std::any_of(content->equipment.begin(), content->equipment.end(),
@@ -873,7 +1005,7 @@ void GamePlayScene::drawRemoteContacts(const Camera& camera) const {
                 for (const auto& slot : content->equipment) {
                     if (slot.kind != SlotKind::Weapon || slot.equipmentKey.empty()) continue;
                     const auto point = contact.position + contact.orientation *
-                        (glm::vec3(slot.cell) * contact.scale);
+                        ((glm::vec3(slot.cell) - proxy->second->cluster->transform().center()) * contact.scale);
                     const auto module = projectContactMarker(camera.viewProjection() * glm::vec4(point, 1));
                     if (!module.onScreen) continue;
                     const bool isProjector = slot.group == projector && projectorOnline;
@@ -885,28 +1017,32 @@ void GamePlayScene::drawRemoteContacts(const Camera& camera) const {
             }
         }
 
-        glm::vec3 sum(0.0f);
-        int solutions = 0;
+        if (content == contents.end() || proxy == m_remoteVoxelProxyIndex.end() ||
+            !proxy->second->cluster) continue;
+        VoxelAimSelection selection(proxy->second->cluster->transform().center());
+        for (const auto& voxel : content->voxels) selection.consider(voxel.cell);
+        if (!selection.cell()) continue;
+        const glm::vec3 targetPoint = contact.position + contact.orientation *
+            ((glm::vec3(*selection.cell()) - proxy->second->cluster->transform().center()) * contact.scale);
+        std::optional<glm::vec3> point;
         for (const auto& gun : guns) {
-            const auto point = HardpointAimHelper::interceptPoint(gun.muzzle,
-                contact.position, contact.directionalVelocity -
+            point = HardpointAimHelper::interceptPoint(gun.muzzle,
+                targetPoint, contact.directionalVelocity -
                     (gun.inheritsVelocity ? actor->directionalVelocity : glm::vec3(0.0f)),
-                gun.speed, gun.lifetime, gun.range);
-            if (point) {
-                sum += *point;
-                ++solutions;
-            }
+                gun.speed, gun.lifetime, gun.range, gun.spawnOffset);
+            if (point && glm::dot(glm::normalize(*point - gun.muzzle), gun.direction) >=
+                std::cos(gun.fieldOfAim)) break;
+            point.reset();
         }
-        if (solutions == 0) continue;
-        const glm::vec3 point = sum / static_cast<float>(solutions);
-        const auto lead = projectContactMarker(camera.viewProjection() * glm::vec4(point, 1.0f));
+        if (!point) continue;
+        const auto lead = projectContactMarker(camera.viewProjection() * glm::vec4(*point, 1.0f));
         if (!lead.onScreen) continue;
-        const glm::vec3 direction = glm::normalize(point - origin);
+        const glm::vec3 direction = glm::normalize(*point - origin);
         const float leadDistance = 1.0f - glm::dot(direction, crosshairRay);
         if (leadDistance < nearestLead) {
             nearestLead = leadDistance;
             cueScreen = lead.position;
-            m_remoteLeadCue = RemoteLeadCue{actor->id, contact.id, point};
+            m_remoteLeadCue = RemoteLeadCue{actor->id, contact.id, *point};
         }
     }
     if (m_remoteLeadCue) {
@@ -1275,7 +1411,8 @@ void GamePlayScene::drawImpl(const Camera& camera) const {
         }
     }
 
-    {
+    if (!m_gamePlay.running().contractStatus() ||
+        m_gamePlay.running().contractStatus()->phase == voxellancer::protocol::ContractPhase::Mission) {
         BenchmarkCpuScope cpuScope(BenchmarkMetric::ParticleDraw);
         BenchmarkGpuScope gpuScope(BenchmarkMetric::ParticleDraw);
         World::instance()->particleEngine().draw(camera);

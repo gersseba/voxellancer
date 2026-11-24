@@ -15,18 +15,22 @@
 #include "ai/character.h"
 #include "ai/squad.h"
 #include "ai/squadlogic.h"
+#include "client/remotevoxelgeometry.h"
 #include "property/propertydirectory.h"
 #include "property/propertymanager.h"
 #include "resource/worldobjectbuilder.h"
 #include "equipment/hardpoint.h"
 #include "equipment/weapons/gun.h"
 #include "voxel/specialvoxels/hardpointvoxel.h"
+#include "voxel/voxel.h"
+#include "voxel/voxelaimselection.h"
 #include "factions/factionmatrix.h"
 #include "factions/factionrelation.h"
 #include "resource/weaponbuilder.h"
 #include "physics/physics.h"
 #include "scenarios/aicomparisonscenario.h"
 #include "utils/simulationtickrunner.h"
+#include "utils/aimer.h"
 #include "worldobject/helper/hardpointaimhelper.h"
 #include "worldobject/worldobjectcomponents.h"
 #include "worldobject/worldobjectinfo.h"
@@ -47,6 +51,11 @@ namespace {
         ship->transform().setPosition(position);
         world.god().scheduleSpawn(ship);
         return ship;
+    }
+
+    void advanceAi(World& world) {
+        for (std::uint32_t tick = 0; tick < Ship::AiUpdateIntervalTicks; ++tick)
+            world.update(1.0f / 30.0f);
     }
 
     void advanceTasks(
@@ -93,6 +102,38 @@ go_bandit([]() {
 
             delete fighter;
             delete cruiser;
+        });
+
+        it("holds dormant ships until a target closes in or they take damage", []() {
+            World world(World::Mode::Server);
+            Ship* owner = buildTarget(world, "basicship", glm::vec3(0.0f));
+            Ship* target = buildTarget(world, "basicship", glm::vec3(1500.0f, 0.0f, 0.0f));
+            Ship* bystander = buildTarget(world, "basicship", glm::vec3(0.0f, 0.0f, 1500.0f));
+            world.god().spawn();
+            auto task = std::make_shared<FightTask>(owner->boardComputer(),
+                std::vector<Handle<WorldObject>>{target->handle<WorldObject>()});
+            task->setEngagementRange(900.0f);
+            owner->character()->setTask(task);
+            for (int tick = 0; tick < 60; ++tick) world.update(1.0f / 30.0f);
+            AssertThat(task->engaged(), IsFalse());
+            AssertThat(glm::length(owner->position()) < 1.0f, IsTrue());
+            AssertThat(glm::length(owner->components().engineState().directional()), Equals(0.0f));
+
+            target->transform().setPosition(glm::vec3(850.0f, 0.0f, 0.0f));
+            advanceAi(world);
+            AssertThat(task->engaged(), IsTrue());
+
+            auto ambushed = std::make_shared<FightTask>(bystander->boardComputer(),
+                std::vector<Handle<WorldObject>>{target->handle<WorldObject>()});
+            ambushed->setEngagementRange(100.0f);
+            bystander->character()->setTask(ambushed);
+            advanceAi(world);
+            AssertThat(ambushed->engaged(), IsFalse());
+            Voxel* hull = bystander->voxelMap().begin()->second;
+            hull->applyDamage(hull->hp() * 0.5f);
+            advanceAi(world);
+            AssertThat(ambushed->engaged(), IsTrue());
+            AssertThrows(std::invalid_argument, ambushed->setEngagementRange(-1.0f));
         });
 
         it("prefers the nearest fighter and falls back when none exist", []() {
@@ -181,6 +222,124 @@ go_bandit([]() {
             AssertThat(pastRange.isHittable(),IsFalse());
         });
 
+        it("converges manual fire at the nearest crosshair voxel or shortest gun range", []() {
+            World world(World::Mode::Server);
+            auto* shooter = buildTarget(world, "contractship", glm::vec3(0));
+            auto* target = new WorldObject();
+            target->setWorld(world);
+            target->addVoxel(new Voxel(glm::ivec3(2, 0, 0), 0xffffff, 1, 100));
+            target->transform().setPosition(glm::vec3(0, 0, -80));
+            world.god().scheduleSpawn(target);
+            world.god().spawn();
+            auto& mounts = shooter->components().hardpoints();
+            mounts.front()->setWeapon(std::shared_ptr<Weapon>(WeaponBuilder("pulselaser").build()));
+            mounts.back()->setWeapon(std::shared_ptr<Weapon>(WeaponBuilder("kineticrailgun").build()));
+            float range = std::numeric_limits<float>::infinity();
+            for (const auto& mount : mounts) {
+                const auto* gun = dynamic_cast<Gun*>(mount->weapon().get());
+                if (!gun) continue;
+                range = std::min(range, std::min(gun->bulletSpeed()*gun->bulletLifetime(),
+                    gun->profile().range));
+            }
+            Aimer aimer(shooter);
+            const Ray ray(glm::vec3(0), glm::vec3(0, 0, -1));
+            AssertThat(aimer.aim(ray).hitVoxel, IsTrue());
+            AssertThat(glm::distance(aimer.aim(ray).point, glm::vec3(0, 0, -80)) < 0.001f, IsTrue());
+            auto* nearer = new WorldObject();
+            nearer->setWorld(world);
+            nearer->addVoxel(new Voxel(glm::ivec3(0), 0xffffff, 1, 100));
+            nearer->transform().setPosition(glm::vec3(0, 0, -30));
+            world.god().scheduleSpawn(nearer);
+            world.god().spawn();
+            AssertThat(glm::distance(aimer.aim(ray).point, glm::vec3(0, 0, -30)) < 0.001f, IsTrue());
+            nearer->updateTransformAndGeode(glm::vec3(10, 0, -30), nearer->orientation());
+            target->updateTransformAndGeode(glm::vec3(0, 0, -range - 20), target->orientation());
+            AssertThat(aimer.aim(ray).hitVoxel, IsFalse());
+            AssertThat(glm::distance(aimer.aim(ray).point, glm::vec3(0, 0, -range)) < 0.001f, IsTrue());
+            target->updateTransformAndGeode(glm::vec3(10, 0, -80), target->orientation());
+            AssertThat(glm::distance(aimer.aim(ray).point, glm::vec3(0, 0, -range)) < 0.001f, IsTrue());
+        });
+
+        it("intersects rotated and scaled voxel cubes in world-distance order", []() {
+            const auto rotation = glm::angleAxis(glm::half_pi<float>(), glm::vec3(0, 1, 0));
+            const glm::vec3 origin(0), direction(0, 0, -1), position(0, 0, -10);
+            const auto hit = voxelRayInterval(origin, direction, position, rotation, 2.0f,
+                glm::vec3(0), glm::ivec3(0), 20);
+            AssertThat(hit.has_value(), IsTrue());
+            AssertThat(std::abs(hit->x - 9.0f) < 0.001f, IsTrue());
+            AssertThat(std::abs(hit->y - 11.0f) < 0.001f, IsTrue());
+            AssertThat(voxelRayInterval(origin, direction, position, rotation, 2.0f,
+                glm::vec3(0), glm::ivec3(0), 8).has_value(), IsFalse());
+            AssertThat(voxelRayInterval(origin, direction, position, rotation, 2.0f,
+                glm::vec3(0), glm::ivec3(0, 2, 0), 20).has_value(), IsFalse());
+        });
+
+        it("aims at a surviving voxel near the mass center of a hollow target", []() {
+            World world(World::Mode::Server);
+            std::unique_ptr<Ship> owner(WorldObjectBuilder("contractraider", world).buildShip());
+            WorldObject target;
+            target.setWorld(world);
+            target.addVoxel(new Voxel(glm::ivec3(0, 2, 0), 0xffffff, 1, 100));
+            target.addVoxel(new Voxel(glm::ivec3(4, 2, 0), 0xffffff, 1, 100));
+            target.transform().setPosition(glm::vec3(0, 0, -200));
+            target.transform().setOrientation(glm::angleAxis(glm::half_pi<float>(), glm::vec3(0, 0, 1)));
+            const auto mount = owner->components().hardpoints().front();
+            HardpointAimHelper first(mount.get(), &target, true, true);
+            AssertThat(first.isHittable(), IsTrue());
+            AssertThat(glm::distance(first.point(),
+                target.transform().applyTo(glm::vec3(0, 2, 0))) < 0.001f, IsTrue());
+
+            target.removeVoxel(target.voxel(glm::ivec3(0, 2, 0)));
+            HardpointAimHelper remaining(mount.get(), &target, true, true);
+            AssertThat(remaining.isHittable(), IsTrue());
+            AssertThat(glm::distance(remaining.point(),
+                target.transform().applyTo(glm::vec3(4, 2, 0))) < 0.001f, IsTrue());
+            target.removeVoxel(target.voxel(glm::ivec3(4, 2, 0)));
+            HardpointAimHelper empty(mount.get(), &target, true, true);
+            AssertThat(empty.isHittable(), IsFalse());
+        });
+
+        it("reconstructs the replicated mass center and rotating voxel positions after damage", []() {
+            World world(World::Mode::Server);
+            WorldObject target;
+            target.setWorld(world);
+            target.addVoxel(new Voxel(glm::ivec3(2, 1, 4), 0xffffff, 2, 100));
+            target.addVoxel(new Voxel(glm::ivec3(8, 3, 5), 0xffffff, 1, 100));
+            std::vector<voxellancer::protocol::EntityVoxelState> cells{
+                {glm::ivec3(2, 1, 4), 0xffffff, 2, 100, 100},
+                {glm::ivec3(8, 3, 5), 0xffffff, 1, 100, 100}};
+            target.transform().setScale(2);
+            target.transform().setPosition(glm::vec3(10, 20, -100));
+            target.transform().setOrientation(glm::angleAxis(1.0f, glm::vec3(0, 1, 0)));
+            Transform replica;
+            replica.setPosition(target.position());
+            replica.setOrientation(target.orientation());
+            replica.setScale(target.transform().scale());
+            replica.setCenter(remoteVoxelCenter(cells));
+            AssertThat(glm::distance(replica.applyTo(glm::vec3(cells[0].cell)),
+                target.transform().applyTo(glm::vec3(cells[0].cell))) < 0.001f, IsTrue());
+
+            target.removeVoxel(target.voxel(cells[0].cell));
+            cells.erase(cells.begin());
+            replica.setPosition(target.position());
+            replica.setCenter(remoteVoxelCenter(cells));
+            AssertThat(glm::distance(replica.applyTo(glm::vec3(cells[0].cell)),
+                target.transform().applyTo(glm::vec3(cells[0].cell))) < 0.001f, IsTrue());
+        });
+
+        it("limits AI engine inputs to the same unit vectors as player controls", []() {
+            World world(World::Mode::Server);
+            std::unique_ptr<Ship> ship(WorldObjectBuilder("contractraider", world).buildShip());
+            auto* computer = ship->boardComputer();
+            computer->setEngineState(EngineState(glm::vec3(1, 1, 1), glm::vec3(-1, 1, 1)));
+            computer->update(1.0f / 30.0f);
+            AssertThat(glm::length(ship->components().engineState().directional()), EqualsWithDelta(1.0f, 0.00001f));
+            AssertThat(glm::length(ship->components().engineState().angular()), EqualsWithDelta(1.0f, 0.00001f));
+            computer->rotateTo(glm::vec3(100, 100, 100));
+            computer->update(1.0f / 30.0f);
+            AssertThat(glm::length(ship->components().engineState().angular()) <= 1.00001f, IsTrue());
+        });
+
         it("turns the interceptor toward a directly rearward target and clears thrust after target loss", []() {
             World world(World::Mode::Server);
             auto* owner = buildTarget(world,"contractraider",glm::vec3(0));
@@ -222,23 +381,25 @@ go_bandit([]() {
             target->character()->setFaction(factions.pirateFaction());
             factions.getRelation(factions.policeFaction(),factions.pirateFaction()).setFriendliness(-100);
             auto& components = owner->components();
-            components.configureWeaponEnergy(15,10,1);
+            components.configureWeaponEnergy(20,10,1);
             for (const auto& mount : components.hardpoints())
                 mount->setWeapon(std::shared_ptr<Weapon>(WeaponBuilder("kineticrailgun").build()));
-            components.hardpoints().front()->setWeapon(
-                std::shared_ptr<Weapon>(WeaponBuilder("pulselaser").build()));
+            auto pulse = std::shared_ptr<Weapon>(WeaponBuilder("pulselaser").build());
+            components.hardpoints().front()->setWeapon(pulse);
             FightTask task(owner->boardComputer(),{target->handle<WorldObject>()},AiArchetype::Interceptor);
             task.shooting().setSkill({1,1,1});
             task.update(1.0f/30);
-            AssertThat(components.weaponEnergy(),Equals(11.0f));
-            AssertThat(components.consumeWeaponEnergy(11),IsTrue());
+            const float afterFirstShot = 20.0f - pulse->energyCost();
+            AssertThat(components.weaponEnergy(),EqualsWithDelta(afterFirstShot,0.0001f));
+            AssertThat(components.consumeWeaponEnergy(afterFirstShot),IsTrue());
             task.update(1.0f/30);
             components.update(1.5f);
             task.update(1.0f/30);
             AssertThat(components.weaponEnergy(),Equals(5.0f));
-            components.update(0.4f);
+            components.update(0.7f);
             task.update(1.0f/30);
-            AssertThat(components.weaponEnergy(),EqualsWithDelta(5.0f,0.0001f));
+            AssertThat(components.weaponEnergy(),
+                EqualsWithDelta(20.0f*0.6f - pulse->energyCost(),0.0001f));
             world.god().spawn();
         });
 
@@ -467,7 +628,8 @@ go_bandit([]() {
                         " accuracy=" << accuracy << " shots=" <<
                         statistics->shots << " hits=" << statistics->hits << " hit_rate=" << rate << std::endl;
                     if (accuracy == 1) {
-                        AssertThat(statistics->hits,Equals(statistics->shots));
+                        // Perfect aim still carries the pulse repeater's small scatter cone.
+                        AssertThat(rate >= 0.75,IsTrue());
                     } else if (accuracy == 0) {
                         AssertThat(std::abs(rate-0.1) < 0.02,IsTrue());
                     } else {

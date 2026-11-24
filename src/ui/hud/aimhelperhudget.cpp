@@ -21,9 +21,8 @@
 AimHelperHudget::AimHelperHudget(HUD* hud):
     CircularHudget(hud, 0.25f),
     m_voxels(new AimHelperHudgetVoxels(this)),
-    m_distanceRange(m_hud->sphere().radius() * 2, m_hud->sphere().radius() * 10),
     m_lastTargetWorldObject(nullptr),
-    m_lastVisible(false)
+    m_distanceRange(m_hud->sphere().radius() * 2, m_hud->sphere().radius() * 10)
 {
 
 }
@@ -46,19 +45,17 @@ void AimHelperHudget::update(float deltaSec) {
 
     if (!targetObject) {
         setVisible(false);
-        m_lastVisible = false;
+        m_lastTargetWorldObject = nullptr;
         return;
     }
 
     calculateTargetPoint(targetObject);
-
-    if (m_lastTargetWorldObject == targetObject && m_lastVisible) {
-        m_smoothTargetPoint = glm::mix(m_smoothTargetPoint, m_targetPoint, 5.0f * deltaSec);
-    } else {
-        m_smoothTargetPoint = m_targetPoint;
+    if (!visible()) {
+        m_lastTargetWorldObject = nullptr;
+        return;
     }
 
-    pointToWorldPoint(m_smoothTargetPoint);
+    pointToWorldPoint(m_targetPoint);
     setRelativeDistance(1.0f);
 
     if (hovered()) {
@@ -68,7 +65,6 @@ void AimHelperHudget::update(float deltaSec) {
     }
 
     m_lastTargetWorldObject = targetObject;
-    m_lastVisible = visible();
 }
 
 void AimHelperHudget::draw() {
@@ -76,14 +72,11 @@ void AimHelperHudget::draw() {
 }
 
 void AimHelperHudget::calculateTargetPoint(WorldObject* targetObject) {
-    int hitableHardpointCount = 0;
     Ship* ship = m_hud->player()->ship();
 
     if (!ship) {
         return;
     }
-
-    m_targetPoint = glm::vec3(0.0f, 0.0f, 0.0f);
 
     for (std::shared_ptr<Hardpoint> hardpoint : ship->components().hardpoints()) {
         if (!hardpoint->weapon()) {
@@ -93,20 +86,15 @@ void AimHelperHudget::calculateTargetPoint(WorldObject* targetObject) {
             continue;
         }
 
-        HardpointAimHelper aimHelper(hardpoint.get(), targetObject, true);
+        HardpointAimHelper aimHelper(hardpoint.get(), targetObject, true, true);
 
         if (aimHelper.isHittable() && hardpoint->inFieldOfAim(aimHelper.point())) {
-            m_targetPoint += aimHelper.point();
-            hitableHardpointCount++;
+            m_targetPoint = aimHelper.point();
+            setVisible(true);
+            return;
         }
     }
-
-    if (hitableHardpointCount > 0) {
-        setVisible(true);
-        m_targetPoint /= hitableHardpointCount;
-    } else {
-        setVisible(false);
-    }
+    setVisible(false);
 }
 
 bool AimHelperHudget::isAt(const Ray& ray) const {

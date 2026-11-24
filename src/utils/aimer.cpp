@@ -1,10 +1,15 @@
 #include "aimer.h"
 
 #include <glm/glm.hpp>
+#include <algorithm>
+#include <limits>
 #include <stdexcept>
 
 #include "collision/collisiondetector.h"
-#include "collision/collisionfilter.h"
+#include "equipment/hardpoint.h"
+#include "equipment/weapons/gun.h"
+#include "geometry/voxelray.h"
+#include "property/property.h"
 
 #include "voxel/voxel.h"
 #include "voxel/voxeltree.h"
@@ -12,73 +17,53 @@
 
 #include "world/world.h"
 #include "worldobject/worldobject.h"
+#include "worldobject/worldobjectcomponents.h"
 
 #include "worldtree/worldtreegeode.h"
 #include "worldtree/worldtreequery.h"
 
 
 Aimer::Aimer(WorldObject* worldObject) :
-    m_worldObject(worldObject),
-    m_infityAimDistance("general.infinityAimDistance"),
-    m_infityAimInterpolation("general.infinityAimInterpolation"),
-    m_lastDistance(0)
+    m_worldObject(worldObject)
 {
-}
-
-void Aimer::update(float deltaSec) {
-    float interpolation = deltaSec * 0.3f;
-    m_lastDistance = interpolation * m_infityAimDistance + (1 - interpolation) * m_lastDistance;
 }
 
 void Aimer::setWorldObject(WorldObject* worldObject) {
     m_worldObject = worldObject;
 }
 
-glm::vec3 Aimer::aim(const Ray& ray) {
+CrosshairAim Aimer::aim(const Ray& ray) {
     assert(m_worldObject);
     assert(m_worldObject->collisionDetector().geode());
     if (m_worldObject->world() == nullptr) {
         throw std::logic_error("Aiming requires an object attached to a world.");
     }
 
-    glm::vec3 targetPoint;
-
-    WorldTreeQuery query(&m_worldObject->world()->worldTree(), &ray, m_worldObject->collisionDetector().geode()->hint(), &m_worldObject->collisionFilter());
-
-    std::unordered_set<Voxel*> intersectingVoxels = query.intersectingVoxels();
-
-    if(!intersectingVoxels.empty()) {
-        targetPoint = nearestTarget(intersectingVoxels, ray.origin());
-    } else {
-        targetPoint = infinity(ray);
+    float range = std::numeric_limits<float>::infinity();
+    for (const auto& hardpoint : m_worldObject->components().hardpoints()) {
+        const auto* gun = dynamic_cast<Gun*>(hardpoint->weapon().get());
+        if (!gun) continue;
+        const float travel = gun->bulletSpeed() * gun->bulletLifetime();
+        range = std::min(range, gun->profile().enabled
+            ? std::min(travel, gun->profile().range) : travel);
     }
-
-    m_lastDistance = glm::length(ray.origin() - targetPoint);
-    return targetPoint;
-}
-
-glm::vec3 Aimer::nearestTarget(const std::unordered_set<Voxel*>& voxels, const glm::vec3& origin) const {
-    Voxel* anyVoxel = *voxels.begin();
-
-    float minDistance = distanceTo(anyVoxel, origin);
-    glm::vec3 targetPoint = anyVoxel->position();
-
-    for(Voxel* voxel : voxels) {
-        float distance = distanceTo(voxel, origin);
-
-        if(distance < minDistance) {
-            targetPoint = voxel->position();
-            minDistance = distance;
+    if (!std::isfinite(range)) range = Property<float>("general.infinityAimDistance");
+    const glm::vec3 direction = glm::normalize(ray.direction());
+    const Ray normalized(ray.origin(), direction);
+    WorldTreeQuery query(&m_worldObject->world()->worldTree(), &normalized,
+        m_worldObject->collisionDetector().geode()->hint(), nullptr);
+    float nearest = range;
+    float aimDistance = range;
+    for (Voxel* voxel : query.intersectingVoxels()) {
+        WorldObject* object = voxel->voxelTreeNode()->voxelTree()->worldObject();
+        if (object == m_worldObject) continue;
+        const auto& transform = object->transform();
+        const auto hit = voxelRayInterval(ray.origin(), direction, transform.position(),
+            transform.orientation(), transform.scale(), transform.center(), voxel->cell(), range);
+        if (hit && hit->x < nearest) {
+            nearest = hit->x;
+            aimDistance = (hit->x + hit->y) * 0.5f;
         }
     }
-
-    return targetPoint;
-}
-
-float Aimer::distanceTo(Voxel* voxel, const glm::vec3& origin) const {
-    return glm::length(voxel->position() - origin);
-}
-
-glm::vec3 Aimer::infinity(const Ray& ray) const {
-    return ray.origin() + ray.direction() * m_lastDistance;
+    return {ray.origin() + direction * aimDistance, nearest < range};
 }

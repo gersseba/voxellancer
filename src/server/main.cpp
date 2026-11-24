@@ -492,16 +492,19 @@ int main(int argc, char* argv[]) {
         std::unique_ptr<BaseScenario> scenario;
         std::optional<voxellancer::protocol::EntityId> preferredActor;
         std::unique_ptr<TcpServer> server;
+        // Contract arenas start enemies beyond engagement range; keep them visible.
+        const float interestRadius = options.scenario == "benchmark" ? 1500.0f
+            : options.scenario == "contracts" ? ContractInterestRadius : 650.0f;
 
         if (options.targetPlayers != 0) {
             server = std::make_unique<TcpServer>(
                 *world,
                 session,
                 options.port,
-                options.scenario == "benchmark" ? 1500.0f : 650.0f,
+                interestRadius,
                 std::nullopt,
                 options.targetPlayers);
-            std::cout << "Listening on 127.0.0.1:" << server->port() << '\n';
+            std::cout << "Listening on 127.0.0.1:" << server->port() << std::endl;
             const auto lobbyDeadline = Clock::now() + std::chrono::seconds(90);
             while (server->clientCount() < options.targetPlayers) {
                 server->poll();
@@ -519,8 +522,8 @@ int main(int argc, char* argv[]) {
             preferredActor = actors.front();
             if (!server) {
                 server = std::make_unique<TcpServer>(
-                    *world, session, options.port, 650.0f, preferredActor);
-                std::cout << "Listening on 127.0.0.1:" << server->port() << '\n';
+                    *world, session, options.port, interestRadius, preferredActor);
+                std::cout << "Listening on 127.0.0.1:" << server->port() << std::endl;
             }
             server->enableContracts(actors, options.soloCheckpoint
                 ? std::filesystem::path(FileSystem::userConfigDir()) / "solo-contract.checkpoint"
@@ -567,9 +570,9 @@ int main(int argc, char* argv[]) {
                 *world,
                 session,
                 options.port,
-                options.scenario == "benchmark" ? 1500.0f : 650.0f,
+                interestRadius,
                 preferredActor);
-            std::cout << "Listening on 127.0.0.1:" << server->port() << '\n';
+            std::cout << "Listening on 127.0.0.1:" << server->port() << std::endl;
         }
 
         if (options.benchmarkTicks != 0) {

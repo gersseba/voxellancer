@@ -78,8 +78,9 @@ accessibility, and scope; do not treat these disciplines as separate handoffs.
 3. Implement the smallest complete solution using existing project patterns.
    Include UI states, input paths, and multiplayer behavior where they apply.
 4. Validate with the narrowest relevant tests first. The repository harness is
-   `.\tools\agent-check.ps1 -Mode Test`; it requires a bootstrapped vcpkg via
-   `VCPKG_ROOT` and runs `all_tests`. Report exact commands and outcomes; do
+   `cmake -P tools/agent-check.cmake` on every platform; it locates a
+   bootstrapped vcpkg (`VCPKG_ROOT` or a standard location) and runs
+   `all_tests`. Report exact commands and outcomes; do
    not present unrun checks as passing.
 5. Summarize the player-visible result, technical changes, validation, and any
    remaining design or integration decisions.

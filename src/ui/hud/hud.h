@@ -72,7 +72,7 @@ public:
     float fovy() const;
     float fovx() const;
 
-    void showMissionInfo(const std::string& title, const std::string& caption);
+    void showMissionInfo(const std::string& title, const std::string& caption, float durationSec = 10.0f);
     void showMissionMessage(const std::string& message);
     void showMessage(const std::string& message);
 

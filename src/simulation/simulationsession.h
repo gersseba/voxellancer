@@ -32,6 +32,7 @@ public:
         const voxellancer::protocol::InputCommand& command
     );
     bool requestActorRemoval(voxellancer::protocol::EntityId actor);
+    bool actorRemovalPending(voxellancer::protocol::EntityId actor) const;
     std::vector<InputCommandAcknowledgement> drainInputCommandAcknowledgements();
     std::vector<voxellancer::protocol::VoxelRemovalEvent>
     drainVoxelRemovalEvents();
@@ -66,7 +67,7 @@ private:
     World& m_world;
     SimulationTickRunner m_tickRunner;
     std::unordered_map<std::uint64_t, ActorInput> m_actorInputs;
-    std::mutex m_inputQueueMutex;
+    std::mutex mutable m_inputQueueMutex;
     std::deque<PendingInput> m_pendingInputCommands;
     std::deque<voxellancer::protocol::EntityId> m_pendingActorRemovals;
     std::vector<InputCommandAcknowledgement> m_inputAcknowledgements;

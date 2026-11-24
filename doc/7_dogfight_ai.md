@@ -16,6 +16,8 @@ one shared [ShootingController](../src/ai/shootingcontroller.cpp). Choosing
 
 Interceptor steering uses the target's current position, not the configurable
 crosshair. Lead, tracking, and jitter do not feed back into flight commands.
+Contract fighters use the interceptor; their thrust and turning inputs are
+bounded like player inputs and still use their installed engines and mass.
 Existing target hysteresis and squad sharing remain behavior-owned; gun target
 acquisition no longer has the old additional staggered delay.
 Shooting has its own random generator, independent of random escape maneuvers.
@@ -250,12 +252,14 @@ fewer hits; judge outcomes and hull damage alongside contact rates.
 The AI computes lead per gun using its muzzle position, projectile speed,
 lifetime, and range. A slow plasma mortar generally needs more lead than a
 fast railgun against the same crossing target. The player's HUD shows one
-averaged lead marker as a cue. Firing on the marker requests
+gun's lead as a cue, aimed at a surviving voxel near the target's center of
+mass rather than empty space. Firing on the marker requests
 [a separate intercept for each gun](../src/worldobject/worldobjectcomponents.cpp),
 computed by the server in networked play. Guns without a valid shot do not
 fire; manual aiming away from the marker still uses one crosshair point.
 This baseline does not cover mixed-speed loadouts or the player aiming
-experience with them.
+experience with them. Lead assumes constant velocity and the current hull
+orientation; subsequent acceleration or rotation can still cause a miss.
 
 ### Suggested pilot presets
 
@@ -300,5 +304,5 @@ boundaries, and in-flight return-fire grace.
 ./build/macos/server_tests --only=FightTask --no-color
 ```
 
-The standard full harness remains `.\tools\agent-check.ps1 -Mode Test`; it
-requires PowerShell and the documented vcpkg prerequisites.
+The standard full harness remains `cmake -P tools/agent-check.cmake`; it runs on
+every platform with the documented vcpkg prerequisites.

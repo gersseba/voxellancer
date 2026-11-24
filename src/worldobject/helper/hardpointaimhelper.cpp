@@ -13,13 +13,14 @@
 #include "utils/safenormalize.h"
 
 #include "voxel/specialvoxels/hardpointvoxel.h"
+#include "voxel/voxelaimselection.h"
 
 #include "worldobject/worldobject.h"
 #include "worldobject/worldobjectcomponents.h"
 
 
 HardpointAimHelper::HardpointAimHelper(Hardpoint* hardpoint, WorldObject* targetObject,
-    bool accountForSpawnOffset):
+    bool accountForSpawnOffset, bool aimAtVoxel):
     m_hardpoint(hardpoint),
     m_targetObject(targetObject),
     m_bulletSpeed(0.0f),
@@ -34,6 +35,16 @@ HardpointAimHelper::HardpointAimHelper(Hardpoint* hardpoint, WorldObject* target
     m_hardpointPosition = m_hardpoint->voxel()->position();
 
     m_targetPosition = m_targetObject->transform().position();
+    if (aimAtVoxel) {
+        VoxelAimSelection selection(m_targetObject->transform().center());
+        for (const auto& entry : m_targetObject->voxelMap()) {
+            selection.consider(entry.first);
+        }
+        if (selection.cell())
+            m_targetPosition = m_targetObject->transform().applyTo(glm::vec3(*selection.cell()));
+        else
+            m_hasTargetPoint = false;
+    }
     m_targetSpeed = m_targetObject->physics().speed().directional();
     if (gun.profile().enabled)
         m_targetSpeed -= m_hardpoint->components()->worldObject()->physics().speed().directional();
@@ -46,6 +57,7 @@ HardpointAimHelper::HardpointAimHelper(Hardpoint* hardpoint, WorldObject* target
 
 void HardpointAimHelper::aim() {
     m_aimed = true;
+    if (!m_hasTargetPoint) return;
     const auto point = interceptPoint(m_hardpointPosition, m_targetPosition, m_targetSpeed,
         m_bulletSpeed, m_bulletLifetime, m_bulletRange, m_spawnOffset);
     m_hitable = point.has_value();

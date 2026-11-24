@@ -33,10 +33,7 @@ protected:
     std::unique_ptr<AimHelperHudgetVoxels> m_voxels;
 
     glm::vec3 m_targetPoint;
-    glm::vec3 m_smoothTargetPoint;
-
     WorldObject* m_lastTargetWorldObject;
-    bool m_lastVisible;
 
     Range m_distanceRange;
 

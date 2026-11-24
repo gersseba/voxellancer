@@ -58,7 +58,6 @@ void Player::setShip(Ship* ship) {
 void Player::update(float deltaSec) {
     m_cameraDolly->update(deltaSec);
     m_hud->update(deltaSec);
-    m_aimer->update(deltaSec);
 
     if (m_ship.valid()) {
         m_ship->components().setEngineState(m_engineState);
@@ -77,10 +76,12 @@ void Player::fire() {
     if (ship()) {
         auto* target = m_ship->targetObject();
         const Ray crosshair = Ray::fromTo(cameraHead().position(), m_hud->crossHair().worldPosition());
-        if (target && Property<bool>("vfx.drawhud") && m_hud->aimHelper().isLinedUp(crosshair, *target))
+        const auto aim = m_aimer->aim(crosshair);
+        if (!aim.hitVoxel && target && Property<bool>("vfx.drawhud") &&
+            m_hud->aimHelper().isLinedUp(crosshair, *target))
             m_ship->components().fireGunsWithLead(*target, false);
         else
-            m_ship->components().fireAtPoint(aimPoint(), false);
+            m_ship->components().fireGunsAtCrosshair(aim.point, false);
     }
 }
 
@@ -88,7 +89,7 @@ glm::vec3 Player::aimPoint() {
     const glm::vec3 direction = safeNormalize(
         m_hud->crossHair().worldPosition() - cameraHead().position(),
         cameraHead().orientation() * glm::vec3(0.0f, 0.0f, -1.0f));
-    return m_aimer->aim(Ray(m_hud->crossHair().worldPosition(), direction));
+    return m_aimer->aim(Ray(cameraHead().position(), direction)).point;
 }
 
 void Player::move(const glm::vec3& vec) {

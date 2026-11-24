@@ -38,6 +38,7 @@ public:
 
     void addParticle(const VoxelParticleSetup& particleSetup, const VoxelCluster* creator);
     void removeParticle(int index);
+    void clear();
 
     void update(float deltaSec);
     void draw(const Camera& camera);

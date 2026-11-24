@@ -88,7 +88,9 @@ the route, run rewards, inventory, loadout, shop offer, and surviving hull
 cells and HP. They restore a docked ship with base shield and energy refills,
 not an in-progress fight. Manual servers do not use this save unless opted in
 for one pilot. Invalid or incompatible saves are rejected without overwriting
-them; move the checkpoint out of the config directory to start fresh.
+them; move the checkpoint out of the config directory to start fresh. The
+checkpoint status layout is versioned independently of the network protocol;
+existing protocol 30 and 31 checkpoints with that layout remain readable.
 
 ### Multiplayer lobby and player binding
 
@@ -132,7 +134,7 @@ simulation and network polling on the same thread.
 The transport is an SFML TCP stream. TCP provides reliable, ordered delivery;
 there is no separate unreliable snapshot channel. Each application frame has a
 four-byte little-endian payload length followed by a packet with protocol
-version 30 and a message-type byte. There is no version negotiation: peers with
+version 31 and a message-type byte. There is no version negotiation: peers with
 different protocol versions reject each other's packets.
 
 On connection, the server assigns a generation-protected entity ID for a ship,
@@ -151,7 +153,8 @@ Contract actions are 22 bytes, including the selected catalog weapon and mount
 cell for fitting, a route-node byte (255 outside node selection), and a reward
 choice byte (zero outside reward claims). Byte 21 selects a shield build for
 BuyShield (1--3; zero retains the default Mk2 purchase); other actions require
-zero there. New Run is a separate action.
+zero there. SellGun uses the weapon byte and sells a stored gun for half its
+catalog price (rounded down), with server-side validation. New Run is a separate action.
 Contract status is 399 bytes: the original 40-byte prefix
 (including invulnerability at byte 39), personal offer ID, six inventory stack
 counts, mount count, reserved byte, and 32 padded four-byte mount records,
@@ -191,7 +194,11 @@ from primary gun convergence (`firePoint`, three floats at bytes 40--51).
 The fire point is an offset in ship-relative axes, measured in world units
 independently of mesh scale. The client sends changed aim while firing, even
 without a new snapshot. For manual fire, the server transforms the point using
-its current ship pose. When lined up with the lead marker, the client instead
+its current ship pose. The client raycasts through the crosshair against
+non-owner voxels, choosing the nearest voxel within the shortest equipped gun
+range, or the range itself when the ray is clear. Manual fire compensates each
+profiled gun for inherited shooter velocity when an intercept is possible.
+When no nearer voxel is under the crosshair and it is lined up with the lead marker, the client instead
 sets `FireWithLead` alongside `FirePrimary` and sends the cue's generational
 target ID. The server resolves that target and computes one intercept per gun
 from current simulation state; missing or ineligible targets do not fall back
@@ -199,9 +206,18 @@ to manual fire. Hardpoint aiming limits, cooldowns, line-of-fire checks, and
 collisions remain authoritative.
 Non-finite, zero, and more-than-10,000-unit fire points are rejected.
 
+Remote solo and co-op clients use existing weapon-fire, shield-hit, and
+voxel-damage events for combat audio. The mixer combines cues from the same
+ship and category, rejects distant cues, and plays at most 12 combat voices
+at a time, of which at most eight can be spatial world sounds. The local
+pilot's hits and gunfire take priority. Visual effects keep their separate
+budgets; audio selection does not affect the simulation or network protocol.
+
 `WorldObjectComponents` owns the shared weapon-energy reserve. Ship properties
-`weaponEnergyCapacity`, `weaponEnergyRegeneration`, and `weaponEnergyDelay`
-opt into a reactor; absent/zero capacity retains legacy unlimited firing.
+`weaponEnergyCapacity` and `weaponEnergyRegeneration` opt into a reactor;
+absent/zero capacity retains legacy unlimited firing. Optional
+`weaponEnergyDelay` (default zero) pauses recharge after a shot; contract ships
+leave it unset so they recharge while firing.
 Contract pilots opt in; NPCs and existing benchmark/scenario ships do not.
 Weapons load optional `general.energyCost` (legacy default zero), check
 affordability before spawning, and spend once per successful trigger, including
@@ -225,7 +241,7 @@ neither presentation nor client firing requests can grant resources.
 Snapshots are emitted every two simulation ticks (15 Hz). Each client has a
 baseline and receives entity additions/changes/removals relative to that
 baseline. The server filters snapshots to entities within a 650-unit radius of
-the controlled actor, while always including that actor. A snapshot entity
+the controlled actor (`ContractInterestRadius`, 2200 units, for contracts), while always including that actor. A snapshot entity
 record is 66 bytes and carries a generation-safe ID, kind, transform,
 velocities, shield/hull fractions, scale, maximum mass, and engine state.
 The final byte is a canonical hostile-contact boolean. For contracts,
@@ -294,6 +310,9 @@ loads speed, range, material-specific HP budgets, mass, penetration, and splash/
 pellet bounds. `Gun` emits deterministic scatter volleys, inherits launch-ship
 velocity, and applies physical recoil. Optional hardpoint-group `.equipped`
 chooses the initial compatible weapon; omitted values retain legacy selection.
+`hardpointCellX_Y_Z.equipped` overrides the group for a specific voxel cell;
+the value `none` leaves that mount empty but still usable. The contract starter
+uses two symmetric Pulse I mounts and leaves its other three mounts empty.
 Armor uses voxel prefix `0x000A`, 150 HP, and density 3; its server-side material
 flag is copied when voxels split. Clients need only replicated appearance/HP.
 

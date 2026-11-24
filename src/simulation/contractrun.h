@@ -8,9 +8,13 @@
 #include <string>
 #include <vector>
 
+#include "procedural/coverlayout.h"
 #include "protocol/serverprotocol.h"
 
 class World;
+
+// Replication radius for contract arenas, which open with enemies beyond weapon range.
+inline constexpr float ContractInterestRadius = 2200.0f;
 
 class ContractRun {
 public:
@@ -29,6 +33,8 @@ public:
     bool inMission() const;
     voxellancer::protocol::EntityId controlledActor(voxellancer::protocol::EntityId player) const;
     voxellancer::protocol::EntityId viewActor(voxellancer::protocol::EntityId player) const;
+    // The cover layout of the current or most recent sortie.
+    procedural::CoverLayout coverLayout() const;
 
 private:
     struct PlayerState {
@@ -58,6 +64,7 @@ private:
     std::vector<voxellancer::protocol::EntityId> m_enemies;
     voxellancer::protocol::EntityId m_wingman;
     std::uint32_t m_rescueBonus = 0;
+    procedural::CoverLayout m_coverLayout = procedural::CoverLayout::Empty;
     std::vector<std::pair<voxellancer::protocol::EntityId, glm::ivec3>> m_projectors;
     std::uint32_t m_mission = 0;
     voxellancer::protocol::ContractPhase m_phase = voxellancer::protocol::ContractPhase::Station;
@@ -73,6 +80,7 @@ private:
     std::mt19937 m_offerRandom{std::random_device{}()};
 
     void deploy();
+    void alertSquad();
     std::uint32_t encounterReward() const;
     void finishEncounter(bool success);
     void generateRoute();
@@ -89,6 +97,7 @@ private:
         std::uint8_t shield = 1);
     voxellancer::protocol::ContractResult equip(PlayerState& player,
         const voxellancer::protocol::ContractAction& action);
+    voxellancer::protocol::ContractResult sell(PlayerState& player, std::uint8_t weapon);
     void refreshOffer(PlayerState& player);
     bool alive(const PlayerState& player) const;
     void clearEncounter(bool removePlayers = false);

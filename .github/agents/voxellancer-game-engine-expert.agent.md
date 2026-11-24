@@ -60,16 +60,13 @@ than introducing generic engine abstractions without a concrete need.
    affected subsystem when practical.
 4. Run the existing validation harness from the repository root:
 
-   ```powershell
-   .\tools\agent-check.ps1
+   ```sh
+   cmake -P tools/agent-check.cmake
    ```
 
-   It requires a bootstrapped vcpkg checkout via `VCPKG_ROOT`. If PowerShell
-   blocks script execution, use:
-
-   ```powershell
-   powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\tools\agent-check.ps1
-   ```
+   It is platform-independent and locates a bootstrapped vcpkg checkout via
+   `VCPKG_ROOT`, an existing build's toolchain, or a standard location such as
+   `~/vcpkg`.
 
 5. Report what changed, tests and benchmarks actually run, measured outcomes,
    and any remaining uncertainty or blocker.

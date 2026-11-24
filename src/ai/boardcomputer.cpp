@@ -75,7 +75,11 @@ const EngineState& BoardComputer::engineState() const {
 }
 
 void BoardComputer::setEngineState(const EngineState& state) {
-    m_engineState = state;
+    glm::vec3 directional = state.directional();
+    glm::vec3 angular = state.angular();
+    if (glm::length(directional) > 1.0f) directional = glm::normalize(directional);
+    if (glm::length(angular) > 1.0f) angular = glm::normalize(angular);
+    m_engineState = EngineState(directional, angular);
     m_overwriteEngineState = true;
 }
 
@@ -334,6 +338,7 @@ void BoardComputer::shootRockets(WorldObject* target) {
 
 void BoardComputer::update(float deltaSec) {
     if(m_overwriteEngineState) {
+        setEngineState(m_engineState);
         m_worldObject->components().setEngineState(m_engineState);
     }
     m_engineState.clear();

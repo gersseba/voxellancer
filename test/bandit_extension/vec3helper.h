@@ -8,11 +8,12 @@
 #include <bandit/assertion_frameworks/snowhouse/snowhouse/stringize.h>
 
 
-// adds vec3 support to bandit
+// adds vec3 support to bandit; operators live in glm so snowhouse templates find them via ADL
+namespace glm {
+    bool operator>=(const glm::vec3 &a, const glm::vec3 &b);
 
-bool operator>=(const glm::vec3 &a, const glm::vec3 &b);
-
-bool operator<=(const glm::vec3 &a, const glm::vec3 &b);
+    bool operator<=(const glm::vec3 &a, const glm::vec3 &b);
+}
 
 namespace snowhouse {
     template<>

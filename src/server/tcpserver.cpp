@@ -1057,8 +1057,11 @@ void TcpServer::sendContractStatus() {
 }
 
 std::optional<voxellancer::protocol::EntityId> TcpServer::availableActor() const {
+    // Ships of disconnected clients stay in the world until the next tick
+    // applies their removal; never hand them to a new connection.
     if (m_preferredActor &&
         m_world.worldObject(*m_preferredActor) != nullptr &&
+        !m_session.actorRemovalPending(*m_preferredActor) &&
         m_controlledActors.find(entityIdKey(*m_preferredActor)) ==
             m_controlledActors.end()) {
         return m_preferredActor;
@@ -1066,6 +1069,7 @@ std::optional<voxellancer::protocol::EntityId> TcpServer::availableActor() const
     for (Ship* ship : m_world.ships()) {
         const auto id = m_world.entityId(ship);
         if (id && (!m_contracts || m_contracts->contains(*id)) &&
+            !m_session.actorRemovalPending(*id) &&
             m_controlledActors.find(entityIdKey(*id)) == m_controlledActors.end()) {
             return id;
         }

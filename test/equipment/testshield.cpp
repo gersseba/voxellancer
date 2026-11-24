@@ -118,9 +118,10 @@ go_bandit([]() {
             shield.setMaxHP(100.0f);
             shield.setHP(100.0f);
             WorldObject protectedObject;
-            for (int x = -4; x <= 4; ++x) {
-                for (int y = -4; y <= 4; ++y) {
-                    for (int z = -4; z <= 4; ++z) {
+            // Voxel cells are non-negative; VoxelTree only grows toward +urb.
+            for (int x = 0; x <= 8; ++x) {
+                for (int y = 0; y <= 8; ++y) {
+                    for (int z = 0; z <= 8; ++z) {
                         protectedObject.addVoxel(
                             new Voxel(glm::ivec3(x, y, z)));
                     }
@@ -132,12 +133,12 @@ go_bandit([]() {
             AssertThat(shield.intersectsSegment(
                 protectedObject,
                 ShieldType::Hull,
-                glm::vec3(-10.0f, 0.0f, 0.0f),
-                glm::vec3(10.0f, 0.0f, 0.0f),
+                glm::vec3(-10.0f, 4.0f, 4.0f),
+                glm::vec3(10.0f, 4.0f, 4.0f),
                 0.1f,
                 impactCell,
                 hitParameter), IsTrue());
-            AssertThat(impactCell.x, Equals(-4));
+            AssertThat(impactCell.x, Equals(0));
         });
 
         it("absorbs ship collision damage before it reaches hull voxels", []() {

@@ -594,9 +594,9 @@ DecodeError decodeEntityId(
 bool encodeContractAction(const ContractAction& action, ContractActionPacket& packet) {
     const auto kind = static_cast<std::uint8_t>(action.kind);
     const auto choice = static_cast<std::uint8_t>(action.choice);
-    if (action.sequence == 0 || kind < 1 || kind > 10 ||
+    if (action.sequence == 0 || kind < 1 || kind > 11 ||
         action.weapon > ContractWeaponKinds ||
-        (kind == 6 ? action.weapon == 0 : action.weapon != 0) ||
+        ((kind == 6 || kind == 11) ? action.weapon == 0 : action.weapon != 0) ||
         glm::any(glm::lessThan(action.cell, glm::ivec3(0))) ||
         glm::any(glm::greaterThan(action.cell, glm::ivec3(255))) ||
         (kind != 6 && action.cell != glm::ivec3(0)) ||

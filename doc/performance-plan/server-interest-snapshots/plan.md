@@ -40,8 +40,8 @@ connection before applying that connection's radius and delta baseline.
 
 ## Validation command
 
-```powershell
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\tools\agent-check.ps1 -Mode Run -Benchmark MultiplayerLargeCombat
+```sh
+cmake -DMODE=Run -DRUN=MultiplayerLargeCombat -P tools/agent-check.cmake
 ```
 
 ## Results

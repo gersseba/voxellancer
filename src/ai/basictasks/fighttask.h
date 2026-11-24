@@ -40,8 +40,23 @@ public:
 
     virtual bool isFinished() override;
 
+    /**
+     * Holds the ship in place, facing the nearest target, until a target comes
+     * within range or the ship takes damage. A range of 0 engages immediately.
+     */
+    void setEngagementRange(float range);
+    float engagementRange() const;
+    bool engaged() const;
+    void engage();
+
 protected:
     std::unique_ptr<FightTaskImplementation> m_task;
     AiArchetype m_archetype;
     ShootingController m_shooting;
+    float m_engagementRange = 0.0f;
+    bool m_engaged = true;
+    glm::vec2 m_lastIntegrity{-1.0f};
+
+    bool shouldEngage();
+    glm::vec2 integrity();
 };

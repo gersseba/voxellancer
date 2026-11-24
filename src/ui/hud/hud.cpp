@@ -227,8 +227,8 @@ float HUD::fovx() const {
     return m_fovx;
 }
 
-void HUD::showMissionInfo(const std::string& title, const std::string& caption) {
-    m_elements->showMissionInfo(title, caption);
+void HUD::showMissionInfo(const std::string& title, const std::string& caption, float durationSec) {
+    m_elements->showMissionInfo(title, caption, durationSec);
 }
 
 void HUD::showMissionMessage(const std::string& message) {

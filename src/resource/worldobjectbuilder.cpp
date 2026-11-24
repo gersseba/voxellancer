@@ -29,6 +29,7 @@
 #include "shieldbuilder.h"
 #include "weaponbuilder.h"
 #include "worldobject/worldobjectcomponents.h"
+#include "voxel/specialvoxels/hardpointvoxel.h"
 
 
 WorldObjectBuilder::WorldObjectBuilder(const std::string& name):
@@ -236,8 +237,13 @@ void WorldObjectBuilder::setupShieldSlots(WorldObjectComponents& components) {
 void WorldObjectBuilder::equipSomehow(WorldObject* worldObject) {
     for (std::shared_ptr<Hardpoint>& hardpoint : worldObject->components().hardpoints()) {
         if(!hardpoint->mountables().empty()) {
-            const std::string key = Property<std::string>(m_name + ".hardpointGroup" +
+            const std::string groupKey = Property<std::string>(m_name + ".hardpointGroup" +
                 std::to_string(hardpoint->group()) + ".equipped", hardpoint->mountables().front());
+            const auto cell = hardpoint->voxel()->cell();
+            const std::string key = Property<std::string>(m_name + ".hardpointCell" +
+                std::to_string(cell.x) + "_" + std::to_string(cell.y) + "_" +
+                std::to_string(cell.z) + ".equipped", groupKey);
+            if (key == "none") continue;
             if (!hardpoint->mountable(key))
                 throw std::invalid_argument("Default weapon is not mountable: " + key);
             Weapon* weapon = WeaponBuilder(key).build();

@@ -14,7 +14,7 @@
 namespace voxellancer {
 namespace protocol {
 
-constexpr std::uint8_t ProtocolVersion = 30;
+constexpr std::uint8_t ProtocolVersion = 31;
 constexpr std::size_t ContractActionPacketSize = 22;
 constexpr std::size_t MaxContractMounts = 32;
 constexpr std::size_t ContractWeaponKinds = 6;
@@ -76,7 +76,7 @@ enum class RewardChoice : std::uint8_t { None, Credits, Weapon, Upgrade };
 enum class ContractActionKind : std::uint8_t {
     Ready = 1, BuyGun = 2, BuyShield = 3,
     EnableInvulnerability = 4, DisableInvulnerability = 5, EquipGun = 6, SelectNode = 7,
-    ClaimReward = 8, NewRun = 9, RepairHull = 10
+    ClaimReward = 8, NewRun = 9, RepairHull = 10, SellGun = 11
 };
 enum class ContractResult : std::uint8_t {
     None, Accepted, WrongPhase, InsufficientCredits, AlreadyOwned,

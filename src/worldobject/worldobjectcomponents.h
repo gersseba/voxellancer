@@ -79,6 +79,7 @@ public:
      * aimType
      */
     void fireAtPoint(const glm::vec3& point, bool checkFriendlyFire);
+    void fireGunsAtCrosshair(const glm::vec3& point, bool checkFriendlyFire);
     void fireGunsWithLead(WorldObject& target, bool checkFriendlyFire);
 
     void fireAtObject(WorldObject* worldObject);
@@ -115,7 +116,8 @@ public:
 
 
 protected:
-    void fireGuns(const glm::vec3& point, WorldObject* leadTarget, bool checkFriendlyFire);
+    void fireGuns(const glm::vec3& point, WorldObject* leadTarget, bool checkFriendlyFire,
+        bool compensateVelocity = false);
     WorldObject* m_worldObject;
 
     std::list<std::shared_ptr<EngineSlot>> m_engineSlots;

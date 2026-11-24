@@ -24,6 +24,8 @@
 #include "voxel/specialvoxels/hardpointvoxel.h"
 #include "geometry/speed.h"
 #include "physics/physics.h"
+#include "procedural/covergenerator.h"
+#include "procedural/coverlayout.h"
 #include "property/property.h"
 #include "resource/shieldbuilder.h"
 #include "resource/weaponbuilder.h"
@@ -33,11 +35,19 @@
 #include "worldobject/ship.h"
 #include "worldobject/worldobjectcomponents.h"
 #include "voxel/voxel.h"
+#include "voxel/voxelclusterbounds.h"
 
 using namespace voxellancer::protocol;
 
 namespace {
     constexpr char CheckpointHeader[] = "VOXELLANCER SOLO CHECKPOINT 1";
+    // Checkpoint 1 uses the contract-status layout shared by protocols 30 and 31.
+    // A changed status layout requires a new checkpoint format and migration.
+    constexpr std::uint8_t CheckpointStatusVersion = 0;
+    static_assert(ContractRouteOffset == 183 && ContractRunOffset == 326 &&
+        ContractResourceOffset == 366 && ContractStatusPacketSize == 407,
+        "Checkpoint status layout changed; add a checkpoint format migration.");
+
     std::uint64_t playerKey(EntityId actor) {
         return (static_cast<std::uint64_t>(actor.generation) << 32) | actor.index;
     }
@@ -123,6 +133,7 @@ void ContractRun::saveCheckpoint() const {
     ContractStatusPacket packet{};
     if (m_phase != ContractPhase::Station || !ship || !encodeContractStatus(state, packet))
         throw std::logic_error("Cannot checkpoint outside a live base visit.");
+    packet[0] = CheckpointStatusVersion;
 
     auto temporary = m_checkpoint;
     temporary += "." + std::to_string(std::random_device{}()) + ".tmp";
@@ -177,7 +188,10 @@ bool ContractRun::loadCheckpoint() {
     ContractStatus state;
     if (!std::getline(in, header) || header != CheckpointHeader ||
         !in.read(reinterpret_cast<char*>(packet.data()), packet.size()) ||
-        decodeContractStatus(packet.data(), packet.size(), state) != DecodeError::None ||
+        (packet[0] != CheckpointStatusVersion && packet[0] != 30 && packet[0] != 31))
+        throw invalid();
+    packet[0] = ProtocolVersion;
+    if (decodeContractStatus(packet.data(), packet.size(), state) != DecodeError::None ||
         state.phase != ContractPhase::Station || !state.alive || state.players != 1 ||
         state.route.empty() || state.route[state.currentNode].kind != RouteNodeKind::Base ||
         state.selectedNode == NoRouteNode ||
@@ -411,7 +425,8 @@ void ContractRun::act(EntityId actor, const ContractAction& action) {
         action.kind != ContractActionKind::SelectNode &&
         action.kind != ContractActionKind::ClaimReward &&
         action.kind != ContractActionKind::NewRun &&
-        action.kind != ContractActionKind::RepairHull) {
+        action.kind != ContractActionKind::RepairHull &&
+        action.kind != ContractActionKind::SellGun) {
         throw std::invalid_argument("Unknown contract action.");
     }
     auto& player = m_players.at(playerKey(actor));
@@ -507,6 +522,8 @@ void ContractRun::act(EntityId actor, const ContractAction& action) {
         player.result = action.kind == ContractActionKind::RepairHull ? repair(player)
             : action.kind == ContractActionKind::EquipGun
             ? equip(player, action)
+            : action.kind == ContractActionKind::SellGun
+            ? sell(player, action.weapon)
             : purchase(player, action.kind == ContractActionKind::BuyGun, action.shield ? action.shield : 1);
         if (player.result == ContractResult::Accepted) {
             player.ready = false;
@@ -646,6 +663,17 @@ ContractResult ContractRun::purchase(PlayerState& player, bool gun, std::uint8_t
     return ContractResult::Accepted;
 }
 
+ContractResult ContractRun::sell(PlayerState& player, std::uint8_t weapon) {
+    if (weapon == 0 || weapon > WeaponCatalogSize) return ContractResult::Incompatible;
+    if (player.inventory[weapon - 1] == 0) return ContractResult::Unavailable;
+    const auto price = catalogWeapon(weapon).price / 2;
+    if (player.credits > std::numeric_limits<std::uint32_t>::max() - price)
+        throw std::overflow_error("Contract sale exceeds the credit limit.");
+    --player.inventory[weapon - 1];
+    player.credits += price;
+    return ContractResult::Accepted;
+}
+
 void ContractRun::refreshOffer(PlayerState& player) {
     if (player.originalHullBlocks == 0)
         player.originalHullBlocks = m_world.worldObject(player.actor)->voxelMap().size();
@@ -679,6 +707,19 @@ ContractResult ContractRun::equip(PlayerState& player, const ContractAction& act
     return ContractResult::Accepted;
 }
 
+namespace {
+    float shipRadius(WorldObject& ship) {
+        return ship.bounds().sphere().radius();
+    }
+
+    std::uint64_t mix(std::uint64_t value) {
+        value += 0x9E3779B97F4A7C15ull;
+        value = (value ^ (value >> 30)) * 0xBF58476D1CE4E5B9ull;
+        value = (value ^ (value >> 27)) * 0x94D049BB133111EBull;
+        return value ^ (value >> 31);
+    }
+}
+
 void ContractRun::deploy() {
     const auto& node = m_route[m_selectedNode];
     const auto level = node.kind == RouteNodeKind::Encounter ? contractSignal(node.level) : contractLevel(node.level);
@@ -687,11 +728,16 @@ void ContractRun::deploy() {
         finishEncounter(true);
         return;
     }
+    const float engagement = contractEngagementRange();
+    // Enemies start beyond engagement range of every berth and close in once alerted.
+    const float depth = engagement + 260.0f;
     std::vector<Handle<WorldObject>> targets;
+    std::vector<procedural::CoverKeepOut> obstacles;
     for (auto& entry : m_players) {
         WorldObject* ship = m_world.worldObject(entry.second.actor);
         if (!alive(entry.second)) continue;
         targets.push_back(ship->handle<WorldObject>());
+        obstacles.push_back({ship->position(), shipRadius(*ship) + 60.0f});
         entry.second.ready = false;
     }
     const bool finale = node.kind == RouteNodeKind::Attack && node.level == FlagshipLevel;
@@ -702,40 +748,44 @@ void ContractRun::deploy() {
         wingman->transform().setPosition(glm::vec3(-110.0f, 0.0f, -90.0f));
         m_world.god().scheduleSpawn(wingman);
         targets.push_back(wingman->handle<WorldObject>());
+        obstacles.push_back({wingman->position(), shipRadius(*wingman) + 40.0f});
     }
     std::vector<Ship*> enemies;
     for (std::size_t index = 0; index < count; ++index) {
         const bool flagship = finale && index == 0;
         const auto definition = finale && !flagship ? "contractraider" : level.enemy;
         Ship* enemy = WorldObjectBuilder(definition, m_world).buildShip();
-        glm::vec3 position(static_cast<float>(index) * 70.0f, 0.0f, -180.0f);
-        if (level.layout == 2)
+        glm::vec3 position(static_cast<float>(index) * 70.0f, 0.0f, -depth);
+        if (level.formation == 2)
             position = glm::vec3(index % 2 ? 150.0f : -150.0f,
-                (index / 2) * 30.0f, -130.0f - (index / 2) * 60.0f);
-        if (level.layout == 3)
-            position = glm::vec3(static_cast<float>(index) * 90.0f, 30.0f, -280.0f);
-        if (finale) position = flagship ? glm::vec3(35,0,-290) :
-            glm::vec3(index % 2 ? -115 : 135, 35.0f * (index/2), -210);
+                (index / 2) * 30.0f, -depth - (index / 2) * 60.0f);
+        if (level.formation == 3)
+            position = glm::vec3(static_cast<float>(index) * 90.0f, 30.0f, -depth - 100.0f);
+        if (finale) position = flagship ? glm::vec3(35.0f, 0.0f, -depth - 110.0f) :
+            glm::vec3(index % 2 ? -115.0f : 135.0f, 35.0f * (index / 2), -depth - 30.0f);
         enemy->transform().setPosition(position);
         enemy->info().setName(finale && !flagship ? "REGENT ESCORT" : level.name);
-        if (flagship)
-            enemy->character()->setTask(std::make_shared<FightTask>(enemy->boardComputer(), targets,
-                AiArchetype::Cruiser, ShootingSkill{0.80f,0.55f,0.60f}));
-        else
-            enemy->character()->setTask(std::make_shared<FightTask>(enemy->boardComputer(), targets));
+        auto task = flagship
+            ? std::make_shared<FightTask>(enemy->boardComputer(), targets,
+                AiArchetype::Cruiser, ShootingSkill{0.80f,0.55f,0.60f})
+            : std::make_shared<FightTask>(enemy->boardComputer(), targets, AiArchetype::Interceptor);
+        task->setEngagementRange(engagement);
+        enemy->character()->setTask(task);
         m_world.god().scheduleSpawn(enemy);
         enemies.push_back(enemy);
+        obstacles.push_back({position, shipRadius(*enemy) + 60.0f});
     }
-    for (int i = 0; i < level.cover; ++i) {
-        auto* barrier = new WorldObject();
-        barrier->setWorld(m_world);
-        for (int x = 0; x < 3; ++x) for (int y = 0; y < 5; ++y)
-            barrier->addVoxel(new Voxel(glm::ivec3(x,y,0),0x637b8c,3,150));
-        barrier->transform().setScale(4.0f);
-        barrier->transform().setPosition(glm::vec3(i % 2 ? 65.0f : -65.0f,
-            -10.0f, -90.0f - (i/2)*55.0f));
-        m_world.god().scheduleSpawn(barrier);
-    }
+    // Kept apart from m_offerRandom so cover never shifts reward or route rolls.
+    const std::uint64_t coverSeed = mix(m_world.simulationTickIndex() ^ mix(m_selectedNode + 1));
+    m_coverLayout = level.layouts[mix(coverSeed) % level.layouts.size()];
+    procedural::CoverArena arena;
+    arena.nearZ = -170.0f;
+    arena.farZ = -(depth - 150.0f);
+    arena.centerX = 80.0f;
+    arena.halfWidth = 520.0f;
+    arena.keepOut = std::move(obstacles);
+    for (const auto& cover : procedural::generateCoverLayout(m_coverLayout, coverSeed, arena))
+        m_world.god().scheduleSpawn(procedural::buildCover(m_world, cover.piece, cover.position));
     m_world.god().spawn();
     if (wingman) {
         const auto id = m_world.entityId(wingman);
@@ -744,8 +794,10 @@ void ContractRun::deploy() {
         m_rescueBonus = level.rescueBonus;
         std::vector<Handle<WorldObject>> hostiles;
         for (auto* enemy : enemies) hostiles.push_back(enemy->handle<WorldObject>());
-        wingman->character()->setTask(std::make_shared<FightTask>(wingman->boardComputer(),
-            hostiles, AiArchetype::Interceptor, ShootingSkill{0.65f,0.55f,0.55f}));
+        auto task = std::make_shared<FightTask>(wingman->boardComputer(),
+            hostiles, AiArchetype::Interceptor, ShootingSkill{0.65f,0.55f,0.55f});
+        task->setEngagementRange(engagement);
+        wingman->character()->setTask(task);
     }
     m_enemies.clear();
     for (Ship* enemy : enemies) {
@@ -765,6 +817,10 @@ void ContractRun::deploy() {
     }
     m_phase = ContractPhase::Mission;
     m_remainingEnemies = m_enemies.size();
+}
+
+procedural::CoverLayout ContractRun::coverLayout() const {
+    return m_coverLayout;
 }
 
 std::uint32_t ContractRun::encounterReward() const {
@@ -788,6 +844,7 @@ void ContractRun::update() {
                 for (auto& slot : enemy->components().shieldSlots()) slot->setShield(nullptr);
                 return true;
             }), m_projectors.end());
+        alertSquad();
         const auto remaining = static_cast<std::size_t>(std::count_if(m_enemies.begin(), m_enemies.end(),
             [this](EntityId enemy) { return m_world.worldObject(enemy) != nullptr; }));
         m_enemiesDefeated += static_cast<std::uint16_t>(m_remainingEnemies - remaining);
@@ -798,6 +855,23 @@ void ContractRun::update() {
         finishEncounter(false);
     else if (inMission() && m_remainingEnemies == 0) finishEncounter(true);
     else if (m_phase == ContractPhase::Reward) finishRewards();
+}
+
+void ContractRun::alertSquad() {
+    // Once any hostile engages, the whole squad and the stranded wingman join the fight.
+    std::vector<std::shared_ptr<FightTask>> tasks;
+    bool alerted = false;
+    auto collect = [&](EntityId id) {
+        auto* ship = dynamic_cast<Ship*>(m_world.worldObject(id));
+        if (!ship || !ship->character()) return;
+        auto task = std::dynamic_pointer_cast<FightTask>(ship->character()->task());
+        if (!task) return;
+        alerted = alerted || task->engaged();
+        tasks.push_back(task);
+    };
+    for (EntityId enemy : m_enemies) collect(enemy);
+    if (m_wingman.valid()) collect(m_wingman);
+    if (alerted) for (auto& task : tasks) task->engage();
 }
 
 void ContractRun::finishEncounter(bool success) {
