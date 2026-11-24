@@ -27,6 +27,7 @@
 #include "scenarios/largecombatscenario.h"
 #include "scenarios/shieldshowcasescenario.h"
 #include "scenarios/aicomparisonscenario.h"
+#include "scenarios/weaponrangescenario.h"
 
 #include "sound/soundmanager.h"
 
@@ -196,11 +197,20 @@ AiComparisonScenario* GamePlay::aiComparison() const {
     return dynamic_cast<AiComparisonScenario*>(m_scenario.get());
 }
 
+WeaponRangeScenario* GamePlay::weaponRange() const {
+    return dynamic_cast<WeaponRangeScenario*>(m_scenario.get());
+}
+
 void GamePlay::loadScenario(int i) {
     TextureRenderer loadRenderer("data/textures/loading.dds");
     loadRenderer.display("Loading Scenario...");
 
     m_soundManager->stopAll();
+#ifndef VOXELLANCER_HEADLESS_SERVER
+    World& presentationWorld = *World::instance();
+    if (presentationWorld.player().ship()) presentationWorld.player().setTarget(nullptr);
+    presentationWorld.particleEngine().clear();
+#endif
     if (m_scenario) {
         m_scenario->clear();
     }
@@ -235,6 +245,9 @@ void GamePlay::loadScenario(int i) {
     case AiComparisonScenario::ScenarioId:
         m_scenario.reset(new AiComparisonScenario(world));
         break;
+    case WeaponRangeScenario::ScenarioId:
+        m_scenario.reset(new WeaponRangeScenario(world));
+        break;
     default:
         m_scenario.reset(new BaseScenario(world));
     }
@@ -242,7 +255,45 @@ void GamePlay::loadScenario(int i) {
     m_scenario->load();
 }
 
+#ifndef VOXELLANCER_HEADLESS_SERVER
+void GamePlay::startLocalScenario(int scenario) {
+    m_runningState->setLocalScenarioActive(true);
+    if (m_freecamActive) setFreecamActive(false);
+    m_scene->hudOverlay().setFocused(false);
+    setMouseCursorFree(false);
+    World::instance()->player().move(glm::vec3(0));
+    World::instance()->player().rotate(glm::vec3(0));
+    loadScenario(scenario);
+}
+
+void GamePlay::returnToContracts() {
+    if (!m_runningState->localScenarioActive()) return;
+    if (m_freecamActive) setFreecamActive(false);
+    m_scene->hudOverlay().setFocused(false);
+    setMouseCursorFree(false);
+    World::instance()->player().move(glm::vec3(0));
+    World::instance()->player().rotate(glm::vec3(0));
+    loadScenario(99);
+    createContractPresentation();
+    m_runningState->setLocalScenarioActive(false);
+}
+
+void GamePlay::createContractPresentation() {
+    World& world = *World::instance();
+    Ship* ship = WorldObjectBuilder("contractship", world).buildShip();
+    world.god().scheduleSpawn(ship);
+    world.god().spawn();
+    if (!world.entityId(ship)) {
+        throw std::runtime_error("Could not create the contract camera presentation ship.");
+    }
+    world.player().setShip(ship);
+}
+#endif
+
 void GamePlay::update(float deltaSec) {
+    if (!m_game->mainMenuVisible()) {
+        if (auto* range = weaponRange()) range->update(deltaSec);
+    }
 #ifndef VOXELLANCER_HEADLESS_SERVER
     refreshMouseCursorMode();
     if (m_scene->hudOverlay().focused()) {
@@ -284,14 +335,7 @@ void GamePlay::onEntered() {
     loadScenario(m_initialScenario);
 #ifndef VOXELLANCER_HEADLESS_SERVER
     if (m_game->mainMenuEnabled()) {
-        World& world = *World::instance();
-        Ship* ship = WorldObjectBuilder("contractship", world).buildShip();
-        world.god().scheduleSpawn(ship);
-        world.god().spawn();
-        if (!world.entityId(ship)) {
-            throw std::runtime_error("Could not create the contract camera presentation ship.");
-        }
-        world.player().setShip(ship);
+        createContractPresentation();
     }
     refreshMouseCursorMode();
 #endif

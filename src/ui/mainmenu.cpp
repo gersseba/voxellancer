@@ -1,6 +1,7 @@
 #include "mainmenu.h"
 
 #include <fstream>
+#include <utility>
 
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
@@ -10,11 +11,11 @@
 #include "display/rendering/screenquad.h"
 #include "property/property.h"
 #include "ui/uifont.h"
+#include "ui/scenariomenu.h"
 #include "utils/filesystem.h"
 
 namespace {
     constexpr float ButtonLeft = 0.34f;
-    constexpr float ButtonTop = 0.40f;
     constexpr float ButtonWidth = 0.32f;
     constexpr float ButtonHeight = 0.065f;
     constexpr float ButtonStep = 0.09f;
@@ -23,7 +24,10 @@ namespace {
     const glm::vec3 Accent(0.30f, 0.80f, 0.90f);
 }
 
-MainMenu::MainMenu(): m_quad(new ScreenQuad()) {}
+MainMenu::MainMenu(std::function<void()> contracts, std::function<void(int)> scenario):
+    m_contracts(std::move(contracts)),
+    m_scenario(std::move(scenario)),
+    m_quad(new ScreenQuad()) {}
 MainMenu::~MainMenu() = default;
 
 bool MainMenu::visible() const {
@@ -31,34 +35,36 @@ bool MainMenu::visible() const {
 }
 
 void MainMenu::toggle() {
-    if (m_state.page() == MainMenuState::Page::Settings) {
+    if (m_state.page() == MainMenuState::Page::Settings ||
+        m_state.page() == MainMenuState::Page::Scenarios) {
         m_state.show();
-        m_selected = 2;
+        m_selected = 1;
     } else if (visible()) {
         m_state.resume();
     } else {
         m_state.show();
-        m_selected = 1;
+        m_selected = m_state.resumeEnabled() ? 2 : 1;
     }
     m_pressed = -1;
 }
 
 void MainMenu::setConnection(bool ready, const std::string& note) {
-    const bool couldStart = m_state.startEnabled();
     m_state.setConnectionReady(ready);
     m_note = note;
-    if (!couldStart && m_state.startEnabled() &&
-        m_state.page() == MainMenuState::Page::Main) {
-        m_selected = 0;
-    }
     if (!enabled(m_selected)) {
         selectNext(1);
     }
 }
 
 std::vector<std::string> MainMenu::labels() const {
+    if (m_state.page() == MainMenuState::Page::Scenarios) {
+        std::vector<std::string> items;
+        for (const auto& entry : ScenarioMenuEntries) items.emplace_back(entry.name);
+        items.emplace_back("Back");
+        return items;
+    }
     if (m_state.page() != MainMenuState::Page::Settings) {
-        return {"Start", "Resume", "Settings"};
+        return {"Contracts", "Scenarios", "Resume", "Settings", "Exit"};
     }
     const std::string aa = Property<std::string>("vfx.antialiasing");
     const std::string aaLabel = aa == "ssaa" ? "SSAA" : aa == "fxaa" ? "FXAA" : "Off";
@@ -74,9 +80,9 @@ std::vector<std::string> MainMenu::labels() const {
 
 bool MainMenu::enabled(int index) const {
     if (index < 0 || index >= static_cast<int>(labels().size())) return false;
-    if (m_state.page() == MainMenuState::Page::Settings) return true;
-    return index == 0 ? m_state.startEnabled()
-        : index == 1 ? m_state.resumeEnabled() : true;
+    if (m_state.page() != MainMenuState::Page::Main) return true;
+    return index == 0 ? m_state.contractsEnabled()
+        : index == 2 ? m_state.resumeEnabled() : true;
 }
 
 void MainMenu::selectNext(int direction) {
@@ -88,11 +94,17 @@ void MainMenu::selectNext(int direction) {
 }
 
 float MainMenu::buttonTop() const {
-    return m_state.page() == MainMenuState::Page::Settings ? 0.36f : ButtonTop;
+    return m_state.page() == MainMenuState::Page::Scenarios ? 0.31f
+        : 0.36f;
 }
 
 float MainMenu::buttonStep() const {
-    return m_state.page() == MainMenuState::Page::Settings ? 0.08f : ButtonStep;
+    return m_state.page() == MainMenuState::Page::Scenarios ? 0.047f
+        : m_state.page() == MainMenuState::Page::Settings ? 0.08f : ButtonStep;
+}
+
+float MainMenu::buttonHeight() const {
+    return m_state.page() == MainMenuState::Page::Scenarios ? 0.041f : ButtonHeight;
 }
 
 int MainMenu::itemAtPointer() const {
@@ -106,7 +118,7 @@ int MainMenu::itemAtPointer() const {
     y /= height;
     if (x < ButtonLeft || x > ButtonLeft + ButtonWidth) return -1;
     const int index = static_cast<int>((y - buttonTop()) / buttonStep());
-    if (y < buttonTop() || y > buttonTop() + index * buttonStep() + ButtonHeight ||
+    if (y < buttonTop() || y > buttonTop() + index * buttonStep() + buttonHeight() ||
         index >= static_cast<int>(labels().size())) return -1;
     return index;
 }
@@ -129,6 +141,8 @@ void MainMenu::onKeyEvent(int key, int scancode, int action, int mods) {
     if (key == GLFW_KEY_UP) selectNext(-1);
     if (key == GLFW_KEY_DOWN) selectNext(1);
     if (key == GLFW_KEY_TAB) selectNext(mods & GLFW_MOD_SHIFT ? -1 : 1);
+    if (key == GLFW_KEY_P && m_state.page() == MainMenuState::Page::Main &&
+        m_state.scenarioActive()) m_state.resume();
     if (key == GLFW_KEY_ENTER || key == GLFW_KEY_SPACE) activate(m_selected);
 }
 
@@ -147,18 +161,36 @@ void MainMenu::onMouseButtonEvent(int button, int action, int mods) {
 
 void MainMenu::activate(int index) {
     if (!enabled(index)) return;
-    if (m_state.page() != MainMenuState::Page::Settings) {
-        if (index == 0) m_state.start();
-        if (index == 1) m_state.resume();
-        if (index == 2) {
+    if (m_state.page() == MainMenuState::Page::Scenarios) {
+        if (index == static_cast<int>(ScenarioMenuEntries.size())) {
+            m_state.show();
+            m_selected = 1;
+        } else {
+            m_scenario(ScenarioMenuEntries[index].id);
+            m_state.startScenario();
+        }
+        return;
+    }
+    if (m_state.page() == MainMenuState::Page::Main) {
+        if (index == 0) {
+            m_contracts();
+            m_state.selectContracts();
+        }
+        if (index == 1) {
+            m_state.scenarios();
+            m_selected = 0;
+        }
+        if (index == 2) m_state.resume();
+        if (index == 3) {
             m_state.settings();
             m_selected = 0;
         }
+        if (index == 4) glfwSetWindowShouldClose(glfwGetCurrentContext(), GLFW_TRUE);
         return;
     }
     if (index == 4) {
         m_state.show();
-        m_selected = 2;
+        m_selected = 3;
         return;
     }
     if (index == 0) {
@@ -230,11 +262,13 @@ void MainMenu::draw() {
     rectangle(glm::vec4(0, 0, 1, 1), Background);
     rectangle(glm::vec4(0.08f, 0.12f, 0.002f, 0.72f), Accent * 0.35f);
     rectangle(glm::vec4(0.918f, 0.12f, 0.002f, 0.72f), Accent * 0.35f);
-    rectangle(glm::vec4(0.30f, 0.355f, 0.40f, 0.405f), Surface * 0.70f);
+    const bool scenarios = m_state.page() == MainMenuState::Page::Scenarios;
+    rectangle(scenarios ? glm::vec4(0.30f, 0.30f, 0.40f, 0.53f)
+                        : glm::vec4(0.30f, 0.35f, 0.40f, 0.44f), Surface * 0.70f);
     const auto items = labels();
     for (int index = 0; index < static_cast<int>(items.size()); ++index) {
         const glm::vec4 bounds(ButtonLeft, buttonTop() + index * buttonStep(),
-            ButtonWidth, ButtonHeight);
+            ButtonWidth, buttonHeight());
         const bool selected = index == m_selected && enabled(index);
         rectangle(bounds, selected ? Accent * 0.55f : Surface);
         if (selected) {
@@ -247,12 +281,13 @@ void MainMenu::draw() {
     font->drawScreen("VOXELLANCER", glm::vec2(0.5f, 0.19f), 0.052f,
         glm::vec4(0.90f, 0.97f, 1.0f, 1), FontAlign::CENTER, 0.8f);
     const bool settings = m_state.page() == MainMenuState::Page::Settings;
-    font->drawScreen(settings ? "SETTINGS" : "CONTRACT OPERATIONS",
-        glm::vec2(0.5f, 0.285f), 0.019f, glm::vec4(Accent, 1),
+    font->drawScreen(settings ? "SETTINGS" : scenarios ? "SCENARIO SELECTION" : "MAIN MENU",
+        glm::vec2(0.5f, scenarios ? 0.265f : 0.285f), 0.019f, glm::vec4(Accent, 1),
         FontAlign::CENTER, 0.8f);
     for (int index = 0; index < static_cast<int>(items.size()); ++index) {
         font->drawScreen(items[index],
-            glm::vec2(0.5f, buttonTop() + index * buttonStep() + 0.019f), 0.025f,
+            glm::vec2(0.5f, buttonTop() + index * buttonStep() +
+                (scenarios ? 0.010f : 0.019f)), scenarios ? 0.019f : 0.025f,
             enabled(index) ? glm::vec4(0.9f, 0.96f, 1, 1)
                 : glm::vec4(0.40f, 0.47f, 0.53f, 1),
             FontAlign::CENTER, ButtonWidth - 0.03f);
@@ -261,14 +296,12 @@ void MainMenu::draw() {
         : settings && m_selected == 3
             ? "Invulnerability protects only your pilot. Saved across launches."
         : settings ? "Settings apply immediately and are saved on this computer."
-        : m_state.sessionStarted() && !m_state.resumeEnabled()
-            ? "Session unavailable. Start and Resume require a ready server."
-        : m_state.sessionStarted() ? "Session active. Use Resume. Online simulation continues in the menu."
-        : "Start opens the contract. Solo runs continue from the latest base checkpoint.";
-    font->drawScreen(help, glm::vec2(0.5f, 0.81f), 0.017f,
+        : scenarios ? "Choose a standalone scenario. The contract server continues running."
+        : "Contracts require a server. Scenarios run locally and pause in the menu.";
+    font->drawScreen(help, glm::vec2(0.5f, scenarios ? 0.84f : 0.81f), 0.017f,
         glm::vec4(0.65f, 0.75f, 0.82f, 1), FontAlign::CENTER, 0.85f);
     font->drawScreen("Arrow keys / Tab: select    Enter: confirm    Esc: menu / back",
-        glm::vec2(0.5f, 0.865f), 0.014f, glm::vec4(0.65f, 0.75f, 0.82f, 1),
+        glm::vec2(0.5f, scenarios ? 0.89f : 0.865f), 0.014f, glm::vec4(0.65f, 0.75f, 0.82f, 1),
         FontAlign::CENTER, 0.85f);
     rectangle(glm::vec4(0.08f, 0.925f, 0.84f, 0.0015f), Accent * 0.35f);
     font->drawScreen(m_note, glm::vec2(0.5f, 0.95f), 0.016f,

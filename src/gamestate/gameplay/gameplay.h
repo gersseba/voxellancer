@@ -24,6 +24,7 @@ class SoundManager;
  * in some menustate etc.
  */
 class AiComparisonScenario;
+class WeaponRangeScenario;
 
 class GamePlay: public GameState {
 public:
@@ -57,7 +58,13 @@ public:
 
     void setInitialScenario(int scenario);
     void loadScenario(int i);
+#ifndef VOXELLANCER_HEADLESS_SERVER
+    void startLocalScenario(int scenario);
+    void returnToContracts();
+    void createContractPresentation();
+#endif
     AiComparisonScenario* aiComparison() const;
+    WeaponRangeScenario* weaponRange() const;
 
     virtual void update(float deltaSec) override;
 

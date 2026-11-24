@@ -180,14 +180,14 @@ From the repository root:
 ./build/macos/voxellancer -scenario ai-comparison -nointro
 ```
 
-Or use **Terminal: Run Task -> AI Dogfight Comparison (macOS)**.
-The scenario bypasses contracts and adds one invulnerable, unarmed observer.
+Or choose **Scenarios > AI Dogfight Comparison** from the main menu.
+The scenario runs locally and adds one invulnerable, unarmed observer.
 
 - **1-9 / 0:** jump to pairs 1-10.
 - **Comma / period:** previous/next pair, wrapping through all 16.
 - Selecting a pair returns from free camera.
 - **F:** free camera; normal flight controls move the observer.
-- **Esc:** exit the developer scenario.
+- **Esc:** open the menu (or exit when launched directly).
 
 The left scoreboard shows experiment, A/B hull, outcome, and selected row.
 The right panel shows both behaviors, lead/tracking/accuracy percentages, and

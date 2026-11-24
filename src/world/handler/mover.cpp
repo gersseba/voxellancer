@@ -231,47 +231,105 @@ void Mover::moveProfiledProjectile(Projectile &projectile, float deltaSec, unsig
                     Voxel *voxel;
                     float distance;
                 };
-                std::vector<Surface> surfaces;
-                const Sphere area(point, profile.radius);
+                std::unordered_set<Voxel *> destroyed;
+                std::unordered_set<Voxel *> affected;
+                float remaining = profile.isBlast
+                    ? budgetBefore * profile.propagationFraction : budgetBefore;
+                if (!profile.isBlast) {
+                    Voxel *first = found->second;
+                    const float spent = damageVoxel(first, remaining);
+                    remaining = std::max(0.0f, remaining - spent);
+                    affected.insert(first);
+                    if (spent * (first->armored() ? profile.armor : profile.normal) >=
+                        first->hp() - 1e-4f) {
+                        destroyed.insert(first);
+                        remaining *= profile.propagationFraction;
+                    } else {
+                        remaining = 0;
+                    }
+                }
+
+                const float scale = target->transform().scale();
+                const Sphere area(point, profile.radius * scale);
                 const auto nearby = VoxelTreeQuery(&target->collisionDetector().voxelTree(), &area)
                                         .intersectingVoxels();
-                const auto origin = point - direction * profile.radius;
+                const auto origin = point - direction * (0.001f * scale);
                 const auto localOrigin = target->transform().inverseApplyTo(origin);
+                const float angleLimit = std::cos(glm::radians(profile.propagationAngle * 0.5f));
+                std::vector<Surface> candidates;
                 for (auto *voxel : nearby) {
-                    const float distance = glm::distance(point, voxel->position());
+                    const auto offset = voxel->position() - point;
+                    const float length = glm::length(offset);
+                    const float distance = length / scale;
                     if (distance >= profile.radius)
                         continue;
-                    const auto sight = Capsule::fromTo(origin, voxel->position(), 0.001f);
-                    bool blocked = false;
-                    for (auto *obstacle :
-                         VoxelTreeQuery(&target->collisionDetector().voxelTree(), &sight)
-                             .intersectingVoxels()) {
-                        float t;
-                        if (obstacle != voxel &&
-                            segmentIntersectsVoxel(localOrigin, glm::vec3(voxel->cell()),
-                                                   obstacle->cell(), 0.5f, t)) {
-                            blocked = true;
-                            break;
-                        }
-                    }
-                    if (!blocked)
-                        surfaces.push_back({voxel, distance});
+                    if (profile.propagationAngle < 360 && length > 1e-6f &&
+                        glm::dot(offset / length, direction) + 1e-6f < angleLimit)
+                        continue;
+                    candidates.push_back({voxel, distance});
                 }
-                std::sort(surfaces.begin(), surfaces.end(),
+                std::sort(candidates.begin(), candidates.end(),
                           [&](const Surface &a, const Surface &b) {
                               return a.distance != b.distance
                                          ? a.distance < b.distance
                                          : cellLess(a.voxel->cell(), b.voxel->cell());
                           });
-                if (surfaces.size() > 12)
-                    surfaces.resize(12);
-                float totalWeight = 0;
-                for (const auto &surface : surfaces)
-                    totalWeight += 1 - surface.distance / profile.radius;
-                for (const auto &surface : surfaces)
-                    damageVoxel(surface.voxel, budgetBefore *
-                                                   (1 - surface.distance / profile.radius) /
-                                                   totalWeight);
+                constexpr std::size_t MaxPropagationRecipients = 12;
+                std::size_t recipients = 0;
+                while (remaining > 1e-6f && recipients < MaxPropagationRecipients) {
+                    std::vector<Surface> surfaces;
+                    for (const auto &candidate : candidates) {
+                        auto *voxel = candidate.voxel;
+                        if (affected.count(voxel))
+                            continue;
+                        const glm::vec3 cell(voxel->cell());
+                        const auto nearest = glm::clamp(localOrigin, cell - glm::vec3(0.5f),
+                                                        cell + glm::vec3(0.5f));
+                        const auto toOrigin = localOrigin - nearest;
+                        const auto localSurface = glm::length(toOrigin) > 1e-6f
+                            ? nearest + glm::normalize(toOrigin) * 0.001f : nearest;
+                        const auto sight = Capsule::fromTo(origin,
+                            target->transform().applyTo(localSurface), 0.001f * scale);
+                        bool blocked = false;
+                        for (auto *obstacle :
+                             VoxelTreeQuery(&target->collisionDetector().voxelTree(), &sight)
+                                 .intersectingVoxels()) {
+                            float t;
+                            if (obstacle != voxel && !destroyed.count(obstacle) &&
+                                segmentIntersectsVoxel(localOrigin, localSurface,
+                                                       obstacle->cell(), 0.5f, t)) {
+                                blocked = true;
+                                break;
+                            }
+                        }
+                        if (!blocked) {
+                            surfaces.push_back(candidate);
+                            if (surfaces.size() == MaxPropagationRecipients - recipients)
+                                break;
+                        }
+                    }
+                    float totalWeight = 0;
+                    for (const auto &surface : surfaces)
+                        totalWeight += 1 - surface.distance / profile.radius;
+                    if (totalWeight <= 0)
+                        break;
+
+                    float overflow = 0;
+                    for (const auto &surface : surfaces) {
+                        const float share = remaining *
+                            (1 - surface.distance / profile.radius) / totalWeight;
+                        const float spent = damageVoxel(surface.voxel, share);
+                        affected.insert(surface.voxel);
+                        const float materialDamage =
+                            surface.voxel->armored() ? profile.armor : profile.normal;
+                        if (spent * materialDamage >= surface.voxel->hp() - 1e-4f) {
+                            destroyed.insert(surface.voxel);
+                            overflow += std::max(0.0f, share - spent);
+                        }
+                    }
+                    recipients += surfaces.size();
+                    remaining = overflow * profile.propagationFraction;
+                }
                 projectile.impactBudget = 0;
             } else {
                 projectile.impactBudget -= damageVoxel(found->second, budgetBefore);

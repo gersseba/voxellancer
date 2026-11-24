@@ -64,7 +64,9 @@ Viewer& Game::viewer() {
 }
 
 void Game::enableMainMenu() {
-    m_mainMenu = std::make_unique<MainMenu>();
+    m_mainMenu = std::make_unique<MainMenu>(
+        [this]() { m_gamePlay->returnToContracts(); },
+        [this](int scenario) { m_gamePlay->startLocalScenario(scenario); });
     setInitialSubState(m_gamePlay);
     m_gamePlay->setInitialScenario(99);
 }
@@ -94,22 +96,22 @@ void Game::update(float deltaSec) {
     if (m_mainMenu) {
         const auto& running = m_gamePlay->running();
         const auto lobby = running.remoteLobbyStatus();
-        const bool ready = running.contractStatus().has_value() &&
+        const bool ready = running.connectedContractStatus().has_value() &&
             running.remoteWorldReady() &&
             lobby && lobby->worldStarted && !running.contractSessionEnded();
-        std::string note = "Connecting to server. Start and Resume are unavailable until setup completes.";
+        std::string note = "Connecting to Contracts server. Scenarios are available offline.";
         if (!m_connectionError.empty()) {
             note = m_connectionError + " Restart the game to retry.";
         } else if (!running.remoteConnectionError().empty()) {
-            note = running.remoteConnectionError() + " Start and Resume unavailable. Restart to reconnect.";
+            note = running.remoteConnectionError() + " Restart to reconnect.";
         } else if (ready) {
             note = "Server connected. Contracts ready.";
-        } else if (running.remotePreviewSnapshot() && !running.contractStatus()) {
+        } else if (running.remoteWorldReady() && !running.connectedContractStatus()) {
             note = "Server connected, but contracts are not ready. Use a contracts server.";
         } else if (lobby && !lobby->worldStarted) {
             note = "Waiting for pilots: " + std::to_string(lobby->connectedPlayers) +
                 "/" + std::to_string(lobby->targetPlayers) +
-                ". Start and Resume unlock when the server is ready.";
+                ". Contracts unlock when the server is ready.";
         }
         m_mainMenu->setConnection(ready, note);
         if (mainMenuVisible()) {

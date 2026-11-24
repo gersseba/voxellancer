@@ -37,7 +37,7 @@ exit code. Options are passed as `-D<NAME>=<value>` before `-P`:
 | Option | Values |
 | --- | --- |
 | `MODE` | `Test` (default) or `Run` |
-| `RUN` | `StartServer`, `StartClient` (default for `Run`), `LocalServer`, `LocalContracts`, `ShieldShowcase`, `AiComparison`, `LocalLargeCombat`, `MultiplayerLargeCombat` |
+| `RUN` | `StartServer`, `StartClient` (default for `Run`), `LocalServer`, `LocalContracts`, `ShieldShowcase`, `AiComparison`, `WeaponRange`, `LocalLargeCombat`, `MultiplayerLargeCombat` |
 | `CONFIG` | `Release` (default) or `Debug` |
 | `BUILD_DIR` | build directory; defaults to `build/macos` on macOS and `build/agent-vcpkg-stable` elsewhere (an existing `build/agent-vcpkg-vs<N>-stable` is reused on Windows) |
 | `GENERATOR` | CMake generator for a new build directory |
@@ -68,10 +68,9 @@ until it listens, starts both clients, and validates the three reports.
 `tools/agent-check.ps1` remains as a compatibility wrapper for the previous
 PowerShell parameters.
 
-In VS Code, **Terminal: Run Task** offers the same entries on every platform:
-**Run Tests**, **Start Server**, **Start Client**, **Start Client with Local
-Server**, **Play Contracts with Local Server**, **AI Dogfight Comparison**,
-**Start Shield Showcase Scenario**, and both large-combat benchmarks.
+In VS Code, **Terminal: Run Task > start game** builds the client and local
+server and opens the main menu. Use the harness commands above for tests,
+multiplayer, and benchmarks.
 
 ## Windows
 
@@ -92,21 +91,18 @@ cmake -S . -B build -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_ROOT\scripts\buildsystems
 cmake --build build --config Release --target voxellancer
 ```
 
-Run `cmake -P tools/agent-check.cmake` to build and test. In VS Code,
-**Terminal: Run Task** contains these runtime tasks:
+Run `cmake -P tools/agent-check.cmake` to build and test. For local play, use
+**Terminal: Run Task > start game** in VS Code. For benchmarks, run:
 
-- **Start Server** — start a two-pilot contracts lobby on port 27801.
-- **Start Client** — start a graphical multiplayer client.
-- **Start Shield Showcase Scenario** — start the shield demonstration.
-- **Start Local Client with Integrated Server (Large Combat Benchmark)** —
-  run one graphical client with an integrated authoritative benchmark server.
-- **Start Server and Two Clients (Large Combat Benchmark)** — run the
-  coordinated two-client multiplayer benchmark.
+```powershell
+cmake -DMODE=Run -DRUN=LocalLargeCombat -P tools/agent-check.cmake
+cmake -DMODE=Run -DRUN=MultiplayerLargeCombat -P tools/agent-check.cmake
+```
 
-Both benchmark tasks use the same seeded 800-ship combat scenario. The server
+Both benchmarks use the same seeded 800-ship combat scenario. The server
 advances exactly 1,800 simulation intervals after the target clients connect;
 clients record rendered frames from the first started-world snapshot to the
-final server tick. The two-client task launches a server waiting for two
+final server tick. The two-client command launches a server waiting for two
 players, then opens two graphical
 clients side-by-side. Reports share a run ID and identify each role/client
 explicitly in `benchmark-results/`.
@@ -130,7 +126,7 @@ LLVM and `libomp`). Install the tools with
 `bootstrap-vcpkg.sh`. Initialize the `glow` submodule as described above. The
 client requests an OpenGL 4.1 core-profile context on macOS.
 
-In **Terminal: Run Task**, choose **Start Client with Local Server**. It runs
+In **Terminal: Run Task**, choose **start game**. It runs
 `cmake -DMODE=Run -DRUN=LocalServer -P tools/agent-check.cmake`, which finds
 `~/vcpkg` and Homebrew LLVM/OpenMP (Apple Silicon or Intel) without requiring
 VS Code to inherit terminal exports. Existing `VCPKG_ROOT`, `CC`, and `CXX`
@@ -142,11 +138,9 @@ same command.
 On macOS, the game requests focus once loading finishes. Fullscreen windows
 remain visible rather than automatically minimizing when focus changes.
 The client starts its matching server on an available loopback port and stops
-it on exit. Both macOS local-server tasks now open the contracts main menu,
-not the large-combat benchmark.
+it on exit. The game opens the main menu, not the large-combat benchmark.
 Configuration or build errors stop the task before launch.
-Choose **Play Contracts with Local Server** instead to launch the
-station/mission/shop progression slice (`-DRUN=LocalContracts`).
+Choose **Contracts** in the menu to enter the station/mission/shop progression.
 
 ## Linux
 

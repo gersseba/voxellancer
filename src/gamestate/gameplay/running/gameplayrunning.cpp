@@ -120,7 +120,22 @@ bool GamePlayRunning::connectRemotePreview(std::unique_ptr<TcpClient> client) {
 }
 
 bool GamePlayRunning::remotePreviewActive() const {
-    return m_remotePreview != nullptr || m_contractSessionEnded;
+    return !m_localScenarioActive && (m_remotePreview != nullptr || m_contractSessionEnded);
+}
+
+void GamePlayRunning::setLocalScenarioActive(bool active) {
+    if (active == m_localScenarioActive) return;
+    if (active) submitRemoteInput(glm::vec3(0), glm::vec3(0), false);
+    m_localScenarioActive = active;
+    m_remotePreviewSnapshot.reset();
+    m_remoteReplicaSnapshots.clear();
+    m_remoteViewActor.reset();
+    m_remoteRenderTick.reset();
+    m_remoteInputCommands.clear();
+    m_remoteAppliedInputCommand.reset();
+    m_lastRemoteInputCommand.reset();
+    m_remoteInputEquipment.clear();
+    m_remoteInputEnginePower = EnginePower();
 }
 
 std::optional<voxellancer::protocol::LobbyStatus>
@@ -145,7 +160,7 @@ GamePlayRunning::remoteReplicaSnapshots() const {
 const std::vector<voxellancer::protocol::EntityContentSnapshot>&
 GamePlayRunning::remoteEntityContents() const {
     static const std::vector<voxellancer::protocol::EntityContentSnapshot> Empty;
-    return m_remotePreview ? m_remotePreview->entityContents() : Empty;
+    return m_remotePreview && !m_localScenarioActive ? m_remotePreview->entityContents() : Empty;
 }
 
 std::vector<voxellancer::protocol::EntityId>
@@ -164,7 +179,7 @@ GamePlayRunning::drainRemoteVoxelDamageEvents() {
 
 std::vector<voxellancer::protocol::ShieldHitEvent>
 GamePlayRunning::drainShieldHitEvents() {
-    return m_remotePreview
+    return m_remotePreview && !m_localScenarioActive
         ? m_remotePreview->drainShieldHitEvents()
         : m_world.worldLogic().drainShieldHitEvents();
 }
@@ -184,11 +199,15 @@ GamePlayRunning::drainRemoteWeaponFiredEvents() {
 }
 
 std::optional<voxellancer::protocol::ContractStatus> GamePlayRunning::contractStatus() const {
+    return m_localScenarioActive ? std::nullopt : connectedContractStatus();
+}
+
+std::optional<voxellancer::protocol::ContractStatus> GamePlayRunning::connectedContractStatus() const {
     return m_remotePreview ? m_remotePreview->contractStatus() : std::nullopt;
 }
 
 bool GamePlayRunning::contractSessionEnded() const {
-    return m_contractSessionEnded;
+    return !m_localScenarioActive && m_contractSessionEnded;
 }
 
 bool GamePlayRunning::remoteWorldReady() const {
@@ -204,6 +223,10 @@ const std::string& GamePlayRunning::remoteConnectionError() const {
 bool GamePlayRunning::submitContractAction(voxellancer::protocol::ContractActionKind action,
     std::uint8_t weapon, glm::ivec3 cell, std::uint8_t node,
     voxellancer::protocol::RewardChoice choice, std::uint8_t shield) {
+    if (m_localScenarioActive) {
+        glow::warning("Cannot send a station action while playing a local scenario.");
+        return false;
+    }
     if (!m_remotePreview || !m_remotePreview->sendContractAction(action, weapon, cell, node, choice, shield)) {
         glow::warning("Could not send station action: %;",
             m_remotePreview ? m_remotePreview->lastError() : "not connected");
@@ -222,11 +245,20 @@ void GamePlayRunning::submitRemoteInput(
     const glm::vec3& aim,
     bool firePrimary
 ) {
+    if (m_localScenarioActive) return;
+    queueRemoteInput(movement, aim, firePrimary);
+}
+
+void GamePlayRunning::queueRemoteInput(
+    const glm::vec3& movement,
+    const glm::vec3& aim,
+    bool firePrimary
+) {
     if (!m_remotePreview || !m_remotePreview->actor() ||
         m_remotePreview->snapshotSequence() == 0) {
         return;
     }
-    const auto contract = contractStatus();
+    const auto contract = connectedContractStatus();
     if (contract && !contract->alive) return;
     if (m_remoteInputSequence == std::numeric_limits<std::uint64_t>::max()) {
         glow::warning("Remote input sequence exhausted; refusing further input.");
@@ -323,8 +355,9 @@ void GamePlayRunning::update(float deltaSec) {
 #endif
 
 #ifndef VOXELLANCER_HEADLESS_SERVER
-    if (!m_remotePreview && !m_contractSessionEnded &&
-        !m_gamePlay->game()->mainMenuEnabled()) {
+    if ((m_localScenarioActive && !m_gamePlay->game()->mainMenuVisible()) ||
+        (!m_remotePreview && !m_contractSessionEnded &&
+         !m_gamePlay->game()->mainMenuEnabled())) {
         m_simulationSession.advance(deltaSec);
     }
     if (m_remotePreview) {
@@ -354,6 +387,28 @@ void GamePlayRunning::update(float deltaSec) {
             m_remotePreviewSnapshot.reset();
             m_remoteReplicaSnapshots.clear();
             m_remoteRenderTick.reset();
+            return;
+        }
+        if (m_localScenarioActive) {
+            for (const auto& acknowledgement : m_remotePreview->drainAcknowledgements()) {
+                m_remoteInputCommands.erase(std::remove_if(
+                    m_remoteInputCommands.begin(), m_remoteInputCommands.end(),
+                    [&acknowledgement](const RemoteInputCommand& pending) {
+                        return pending.command.sequence == acknowledgement.sequence;
+                    }), m_remoteInputCommands.end());
+                if (acknowledgement.result !=
+                    voxellancer::protocol::InputCommandResult::Accepted) {
+                    glow::warning("Remote input command %; was rejected with result %;.",
+                        acknowledgement.sequence, static_cast<int>(acknowledgement.result));
+                }
+            }
+            m_remotePreview->drainEntityContentChanges();
+            m_remotePreview->drainVoxelRemovalEvents();
+            m_remotePreview->drainVoxelDamageEvents();
+            m_remotePreview->drainShieldHitEvents();
+            m_remotePreview->drainMissionStateEvents();
+            m_remotePreview->drainWeaponFiredEvents();
+            queueRemoteInput(glm::vec3(0), glm::vec3(0), false);
             return;
         }
         if (const auto contract = m_remotePreview->contractStatus()) {

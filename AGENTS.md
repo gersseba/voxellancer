@@ -32,8 +32,8 @@
    choose another build directory. Use `-DMODE=Run -DRUN=<task>` for runtime
    tasks, starting `StartServer` before `StartClient`. See the
    [build instructions](doc/3_buildinstructions.md#build-test-and-run-harness)
-   for all options and vcpkg setup. **Terminal: Run Task** in VS Code offers
-   the same tests and runtime tasks.
+   for all options and vcpkg setup. **Terminal: Run Task > start game** in
+   VS Code builds and launches the local game.
 4. If the harness cannot run because prerequisites are unavailable, report the
    exact blocker rather than treating an unrun test as a pass.
 

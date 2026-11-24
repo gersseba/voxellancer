@@ -46,19 +46,15 @@ cmake --build build/agent-vcpkg-vs18-stable --target protocol_tests --config Rel
 .\build\agent-vcpkg-vs18-stable\Release\protocol_tests.exe
 ```
 
-In VS Code, **Terminal: Run Task** contains platform-independent tasks to run
-the tests, start the server or client, play locally, start the **Shield
-Showcase Scenario**, or run either large-combat benchmark. They call the same
-harness, for example
-`cmake -DMODE=Run -DRUN=StartServer -P tools/agent-check.cmake`; start the
-server before its clients. See the
-[build instructions](doc/3_buildinstructions.md#build-test-and-run-harness)
-for all options.
+In VS Code, choose **Terminal: Run Task > start game** to build and launch the
+game and its local server. The scenarios are available from the main menu.
+Tests, multiplayer, and benchmarks remain available through the command-line
+harness; see the [build instructions](doc/3_buildinstructions.md#build-test-and-run-harness).
 
 ### Compare dogfight AIs
 
-The original AI remains the default. Run the **AI Dogfight Comparison** VS
-Code task, or launch a built client from the repository root:
+The original AI remains the default. Choose **Scenarios > AI Dogfight Comparison**
+from the main menu, or launch a built client from the repository root:
 
 ```sh
 ./build/macos/voxellancer -scenario ai-comparison -nointro
@@ -82,35 +78,54 @@ Both modes print per-pair results and a final summary. See the
 Normal NPCs share the three `[aiShooting]` defaults in
 [data/config.ini](data/config.ini), independently of their flight archetype.
 
+### Weapon test range
+
+Choose **Scenarios > Weapon Test Range**, or:
+
+```sh
+cmake -DMODE=Run -DRUN=WeaponRange -P tools/agent-check.cmake
+```
+
+Fly a single-gun fighter with unlimited energy against an unshielded, stationary
+C306, the largest available ship. **1–6** select the contract guns in catalog
+order; **7** selects the legacy gun, **8** the ion cannon, and **9** toggles the
+legacy railgun and snow cannon. The selection appears briefly on screen.
+**0** resets the fighter and target. This standalone local test does not use a
+server or alter a contract run; rocket launchers are not included.
+
 ## Station contracts (first progression slice)
 
 Normal graphical startup opens the main menu and automatically starts a local
-contracts server. In VS Code, either macOS local-server task opens this menu;
+contracts server. In VS Code, **start game** opens this menu;
 `-local-singleplayer -scenario contracts` remains supported.
 
-- **Start** enters the prepared contracts session.
-- **Resume** returns to the active session; it is unavailable before Start.
-  Once a session is active, Start is disabled rather than resetting a live
-  party. Progress still does not survive closing the game.
+- **Contracts** enters or returns to the prepared contracts session.
+- **Scenarios** opens the scripted demo, legacy fleet, battle, frozen scene,
+  pirates, friendly fire, shield showcase, 800-ship combat, AI comparison,
+  and weapon range. Selecting one starts it afresh.
+- **Resume** returns to the current Contracts or scenario session.
 - **Settings** changes VSync, antialiasing, the flight HUD, and invulnerability.
   Changes apply immediately and are saved in the user configuration directory.
   Invulnerability defaults to **On** for now and protects your own pilot's
   shields and hull on the server, including co-op. Other pilots and enemies
   are not affected by your toggle. Turn it off for normal combat damage.
+- **Exit** closes the game.
 
-Start and Resume stay disabled until the server has assigned a pilot and sent
-the initial world and contract state. The bottom of the menu shows connection,
-lobby, and failure information. Settings remains available while connecting.
-Press **Esc** during gameplay to open the menu, and again to resume. Online
-simulation continues while the menu is open, but flight and firing input are
-neutralized. Connection loss returns to the menu and disables session actions.
-Restart the game after a connection failure to reconnect.
+Contracts is disabled until the server has assigned a pilot and sent the
+initial world and contract state. Scenarios and Settings remain available while
+connecting or disconnected. Use arrows or Tab and Enter, or the mouse, to
+navigate. Press **Esc** during gameplay to open the menu, and again to resume.
+Local scenarios pause in the menu; the online simulation continues in the menu
+and during scenarios, but remote flight and firing input are neutralized.
+Connection loss returns an active Contracts session to the menu, without
+interrupting a local scenario. Restart the game after a connection failure to
+reconnect. The contract run remains live when switching modes and is not reset.
 
 Menu, HUD, loading, and intro text use the generated **Voxellancer Flight**
 font, rendered as textured triangles instead of voxel letters. Font originals
 and atlas details are in [data/ui/fonts](data/ui/fonts/README.md).
-Benchmarks, shield showcase, and the developer server preview still bypass
-the main menu.
+Direct scenario launch options, benchmarks, and the developer server preview
+still bypass the main menu. The 800-ship scenario is not a benchmark report.
 
 At the starting base, click **HANGAR** or press **Enter / H** to open the
 branching sector map. Select a connected node with the mouse or arrow keys,

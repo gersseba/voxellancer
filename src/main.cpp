@@ -41,6 +41,7 @@
 #include "scenarios/largecombatscenario.h"
 #include "scenarios/shieldshowcasescenario.h"
 #include "scenarios/aicomparisonscenario.h"
+#include "scenarios/weaponrangescenario.h"
 
 #include "display/stereorenderinfo.h"
 #include "display/viewer.h"
@@ -284,7 +285,7 @@ int main(int argc, char* argv[]) {
     }
     const std::string scenario = clParser.scenario();
     if (!scenario.empty() && scenario != "shield-showcase" && scenario != "contracts" &&
-        scenario != "ai-comparison") {
+        scenario != "ai-comparison" && scenario != "weapon-range") {
         std::cerr << "Unknown scenario: " << scenario << ".\n";
         delete initTimer;
         return 1;
@@ -296,7 +297,8 @@ int main(int argc, char* argv[]) {
         delete initTimer;
         return 1;
     }
-    if ((scenario == "shield-showcase" || scenario == "ai-comparison") &&
+    if ((scenario == "shield-showcase" || scenario == "ai-comparison" ||
+         scenario == "weapon-range") &&
         (benchmarkMode != BenchmarkMode::None ||
          clParser.localSingleplayer() ||
          clParser.multiplayerClient() ||
@@ -342,7 +344,8 @@ int main(int argc, char* argv[]) {
             : clParser.benchmarkClientId());
 
     const bool showMainMenu = benchmarkMode == BenchmarkMode::None &&
-        scenario != "shield-showcase" && scenario != "ai-comparison" && !clParser.serverPreview();
+        scenario != "shield-showcase" && scenario != "ai-comparison" &&
+        scenario != "weapon-range" && !clParser.serverPreview();
     LocalServerProcess localServer;
     std::unique_ptr<TcpClient> preconnectedClient;
     std::atomic<bool> cancelConnection(false);
@@ -500,6 +503,8 @@ int main(int argc, char* argv[]) {
                 ShieldShowcaseScenario::ScenarioId);
         } else if (scenario == "ai-comparison") {
             game->gamePlay().setInitialScenario(AiComparisonScenario::ScenarioId);
+        } else if (scenario == "weapon-range") {
+            game->gamePlay().setInitialScenario(WeaponRangeScenario::ScenarioId);
         }
 
         if (!showMainMenu && clParser.localSingleplayer()) {

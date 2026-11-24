@@ -5,22 +5,27 @@ You can fly around, fight and destroy other ships or do missions.
 
 ## Controls
 The game opens on a main menu and connects to an automatically started local
-contracts server. Start and Resume are disabled until pilot assignment and
-initial world/contract state arrive; connection information appears at the
-bottom. Settings is always available. Start enters the station/mission/shop
-loop; Resume is available after starting, and Start is then disabled to avoid
-resetting a live session. Esc opens the menu during gameplay or returns from
-Settings. The online simulation does not pause while the menu is open.
+contracts server. **Contracts** enters the station/mission/shop loop once pilot
+assignment and initial world/contract state arrive. **Scenarios** offers the
+legacy and test scenarios, including the weapon range and AI comparison,
+without requiring a server. Selecting a scenario starts a fresh instance;
+**Resume** returns to the current mode, **Settings** changes preferences, and
+**Exit** closes the game. Use arrows or Tab and Enter, or the mouse. Esc opens
+the menu during gameplay, returns from a submenu, or resumes the current mode.
+Local scenarios pause in the menu. The online simulation continues while the
+menu or a local scenario is open; your remote flight and firing are neutralized.
+Connection information appears at the bottom, and a disconnected server does
+not interrupt a local scenario.
 
 Local solo contracts save automatically when you arrive at a base (including
 the starting station) and when you confirm travel out of it. You can quit
-anywhere. After relaunching, choose **Start** to return to the last saved base.
+anywhere. After relaunching, choose **Contracts** to return to the last saved base.
 A departure checkpoint keeps your purchases, repairs, loadout, and chosen
 destination; confirm travel again when ready. Changes after the latest
 checkpoint, including combat and salvage before the next base, are lost.
 Co-op runs do not use this checkpoint.
 
-Choose **Play Contracts with Local Server (macOS)** in VS Code to build and
+Choose **start game** in VS Code to build and
 launch the menu. At a base, **Enter / H** opens the branching sector map.
 Click a connected node or use the arrow keys to select it, then **TRAVEL / Enter**
 confirms your destination. Every surviving co-op pilot must confirm; changing the shared
@@ -128,8 +133,8 @@ these markers. Enemy marking identifies a contact; it does not auto-lock guns.
 * R - Rocket
 * Esc - equipment/map back at a base; otherwise main menu / resume
 * Tab - show/hide the contract panel and switch between cursor and flight control
-* P - Pause (developer scenarios only)
-* F1-F7 change scenarios (developer modes only); F7 loads the shield showcase
+* P - Pause/resume a local scenario via the main menu (standalone shortcuts use the legacy pause)
+* F1-F7 change local scenarios; F7 loads the shield showcase
 
 The station panel opens with a usable cursor. Tab also frees the cursor when
 opening the contract panel in flight. For other developer overlays, press M
@@ -172,21 +177,11 @@ only for debugging:
 	  -benchmark-run-id <id>   group server and client reports
 	  -benchmark-client-id <id> identify a graphical client report
 
-## Server and benchmark tasks
+## Server and benchmark commands
 
-The Windows runtime tasks are:
-
-1. **Start Server** — start a two-pilot contracts lobby on port 27801.
-2. **Start Client** — start a graphical multiplayer client.
-3. **Start Local Client with Integrated Server (Large Combat Benchmark)** —
-   start a local authoritative large-combat server and its graphical client.
-4. **Start Server and Two Clients (Large Combat Benchmark)** — start a lobby
-   for two visible clients and run the same large-combat benchmark.
-5. **Start Shield Showcase Scenario** — launch the shield demonstration.
-
-On macOS, **Start Client with Local Server (macOS)** and **Play Contracts with
-Local Server (macOS)** both build the client/server and open the contracts
-main menu.
+The VS Code **start game** task builds the client and local server and opens
+the main menu. Multiplayer and benchmark commands remain available through the
+[build and run harness](3_buildinstructions.md#build-test-and-run-harness).
 
 Settings offers VSync, antialiasing (SSAA / FXAA / Off), and the flight HUD.
 Preferences are saved in `settings.ini` in the user configuration directory.

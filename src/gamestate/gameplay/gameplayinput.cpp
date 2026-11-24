@@ -1,5 +1,6 @@
 #include "gameplayinput.h"
 #include "scenarios/aicomparisonscenario.h"
+#include "scenarios/weaponrangescenario.h"
 
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
@@ -24,6 +25,23 @@ void GamePlayInput::onResizeEvent(const unsigned int width, const unsigned int h
 
 void GamePlayInput::onKeyEvent(int key, int scancode, int action, int mods) {
     if (action == GLFW_PRESS) {
+        if (key == GLFW_KEY_P && m_gamePlay.running().localScenarioActive()) {
+            m_gamePlay.game()->toggleMainMenu();
+            return;
+        }
+        if (!m_waitingOnly) {
+            if (auto* range = m_gamePlay.weaponRange()) {
+                if (key == GLFW_KEY_0) {
+                    if (m_gamePlay.freecamActive()) m_gamePlay.setFreecamActive(false);
+                    range->reset();
+                    return;
+                }
+                if (key >= GLFW_KEY_1 && key <= GLFW_KEY_9) {
+                    range->selectNumber(static_cast<unsigned>(key - GLFW_KEY_0));
+                    return;
+                }
+            }
+        }
         if (auto* comparison = m_gamePlay.aiComparison()) {
             if (key == GLFW_KEY_COMMA || key == GLFW_KEY_PERIOD) {
                 if (m_gamePlay.freecamActive()) m_gamePlay.setFreecamActive(false);
@@ -84,7 +102,8 @@ void GamePlayInput::onKeyEvent(int key, int scancode, int action, int mods) {
         }
 
         if (key >= GLFW_KEY_F1 && key <= GLFW_KEY_F7 &&
-            !m_gamePlay.game()->mainMenuEnabled()) {
+            (!m_gamePlay.game()->mainMenuEnabled() ||
+             m_gamePlay.running().localScenarioActive())) {
             m_gamePlay.loadScenario(key - GLFW_KEY_F1);
         }
     }

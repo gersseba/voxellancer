@@ -1,5 +1,6 @@
 #pragma once
 
+#include <functional>
 #include <memory>
 #include <string>
 #include <vector>
@@ -16,7 +17,7 @@ class ScreenQuad;
 
 class MainMenu : public InputHandler, public ContextDependant {
 public:
-    MainMenu();
+    MainMenu(std::function<void()> contracts, std::function<void(int)> scenario);
     ~MainMenu() override;
 
     bool visible() const;
@@ -33,6 +34,7 @@ private:
     int itemAtPointer() const;
     float buttonTop() const;
     float buttonStep() const;
+    float buttonHeight() const;
     void activate(int index);
     void selectNext(int direction);
     void saveSettings();
@@ -42,11 +44,13 @@ private:
     void afterContextRebuild() override;
 
     MainMenuState m_state;
-    int m_selected = 2;
+    int m_selected = 1;
     int m_pressed = -1;
     glm::dvec2 m_lastPointer = glm::dvec2(-1.0);
-    std::string m_note = "Connecting to server. Start and Resume are unavailable until setup completes.";
+    std::string m_note = "Connecting to Contracts server. Scenarios are available offline.";
     std::string m_settingsError;
+    std::function<void()> m_contracts;
+    std::function<void(int)> m_scenario;
     std::unique_ptr<ScreenQuad> m_quad;
     glow::ref_ptr<glow::Program> m_program;
 };

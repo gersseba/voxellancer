@@ -129,7 +129,7 @@ unlimited firing unless reactor properties are authored.
 | Pulse Repeater II | Energy bolt | 1.30 s | Same pattern, with higher damage and speed |
 | Heavy Autocannon | Physical slug | 2.00 s | Penetrate at most two successive voxels |
 | Railgun | Physical penetrator | 2.24 s | Penetrate at most six successive voxels; fires immediately, no charging |
-| Plasma Mortar | Energy payload | 1.20 s | Spread one budget over exposed surface voxels within 2 U of impact; at most 12 recipients; no penetration |
+| Plasma Mortar | Energy blast | 1.20 s | Spread one budget within 2 voxel lengths, including newly exposed voxels; at most 12 recipients |
 | Scatter Cannon | Eight physical pellets per trigger event | 0.93 s | Each pellet: 3 shield / 1 armor / 4 normal damage; no penetration; 8-degree full spread cone |
 
 ### Aim scatter
@@ -165,12 +165,35 @@ whichever comes first. Listed range describes uninterrupted flight; penetration
 can shorten it by reducing speed. Stop a penetrator once its remaining budget
 is exhausted.
 
-For plasma, enumerate exposed candidates before removing any voxel, then share
-the budget using normalized distance weights `max(0, 1 - distance / 2 U)`.
-Choose the nearest 12 eligible surface voxels in stable order, including the
-impact voxel. Occluded voxels receive nothing; destroying an outer voxel does
-not expose an inner layer to this same shot. No eligible recipients means no
-hull damage. Visual particles never add damage.
+### Impact propagation
+
+Profiled projectiles can configure `[impact]`:
+
+- `isBlast` (default `false`): start distribution immediately at a virtual
+  zero-HP impact point just outside the hull. Otherwise damage the struck
+  voxel first; propagation starts only if it is destroyed.
+- `radius` (default 0, maximum 10): maximum distance from the impact point to
+  a recipient's center, measured in target voxel lengths. Zero disables area
+  propagation; a blast requires a positive radius.
+- `propagationAngle` (default 360): full cone angle in degrees around the
+  projectile's direction, from 0 (straight ahead) to 360 (all directions).
+- `propagationFraction` (default 1): fraction of unused payload carried onward
+  whenever a voxel is destroyed, from 0 to 1. For a blast this also applies to
+  the virtual starting point; any undistributed fraction is lost.
+
+Each wave divides its available fraction among currently visible, not-yet-hit
+voxels using normalized linear weights `1 - distance / radius`. Visibility is
+checked from just outside the impact surface toward the nearest point of each
+voxel; intact voxels block it. Destructions in a wave can reveal recipients in
+the next wave, which receives only the unused shares of destroyed voxels.
+Recipients are ordered by distance and cell coordinates, with at most 12
+recipients in total. Remainder at the range or recipient limit is lost; visual
+particles do not cause damage. Plasma uses a radius of 2 and a full-angle blast.
+
+Physical penetrators without area propagation continue to travel along their
+actual trajectory, slowing and carrying unused budget through destroyed voxels
+up to their `penetration` contact limit. Existing unprofiled projectiles,
+including legacy rockets, retain the legacy collision damage behavior.
 
 ## Budget and physics rules
 
@@ -208,8 +231,8 @@ not once per pellet using the whole volley's 24 damage.
   destructive capacity becomes local heating/deformation, not extra damage
   to hidden blocks. Penetrators continue only through destroyed voxels and
   within their profile's traversal limit.
-- Plasma apportions its fraction by surface weights; scatter apportions its
-  volley through its eight pellets. Never apply the full budget to each
+- Plasma apportions its fraction in visibility-checked waves; scatter apportions
+  its volley through its eight pellets. Never apply the full budget to each
   recipient.
 - Actual voxel intersections govern which cells are hit. This first pass spends
   budget per voxel, not proportionally to the chord length inside it; there is

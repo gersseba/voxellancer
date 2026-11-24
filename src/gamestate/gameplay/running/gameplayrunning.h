@@ -37,8 +37,11 @@ public:
     bool connectRemotePreview(std::uint16_t port);
     bool connectRemotePreview(std::unique_ptr<TcpClient> client);
     bool remotePreviewActive() const;
+    void setLocalScenarioActive(bool active);
+    bool localScenarioActive() const { return m_localScenarioActive; }
     std::optional<voxellancer::protocol::LobbyStatus> remoteLobbyStatus() const;
     std::optional<voxellancer::protocol::ContractStatus> contractStatus() const;
+    std::optional<voxellancer::protocol::ContractStatus> connectedContractStatus() const;
     bool contractSessionEnded() const;
     bool remoteWorldReady() const;
     const std::string& remoteConnectionError() const;
@@ -90,6 +93,8 @@ protected:
     };
 
     std::unique_ptr<TcpClient> m_remotePreview;
+    void queueRemoteInput(const glm::vec3& movement, const glm::vec3& aim, bool firePrimary);
+    bool m_localScenarioActive = false;
     bool m_contractSessionEnded = false;
     std::optional<bool> m_submittedInvulnerability;
     std::optional<voxellancer::protocol::EntityId> m_remoteViewActor;

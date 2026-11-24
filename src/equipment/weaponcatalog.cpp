@@ -25,6 +25,9 @@ WeaponProfile WeaponProfile::load(const std::string& projectile) {
     p.armor = Property<float>(root + "armor");
     p.normal = Property<float>(root + "normal");
     p.radius = Property<float>(root + "radius", 0);
+    p.isBlast = Property<bool>(root + "isBlast", false);
+    p.propagationAngle = Property<float>(root + "propagationAngle", 360);
+    p.propagationFraction = Property<float>(root + "propagationFraction", 1);
     p.mass = Property<float>(root + "mass", 0);
     p.physical = p.mass > 0;
     p.penetration = Property<int>(root + "penetration", 1);
@@ -36,6 +39,11 @@ WeaponProfile WeaponProfile::load(const std::string& projectile) {
         }
     }
     if (!std::isfinite(p.radius) || p.radius < 0 || p.radius > 10 ||
+        (p.isBlast && p.radius <= 0) ||
+        !std::isfinite(p.propagationAngle) || p.propagationAngle < 0 ||
+        p.propagationAngle > 360 ||
+        !std::isfinite(p.propagationFraction) || p.propagationFraction < 0 ||
+        p.propagationFraction > 1 ||
         !std::isfinite(p.mass) || p.mass < 0 ||
         p.penetration < 1 || p.penetration > 6 ||
         p.pellets < 1 || p.pellets > 8 ||

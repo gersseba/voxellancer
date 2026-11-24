@@ -93,6 +93,7 @@ void CommandLineParser::checkHelp() {
         glow::debug("  -benchmark-client-id <id> identify this client in its benchmark report");
         glow::debug("  -scenario shield-showcase  start the shield showcase scenario");
         glow::debug("  -scenario ai-comparison  observe ten legacy-versus-interceptor AI duels");
+        glow::debug("  -scenario weapon-range  test guns against a large stationary ship");
         glow::debug("  -scenario contracts  open the main menu for station contracts with a local server");
         exit(0);
     }

@@ -33,18 +33,24 @@ All polling, prediction, input, and presentation remain on the graphical
 thread. Closing during setup cancels further connection attempts and joins
 the worker before stopping the owned server.
 
-`MainMenuState` enables Start only for a ready, not-yet-entered session, and
-Resume only for a ready active session. Readiness requires lobby world-start,
-the assigned actor snapshot, and contract status, not merely a TCP connection.
-Disconnects return to the menu. Settings remains accessible while disconnected.
+`MainMenuState` offers Contracts, Scenarios, Resume, Settings, and Exit.
+Contracts requires lobby world-start, the assigned actor snapshot, and contract
+status, not merely a TCP connection; local scenarios remain available without
+one. Resume returns to the active mode. A disconnect returns an active
+Contracts session to the menu but does not interrupt a local scenario.
 Menu input suppresses gameplay device polling and sends neutral remote input;
-it never pauses the authoritative simulation. Start enters the prepared station
-session; it does not deploy until the party confirms a destination on the map.
+it never pauses the authoritative simulation. Contracts enters the prepared
+station session; it does not deploy until the party confirms a destination.
 
 The client loads an empty local scenario and one non-simulated presentation
 ship for the existing camera/HUD attachment. Server snapshots move that ship;
-remote replicas supply visible world geometry. Developer scenario switching
-and the old P pause are disabled in this menu-driven remote session.
+remote replicas supply visible world geometry. Selecting a local scenario
+neutralizes remote input and keeps polling the connection while simulating the
+local world. Remote snapshots and events do not modify that world; local
+simulation pauses in the menu. Returning to Contracts rebuilds the presentation
+ship and synchronizes current remote state. The server continues running in
+both modes. P opens the menu to pause a local scenario; F1–F7 switch local
+scenarios, but are disabled in the remote session.
 
 `UiFont` renders the generated Voxellancer Flight atlas in menu, HUD, loading,
 and intro screens. It preserves case, batches strings as triangles, restores

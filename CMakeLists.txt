@@ -234,6 +234,7 @@ list(APPEND SERVER_SOURCE_FILES
     "${SRC_DIR}/scenarios/battlescenario.cpp"
     "${SRC_DIR}/scenarios/largecombatscenario.cpp"
     "${SRC_DIR}/scenarios/aicomparisonscenario.cpp"
+    "${SRC_DIR}/scenarios/weaponrangescenario.cpp"
     "${SRC_DIR}/sound/soundproperties.cpp"
 )
 if(WIN32)

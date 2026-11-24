@@ -1,5 +1,6 @@
 #include "gameplayscene.h"
 #include "scenarios/aicomparisonscenario.h"
+#include "scenarios/weaponrangescenario.h"
 
 #include <sstream>
 #include <iomanip>
@@ -165,12 +166,14 @@ void GamePlayScene::announceMission(const voxellancer::protocol::ContractStatus&
 }
 
 bool GamePlayScene::stationKey(int key) {
+    if (m_gamePlay.running().localScenarioActive()) return false;
     const bool captured = m_outfitter->key(key);
     if (captured) m_gamePlay.setMouseCursorFree(m_outfitter->visible());
     return captured;
 }
 
 bool GamePlayScene::stationMouse(int button, int action, glm::vec2 pointer) {
+    if (m_gamePlay.running().localScenarioActive()) return false;
     const bool captured = m_outfitter->mouse(button, action, pointer);
     if (captured) m_gamePlay.setMouseCursorFree(m_outfitter->visible());
     return captured;
@@ -1321,6 +1324,16 @@ void GamePlayScene::drawImpl(const Camera& camera) const {
             }
         }
         m_outfitter->draw();
+        if (const auto* range = m_gamePlay.weaponRange()) {
+            UiFont::instance()->drawScreen(
+                "WEAPON RANGE / 1-6 CONTRACT / 7-9 LEGACY / 9 TOGGLE / 0 RESET",
+                {0.5f, 0.08f}, 0.017f, glm::vec4(1), FontAlign::CENTER, 0.9f);
+            if (range->showSelection()) {
+                UiFont::instance()->drawScreen(
+                    range->selectedName(), {0.5f, 0.13f}, 0.025f,
+                    glm::vec4(0.25f, 0.85f, 0.95f, 1), FontAlign::CENTER, 0.8f);
+            }
+        }
         if (const auto* comparison = m_gamePlay.aiComparison()) {
             std::array<int,5> counts{};
             for (const auto& duel : comparison->duels())

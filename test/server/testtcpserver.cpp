@@ -1,6 +1,7 @@
 #include <bandit/bandit.h>
 
 #include <algorithm>
+#include <array>
 #include <chrono>
 #include <cmath>
 #include <filesystem>
@@ -34,6 +35,7 @@
 #include "property/propertymanager.h"
 #include "resource/worldobjectbuilder.h"
 #include "scenarios/battlescenario.h"
+#include "scenarios/weaponrangescenario.h"
 #include "server/tcpserver.h"
 #include "simulation/simulationsession.h"
 #include "simulation/contractrun.h"
@@ -86,8 +88,9 @@ namespace {
     }
 
     void shootProfile(World& world, const std::string& key, const glm::vec3& origin,
-        float deltaSec = 0.1f) {
+        float deltaSec = 0.1f, const WeaponProfile* profile = nullptr) {
         auto* bullet = WorldObjectBuilder(key, world).buildBullet();
+        if (profile) bullet->profile = *profile;
         bullet->transform().setPosition(origin);
         bullet->physics().setSpeed(Speed(glm::vec3(0,0,-bullet->profile.speed),glm::vec3(0)));
         world.god().scheduleSpawn(bullet);
@@ -120,6 +123,78 @@ namespace {
 
 go_bandit([]() {
     describe("TCP simulation client and server", []() {
+        it("provides a resettable single-gun range with unlimited firing for every gun", []() {
+            loadSimulationData();
+            World::reset(false);
+            WorldResetGuard resetGuard;
+            auto& world = *World::instance(World::Mode::Server);
+            WeaponRangeScenario range(world);
+            range.load();
+            auto* player = range.playerShip();
+            auto* target = range.targetShip();
+            AssertThat(player != nullptr && target != nullptr,IsTrue());
+            AssertThat(target->info().definitionKey(),Equals(std::string("c306")));
+            const int initialVoxels = target->voxelCount();
+            AssertThat(initialVoxels > 60000,IsTrue());
+            AssertThat(player->components().weaponEnergyCapacity(),Equals(0.0f));
+            world.worldLogic().setVoxelReplicationEnabled(true);
+            for (const auto& mount : player->components().hardpoints()) {
+                if (!mount->weapon()) continue;
+                auto* gun = dynamic_cast<Gun*>(mount->weapon().get());
+                AssertThat(gun != nullptr,IsTrue());
+                gun->fireAtPoint(target->position(),false);
+            }
+            world.god().spawn();
+            Mover(world).moveProfiledProjectiles(1);
+            world.god().remove();
+            AssertThat(world.worldLogic().drainVoxelDamageEvents().empty(),IsFalse());
+            const std::array<std::string, WeaponRangeScenario::GunCount> keys{{
+                "pulselaser", "pulselasermk2", "heavyautocannon", "kineticrailgun",
+                "plasmamortar", "scattercannon", "gun", "ioncannon", "railgun", "snowcanon"
+            }};
+            for (std::size_t index = 0; index < keys.size(); ++index) {
+                range.selectGun(index);
+                Gun* gun = nullptr;
+                int equipped = 0;
+                for (const auto& mount : player->components().hardpoints()) {
+                    if (!mount->weapon()) continue;
+                    ++equipped;
+                    AssertThat(mount->weapon()->equipmentKey(),Equals(keys[index]));
+                    gun = dynamic_cast<Gun*>(mount->weapon().get());
+                }
+                AssertThat(equipped,Equals(1));
+                AssertThat(gun != nullptr,IsTrue());
+                const auto aim = player->position()+glm::vec3(0,0,-300);
+                for (int shot = 0; shot < 3; ++shot) {
+                    gun->update(3);
+                    gun->fireAtPoint(aim,false);
+                    world.god().spawn();
+                    unsigned bullets = 0;
+                    for (auto* object : world.worldObjects()) {
+                        if (dynamic_cast<Bullet*>(object)) {
+                            ++bullets;
+                            world.god().scheduleRemoval(object);
+                        }
+                    }
+                    AssertThat(bullets,Equals(index == 5 ? 8u : 1u));
+                    world.god().remove();
+                }
+            }
+            range.selectNumber(9);
+            AssertThat(range.selectedGun(),Equals(std::size_t(8)));
+            range.selectNumber(9);
+            AssertThat(range.selectedGun(),Equals(std::size_t(9)));
+            AssertThat(range.showSelection(),IsTrue());
+            range.update(3);
+            AssertThat(range.showSelection(),IsFalse());
+            target->removeVoxel(target->voxelMap().begin()->second);
+            range.reset();
+            AssertThat(range.selectedGun(),Equals(std::size_t(0)));
+            AssertThat(range.showSelection(),IsTrue());
+            AssertThat(range.targetShip()->voxelCount(),Equals(initialVoxels));
+            AssertThat(world.worldObjects().size(),Equals(std::size_t(2)));
+        });
+
         it("spends contract energy once per volley and honors an optional recharge delay", []() {
             loadSimulationData();
             World::reset(false);
@@ -324,6 +399,170 @@ go_bandit([]() {
             AssertThat(target->voxelCount(),Equals(3));
             AssertThat(target->voxel(glm::ivec3(10,10,20))->hp(),EqualsWithDelta(10.0f,0.001f));
             AssertThat(target->voxel(glm::ivec3(10,10,19))->hp(),Equals(50.0f));
+        });
+
+        it("spreads blast damage over intact exposed voxels but not through them", []() {
+            loadSimulationData();
+            World::reset(false);
+            WorldResetGuard resetGuard;
+            auto& world = *World::instance(World::Mode::Server);
+            auto* target = blockTarget(world,2);
+            target->addVoxel(new Voxel(glm::ivec3(11,10,20),0x778899,1,50));
+            const auto origin = target->voxel(glm::ivec3(10,10,20))->position()+glm::vec3(0,0,10);
+            shootProfile(world,"plasmamortar_bullet",origin);
+            const auto first = target->voxel(glm::ivec3(10,10,20))->hp();
+            const auto neighbour = target->voxel(glm::ivec3(11,10,20))->hp();
+            AssertThat(first < neighbour && neighbour < 50.0f,IsTrue());
+            AssertThat(first + neighbour,EqualsWithDelta(60.0f,0.001f));
+            AssertThat(target->voxel(glm::ivec3(10,10,19))->hp(),Equals(50.0f));
+        });
+
+        it("carries blast overkill to newly exposed voxels without exceeding its budget", []() {
+            loadSimulationData();
+            World::reset(false);
+            WorldResetGuard resetGuard;
+            auto& world = *World::instance(World::Mode::Server);
+            auto* target = blockTarget(world,2);
+            target->removeVoxel(target->voxel(glm::ivec3(10,10,20)));
+            target->addVoxel(new Voxel(glm::ivec3(10,10,20),0x778899,1,5));
+            target->addVoxel(new Voxel(glm::ivec3(11,10,20),0x778899,1,50));
+            const auto origin = target->voxel(glm::ivec3(10,10,20))->position()+glm::vec3(0,0,10);
+            shootProfile(world,"plasmamortar_bullet",origin);
+            AssertThat(target->voxel(glm::ivec3(10,10,20)) == nullptr,IsTrue());
+            const float neighbour = target->voxel(glm::ivec3(11,10,20))->hp();
+            const float behind = target->voxel(glm::ivec3(10,10,19))->hp();
+            AssertThat(neighbour < 50.0f && behind < 50.0f,IsTrue());
+            AssertThat((50.0f - neighbour) + (50.0f - behind) + 5.0f,
+                EqualsWithDelta(40.0f,0.001f));
+        });
+
+        it("starts non-blast propagation only on destruction and respects range and fraction", []() {
+            loadSimulationData();
+            for (float hp : {50.0f, 5.0f}) {
+                World::reset(false);
+                WorldResetGuard resetGuard;
+                auto& world = *World::instance(World::Mode::Server);
+                auto* target = blockTarget(world,3);
+                target->removeVoxel(target->voxel(glm::ivec3(10,10,20)));
+                target->addVoxel(new Voxel(glm::ivec3(10,10,20),0x778899,1,hp));
+                const auto origin = target->voxel(glm::ivec3(10,10,20))->position()+glm::vec3(0,0,10);
+                auto profile = WeaponProfile::load("pulselaser_bullet");
+                profile.radius = 2;
+                profile.propagationAngle = 0;
+                profile.propagationFraction = 0.5f;
+                shootProfile(world,"pulselaser_bullet",origin,0.1f,&profile);
+                AssertThat(target->voxel(glm::ivec3(10,10,19))->hp(),
+                    EqualsWithDelta(hp == 5.0f ? 47.5f : 50.0f,0.001f));
+                AssertThat(target->voxel(glm::ivec3(10,10,18))->hp(),Equals(50.0f));
+            }
+        });
+
+        it("spends blast overflow in material-specific budget fractions", []() {
+            loadSimulationData();
+            World::reset(false);
+            WorldResetGuard resetGuard;
+            auto& world = *World::instance(World::Mode::Server);
+            auto* target = blockTarget(world,2);
+            target->removeVoxel(target->voxel(glm::ivec3(10,10,20)));
+            auto* armor = new Voxel(glm::ivec3(10,10,20),0x778899,3,5);
+            armor->setArmored(true);
+            target->addVoxel(armor);
+            const auto origin = armor->position()+glm::vec3(0,0,10);
+            shootProfile(world,"plasmamortar_bullet",origin);
+            AssertThat(target->voxel(glm::ivec3(10,10,20)) == nullptr,IsTrue());
+            // Five of ten armor damage consumes half the payload.
+            AssertThat(target->voxel(glm::ivec3(10,10,19))->hp(),
+                EqualsWithDelta(30.0f,0.001f));
+        });
+
+        it("carries successive blast waves only within the configured range", []() {
+            loadSimulationData();
+            World::reset(false);
+            WorldResetGuard resetGuard;
+            auto& world = *World::instance(World::Mode::Server);
+            auto* target = blockTarget(world,4);
+            for (int z : {20,19,18}) {
+                target->removeVoxel(target->voxel(glm::ivec3(10,10,z)));
+                target->addVoxel(new Voxel(glm::ivec3(10,10,z),0x778899,1,5));
+            }
+            const auto origin = target->voxel(glm::ivec3(10,10,20))->position()+glm::vec3(0,0,10);
+            auto profile = WeaponProfile::load("plasmamortar_bullet");
+            profile.radius = 3;
+            shootProfile(world,"plasmamortar_bullet",origin,0.1f,&profile);
+            AssertThat(target->voxel(glm::ivec3(10,10,20)) == nullptr,IsTrue());
+            AssertThat(target->voxel(glm::ivec3(10,10,19)) == nullptr,IsTrue());
+            AssertThat(target->voxel(glm::ivec3(10,10,18)) == nullptr,IsTrue());
+            AssertThat(target->voxel(glm::ivec3(10,10,17))->hp(),Equals(50.0f));
+        });
+
+        it("limits the blast cone and applies its propagation fraction at the virtual point", []() {
+            loadSimulationData();
+            World::reset(false);
+            WorldResetGuard resetGuard;
+            auto& world = *World::instance(World::Mode::Server);
+            auto* target = blockTarget(world,1);
+            target->addVoxel(new Voxel(glm::ivec3(11,10,20),0x778899,1,50));
+            const auto origin = target->voxel(glm::ivec3(10,10,20))->position()+glm::vec3(0,0,10);
+            auto profile = WeaponProfile::load("plasmamortar_bullet");
+            profile.propagationAngle = 0;
+            profile.propagationFraction = 0.5f;
+            shootProfile(world,"plasmamortar_bullet",origin,0.1f,&profile);
+            AssertThat(target->voxel(glm::ivec3(10,10,20))->hp(),EqualsWithDelta(30.0f,0.001f));
+            AssertThat(target->voxel(glm::ivec3(11,10,20))->hp(),Equals(50.0f));
+        });
+
+        it("measures blast range in target voxel lengths at different scales", []() {
+            loadSimulationData();
+            float reference = 0;
+            for (float scale : {1.0f,2.0f}) {
+                World::reset(false);
+                WorldResetGuard resetGuard;
+                auto& world = *World::instance(World::Mode::Server);
+                auto* target = new WorldObject();
+                target->setWorld(world);
+                target->transform().setScale(scale);
+                target->addVoxel(new Voxel(glm::ivec3(10,10,20),0x778899,1,50));
+                target->addVoxel(new Voxel(glm::ivec3(11,10,20),0x778899,1,50));
+                world.god().scheduleSpawn(target);
+                world.god().spawn();
+                const auto origin = target->voxel(glm::ivec3(10,10,20))->position()+
+                    glm::vec3(0,0,10 * scale);
+                shootProfile(world,"plasmamortar_bullet",origin);
+                const float hp = target->voxel(glm::ivec3(11,10,20))->hp();
+                AssertThat(hp < 50.0f,IsTrue());
+                if (scale == 1) reference = hp;
+                else AssertThat(hp,EqualsWithDelta(reference,0.001f));
+            }
+        });
+
+        it("starts blast only at the hull after a partial shield hit", []() {
+            loadSimulationData();
+            World::reset(false);
+            WorldResetGuard resetGuard;
+            auto& world = *World::instance(World::Mode::Server);
+            auto* target = new Ship(world);
+            target->setWorld(world);
+            target->setShieldType(ShieldType::Sphere);
+            auto* first = new Voxel(glm::ivec3(10,10,20),0x778899,1,50);
+            auto* neighbour = new Voxel(glm::ivec3(11,10,20),0x778899,1,50);
+            target->addVoxel(first);
+            target->addVoxel(neighbour);
+            auto slot = std::make_shared<ShieldSlot>(&target->components(),0);
+            slot->setMountable("thinshield",true);
+            slot->setShield(std::shared_ptr<Shield>(ShieldBuilder("thinshield").build()));
+            target->components().addShieldSlot(slot);
+            world.god().scheduleSpawn(target);
+            world.god().spawn();
+            const auto origin = first->position()+glm::vec3(0,0,10);
+            shootProfile(world,"plasmamortar_bullet",origin);
+            AssertThat(slot->shield()->hp(),Equals(160.0f));
+            AssertThat(first->hp(),Equals(50.0f));
+            AssertThat(neighbour->hp(),Equals(50.0f));
+            slot->shield()->setHP(20);
+            shootProfile(world,"plasmamortar_bullet",origin);
+            AssertThat(slot->shield()->hp(),Equals(0.0f));
+            AssertThat(first->hp() < 50.0f && neighbour->hp() < 50.0f,IsTrue());
+            AssertThat(first->hp() + neighbour->hp(),EqualsWithDelta(80.0f,0.001f));
         });
 
         it("enforces contract projectile travel distance before a distant hull", []() {

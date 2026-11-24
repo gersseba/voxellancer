@@ -7,7 +7,7 @@
 # Options (pass as -D<NAME>=<value> before -P):
 #   MODE       Test (default) or Run.
 #   RUN        Run target: StartServer, StartClient, LocalServer, LocalContracts,
-#              ShieldShowcase, AiComparison, LocalLargeCombat,
+#              ShieldShowcase, AiComparison, WeaponRange, LocalLargeCombat,
 #              MultiplayerLargeCombat. Defaults to StartClient for MODE=Run.
 #   CONFIG     Release (default) or Debug.
 #   BUILD_DIR  Build directory, relative to the repository root or absolute.
@@ -111,7 +111,7 @@ if(NOT CONFIG MATCHES "^(Debug|Release)$")
     fail("CONFIG must be Debug or Release.")
 endif()
 set(run_targets StartServer StartClient LocalServer LocalContracts ShieldShowcase
-    AiComparison LocalLargeCombat MultiplayerLargeCombat)
+    AiComparison WeaponRange LocalLargeCombat MultiplayerLargeCombat)
 if(MODE STREQUAL "Run")
     if(NOT DEFINED RUN OR RUN STREQUAL "")
         set(RUN StartClient)
@@ -365,6 +365,9 @@ elseif(RUN STREQUAL "ShieldShowcase")
     return()
 elseif(RUN STREQUAL "AiComparison")
     run_foreground("${client}" -scenario ai-comparison -nointro ${ARGS})
+    return()
+elseif(RUN STREQUAL "WeaponRange")
+    run_foreground("${client}" -scenario weapon-range -nointro ${ARGS})
     return()
 endif()
 
