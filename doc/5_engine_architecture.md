@@ -140,7 +140,7 @@ simulation and network polling on the same thread.
 The transport is an SFML TCP stream. TCP provides reliable, ordered delivery;
 there is no separate unreliable snapshot channel. Each application frame has a
 four-byte little-endian payload length followed by a packet with protocol
-version 31 and a message-type byte. There is no version negotiation: peers with
+version 32 and a message-type byte. There is no version negotiation: peers with
 different protocol versions reject each other's packets.
 
 On connection, the server assigns a generation-protected entity ID for a ship,
@@ -153,7 +153,7 @@ The main message families are:
 | Direction | Data |
 |---|---|
 | Client to server | Sequenced, tick-stamped input commands, snapshot-resync requests, and contract actions (ready, purchases, personal invulnerability preference). |
-| Server to client | Lobby player-count/world-start status; actor assignment; snapshot deltas and input acknowledgements; full entity voxel/equipment content and equipment-only updates; voxel damage/removal, shield-hit, weapon-fired, mission-state events, and personal contract status. |
+| Server to client | Lobby player-count/world-start status; actor assignment; snapshot deltas and input acknowledgements; full entity voxel/equipment content and equipment-only updates; voxel damage/removal, projectile-impact, shield-hit, weapon-fired, mission-state events, and personal contract status. |
 
 Contract actions are 22 bytes, including the selected catalog weapon and mount
 cell for fitting, a route-node byte (255 outside node selection), and a reward
@@ -234,8 +234,11 @@ world updates on the authoritative 30 Hz tick; recharge accounts for the
 portion of an update remaining after the recovery delay.
 
 Shield properties optionally define `general.rechargeDelay` (default zero).
-Positive absorbed damage restarts it; continuous-HP shields recover after
-depletion, while legacy registered-hit shields preserve their depletion rule.
+Positive absorbed damage restarts it. Once a shield breaks, recovery waits for
+five seconds without positive damage to the ship, or the configured delay if
+longer; hits on the exposed hull restart the wait. This applies to both
+continuous-HP and legacy registered-hit shields. Collision damage is processed
+before component updates, so the hit tick does not shorten that quiet period.
 Explicit `shieldslotN.equipped` chooses a validated mountable default; omitting
 it preserves the prior first-mountable fallback. This prevents the expanded
 contract catalog from changing the starting shield through sorting.
@@ -264,7 +267,12 @@ equipment slot kind/group/cell/key. Later equipment changes use equipment-only
 updates. Damage and removal events update the client's existing voxel
 baseline; shield-hit events include ship-local impact coordinates and
 projectile color for accurate presentation. Weapon and mission events carry
-their authoritative event data for presentation. If a client cannot apply a
+their authoritative event data for presentation. Projectile-impact events carry
+the projectile definition, contact position/normal, scale, and tick, including
+lethal hull contacts; range/lifetime expiry does not emit an impact.
+They are bounded and interest-filtered, so clients never guess the impact
+weapon from a nearby projectile that may already have disappeared.
+If a client cannot apply a
 snapshot delta against its baseline, it requests a full resynchronization. The
 server resets that client's baseline and sends a fresh full snapshot and
 content.
@@ -302,19 +310,66 @@ Each ship's `[general]` INI section selects `shield_type=HULL`, `SPHERE`, or
 `NONE`. Hull shields cover exposed voxels; sphere shields enclose the ship's
 bounds. Active shields intercept projectiles and absorb collision damage before
 it reaches hull voxels. Profiled weapons spend shield HP continuously; legacy
-unprofiled shots use the configured hit capacity (five by default) and permanently
-deplete it. The shield showcase sets all three shields to 100 legacy hits.
-Active shields emit faint, shape-specific cyan shimmer particles while idle;
-shield-hit events create expanding cyan ripples in both local play and remote
-previews. The shield showcase scenario (F7) places the player in a fighter
+unprofiled shots use the configured hit capacity (five by default) before
+breaking it. The shield showcase sets all three shields to 100 legacy hits.
+`CombatEffects`, owned only by presentation worlds, produces bounded,
+instanced voxel boxes for gun flashes, projectile cores/trails, hull sparks,
+and shield effects. Local gun/collision hooks and authoritative remote events
+feed the same model. Trails follow observed projectile positions and fade
+without generating false hits at expiry. Shield cells use cached exposed hull
+faces or a sampled spherical surface. Idle silhouette glints/sweeps, merged
+hit ripples, depletion fractures, and recovery sweeps are rebuilt in ship-local
+coordinates, so translating/rotating ships do not leave their shields behind.
+Projectile/impact work takes priority over idle decoration within the box budget.
+Heavy-fire ship recoil and the optional camera kick are rendering offsets only;
+they never modify ship transforms, aim, input, or authoritative simulation.
+`CombatEffectRenderer` uses the same GLSL/instanced geometry on native and WebGL2,
+with no geometry shaders or simulation dependencies. The F2 console's E page
+edits client-local settings and shows an isolated animated preview.
+`SettingsStore`, owned by `Game` before its gameplay scene, restores explicitly
+saved weapon/effect groups. Stable group/field keys are independent of labels;
+validated restoration is transactional. Saves merge only the selected menu/group
+into the last saved snapshot and atomically replace `settings.ini`; edits and
+resets never write it. Native storage uses the user configuration directory;
+web storage uses `/persist/settings.ini` with IDBFS/IndexedDB, and save feedback
+waits for the asynchronous flush (including failures). Reserved `weapon_*` and
+`effects_*` sections avoid overriding equipment Properties on the authoritative
+server. Saved gun tuning is restored into local instance overrides, not global
+Properties, and applies before first use in a local scenario.
+`SoundManager` categorizes Effects (default), Music, and Voice. Live
+`audio.effectsEnabled` / `audio.musicEnabled` preferences mute existing and
+future sounds without overwriting their logical gains; mission voice is separate.
+There is currently no authored background music; future music playback should
+use `SoundManager::Category::Music`.
+
+Gun and effect editors share `ConfigurationField` metadata/validation and
+`ConfigurationMenu` slider, fine-adjust, hit-testing, reset/save adapters.
+`StationOutfitter` renders one generic row list; only bindings and layout differ.
+General preference labels, choices, live updates, and persistence also derive
+from one descriptor list. Editing/reset invokes the binding immediately;
+saving is a separate action. Cached local gun overrides are refreshed before
+input/simulation, so new/replaced guns use them on the next shot; in-flight
+projectiles retain their captured damage profile.
+
+`EffectSequence` drives one production effect at a fixed frame rate, supports
+deterministic seeking/restart, and never starts a simulation world. Shield
+fixtures are shared with the existing editor preview; transient-only rendering
+disables idle decoration without changing shield settings. The browser's
+`?scenario=effect-lab` entry exits normal startup before `Game`/Contracts/audio
+construction and exposes explicit frame stepping and schema-based overrides.
+`tools/capture-effects.mjs` owns a temporary browser and loopback server and
+writes every requested frame plus configuration/metrics and a visual report.
+The only browser-specific pieces are launch/control and image capture; effect
+geometry, timing, validation, and OpenGL/WebGL rendering remain shared.
+The shield showcase scenario (F7) places the player in a fighter
 between two friendly cruisers, one using each shield shape.
 
 ### Profiled weapons and station outfitting
 
 The six catalog weapons bind one projectile INI to each gun. `WeaponProfile`
-loads speed, range, material-specific HP budgets, mass, penetration, and splash/
-pellet bounds. `Gun` emits deterministic scatter volleys, inherits launch-ship
-velocity, and applies physical recoil. Optional hardpoint-group `.equipped`
+loads speed, range, material-specific HP budgets, mass, propagation radius/
+angle/fraction, and pellet bounds. `Gun` emits deterministic scatter volleys,
+inherits launch-ship velocity, and applies physical recoil. Optional hardpoint-group `.equipped`
 chooses the initial compatible weapon; omitted values retain legacy selection.
 `hardpointCellX_Y_Z.equipped` overrides the group for a specific voxel cell;
 the value `none` leaves that mount empty but still usable. The contract starter
@@ -326,10 +381,15 @@ flag is copied when voxels split. Clients need only replicated appearance/HP.
 profiled projectiles in stable entity order. These shots bypass legacy discrete
 projectile collisions. Exact voxel contacts and shields spend one continuous
 budget; shield overflow reaches hull once. Physical impacts use reference-speed
-calibration once, transfer momentum, and resweep the remaining tick after slowing.
-Traversal is bounded to six penetrating voxels, twelve exposed plasma recipients,
-eight scatter pellets, and 32 physical sweep steps per projectile per tick. Plasma snapshots
-eligible surfaces before removing voxels. Resolved impacts reuse `Damager` and
+calibration once and transfer momentum. A partial physical shield hit resweeps
+the remaining tick after slowing. At the first hull contact, every catalog shot
+resolves one target-local propagation budget and is consumed. Radius zero stops
+at the struck voxel; a zero-degree cone reaches successive voxels crossed by the
+impact axis, including off-center hits, while wider cones spread the budget.
+Autocannon and rail use radii 2 and 6; plasma uses a radius-2 full-angle blast.
+Propagation is bounded to twelve recipients including the initial voxel, eight
+scatter pellets, and 32 physical sweep steps per projectile per tick. The
+resolver snapshots eligible surfaces before removing voxels. Resolved impacts reuse `Damager` and
 the existing removal/splitting/replication lifecycle without legacy neighbor
 propagation. Unprofiled weapons retain fixed-hit legacy shield behavior.
 See the [weapon reference](6_weapons_and_shields_concept.md) for values and limits.

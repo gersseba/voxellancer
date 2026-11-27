@@ -16,6 +16,7 @@
 
 #include "gamestate/gamestate.h"
 #include "gamestate/gameplay/gameplay.h"
+#include "gamestate/gameplay/gameplayscene.h"
 #include "gamestate/gameplay/running/gameplayrunning.h"
 
 #include "camera/camerahead.h"
@@ -23,6 +24,7 @@
 
 #include "input/inputmapping.h"
 #include "input/inputconfigurator.h"
+#include "input/windowfocus.h"
 
 #include "ui/hud/hud.h"
 #include "ui/targetselector.h"
@@ -104,7 +106,7 @@ GamePlayNormalInput::GamePlayNormalInput(GamePlay& gamePlay) :
     m_cursorMaxDistance = glm::min(ContextProvider::instance()->resolution().width(), ContextProvider::instance()->resolution().height()) / 2;
 
     m_mouseControl = false;
-    m_lastfocus = glfwGetWindowAttrib(glfwGetCurrentContext(), GLFW_FOCUSED);
+    m_lastfocus = gameWindowFocused();
 
     retrieveInputValues();
     m_currentTimePressed = 0;
@@ -161,7 +163,14 @@ void GamePlayNormalInput::onMouseButtonEvent(int button, int action, int mods) {
 }
 
 void GamePlayNormalInput::update(float deltaSec) {
-    if (glfwGetWindowAttrib(glfwGetCurrentContext(), GLFW_FOCUSED)) {
+    if (m_gamePlay.scene().developerConsoleVisible()) {
+        m_fireUpdate = false;
+        m_rocketUpdate = false;
+        World::instance()->player().move(glm::vec3(0));
+        World::instance()->player().rotate(glm::vec3(0));
+        return;
+    }
+    if (gameWindowFocused()) {
         if (m_lastfocus) {
             if (glfwJoystickPresent(GLFW_JOYSTICK_1)) {
                 retrieveInputValues();
@@ -180,7 +189,7 @@ void GamePlayNormalInput::update(float deltaSec) {
             }
         }
     }
-    m_lastfocus = glfwGetWindowAttrib(glfwGetCurrentContext(), GLFW_FOCUSED);
+    m_lastfocus = gameWindowFocused();
 }
 
 

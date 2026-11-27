@@ -175,6 +175,7 @@ file(GLOB_RECURSE SRC_FILES
     "src/*.inl"
     "src/*.cpp"
 )
+list(FILTER SRC_FILES EXCLUDE REGEX "/src/web/")
 
 set(SRC_FILES_EXCEPT_MAIN ${SRC_FILES})
 list(REMOVE_ITEM SRC_FILES_EXCEPT_MAIN ${SRC_DIR}/main.cpp)
@@ -210,6 +211,7 @@ endif(WIN32)
 
 set(CLIENT_SOURCE_FILES
     ${SRC_FILES_EXCEPT_MAIN}
+    ${SRC_DIR}/server/tcpserver.cpp
     ${SRC_DIR}/client/tcpclient.cpp
     ${SRC_DIR}/client/snapshotinterpolator.cpp
     ${SOURCE_DIR}/main.cpp
@@ -224,6 +226,9 @@ list(FILTER SERVER_SOURCE_FILES EXCLUDE REGEX
     "/(camera|display|gamestate|input|programs|sound|ui)/|/benchmark/benchmarkrunner\\.cpp$|/benchmark/benchmarkprofiler\\.cpp$|/etc/context(dependant|provider)\\.cpp$|/geometry/viewport\\.cpp$|/player\\.cpp$|/resource/ddstexture\\.cpp$|/scenarios/[^/]+\\.cpp$|/utils/(aabbrenderer|cubemesh)\\.cpp$|/utils/statemachine/|/voxel/(voxelrenderdata|voxelrenderer)\\.cpp$|/voxeleffect/particlechecks/|/voxeleffect/(voxelmesh|voxelparticleengine|voxelparticlerenderer)\\.cpp$|/sound/(sound|soundmanager)\\.cpp$")
 list(REMOVE_ITEM SERVER_SOURCE_FILES
     "${SRC_DIR}/client/localserverprocess.cpp"
+    "${SRC_DIR}/voxeleffect/combateffects.cpp"
+    "${SRC_DIR}/voxeleffect/combateffectrenderer.cpp"
+    "${SRC_DIR}/voxeleffect/effectsequence.cpp"
 )
 # Property loading still materializes InputMapping values without device input.
 list(APPEND SERVER_SOURCE_FILES
@@ -309,6 +314,7 @@ if(VOXELLANCER_BUILD_CLIENT)
         ${SRC_DIR}/client/main.cpp
         ${SRC_DIR}/client/tcpclient.cpp
         ${SRC_DIR}/client/snapshotinterpolator.cpp
+        ${SRC_DIR}/protocol/localstream.cpp
     )
     target_link_libraries(voxellancer-client
         voxellancer-protocol

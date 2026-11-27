@@ -5,6 +5,7 @@
 #include <condition_variable>
 #include <mutex>
 #include <atomic>
+#include <functional>
 
 /**
  * The threadpool allows to distribute work to multiple threads.

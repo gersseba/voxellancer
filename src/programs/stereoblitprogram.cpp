@@ -6,6 +6,7 @@
 #include <glowutils/global.h>
 
 #include "display/rendering/screenquad.h"
+#include "display/rendering/shaderloader.h"
 
 
 StereoBlitProgram::StereoBlitProgram():
@@ -44,8 +45,8 @@ void StereoBlitProgram::blit() {
 }
 
 void StereoBlitProgram::initializeShaders() {
-    glow::Shader* vertShader = glowutils::createShaderFromFile(GL_VERTEX_SHADER, "data/shader/blit/stereoblit.vert");
-    glow::Shader* fragShader = glowutils::createShaderFromFile(GL_FRAGMENT_SHADER, "data/shader/blit/stereoblit.frag");
+    glow::Shader* vertShader = createShaderFromFile(GL_VERTEX_SHADER, "data/shader/blit/stereoblit.vert");
+    glow::Shader* fragShader = createShaderFromFile(GL_FRAGMENT_SHADER, "data/shader/blit/stereoblit.frag");
 
     bindAttributeLocation(ScreenQuad::VERTEX_ATTRIBUTE_LOCATION, "v_vertex");
 
@@ -53,8 +54,7 @@ void StereoBlitProgram::initializeShaders() {
     link();
     assert(checkLinkStatus());
 
-    bindFragDataLocation(0, "fragColor");
 
-    getUniform<GLint>("texture")->set(BlitProgram::TEXTURE_LOCATION);
+    getUniform<GLint>("sourceTexture")->set(BlitProgram::TEXTURE_LOCATION);
 }
 

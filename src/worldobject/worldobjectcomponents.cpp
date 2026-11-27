@@ -234,6 +234,11 @@ float WorldObjectComponents::compensateDamage(float damage) {
     return damage;
 }
 
+void WorldObjectComponents::noteShipHit(float tickDuration) {
+    for (const auto& slot : m_shieldSlots)
+        if (slot && slot->shield()) slot->shield()->noteShipHit(tickDuration);
+}
+
 void WorldObjectComponents::update(float deltaSec) {
     const float blocked = std::min(deltaSec, m_weaponEnergyRechargeRemaining);
     m_weaponEnergyRechargeRemaining -= blocked;

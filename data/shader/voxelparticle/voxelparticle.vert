@@ -36,7 +36,11 @@ void main() {
     vec3 particlePosition = directionalSpeed * timeDelta + creationPosition;
     vec3 particleEulers = angularSpeed * timeDelta + creationEulers;
     vec4 particleOrientation = quat(particleEulers);
-    f_color = color.xyz;
+#ifdef GL_ES
+    f_color = color.bgr;
+#else
+    f_color = color.rgb;
+#endif
     f_emissiveness = emissiveness;
     f_modelposition = v_vertex;
     f_normal = qtransform(particleOrientation, v_normal);

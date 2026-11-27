@@ -22,6 +22,7 @@
 
 class World;
 class WorldObject;
+class Projectile;
 
 struct WorldLogicTimings {
     double movementMs = 0.0;
@@ -45,6 +46,8 @@ public:
         const glm::ivec3& cell
     );
     void processDamageImpacts(std::list<DamageImpact> damageImpacts);
+    bool canDamage(WorldObject& object) const;
+    void damageShieldContact(WorldObject& object, float damage, glm::vec3 position);
     std::vector<voxellancer::protocol::VoxelRemovalEvent>
     drainVoxelRemovalEvents();
     std::vector<voxellancer::protocol::VoxelDamageEvent>
@@ -53,6 +56,9 @@ public:
     drainShieldHitEvents();
     std::vector<voxellancer::protocol::WeaponFiredEvent>
     drainWeaponFiredEvents();
+    void recordProjectileImpact(Projectile& projectile, glm::vec3 position,
+        glm::vec3 normal, float scale);
+    std::vector<voxellancer::protocol::ProjectileImpactEvent> drainProjectileImpactEvents();
     std::uint64_t voxelCollisionPairCount() const;
     const WorldLogicTimings& lastUpdateTimings() const;
 
@@ -65,6 +71,7 @@ protected:
     std::vector<voxellancer::protocol::VoxelRemovalEvent> m_voxelRemovalEvents;
     std::vector<voxellancer::protocol::VoxelDamageEvent> m_voxelDamageEvents;
     std::vector<voxellancer::protocol::WeaponFiredEvent> m_weaponFiredEvents;
+    std::vector<voxellancer::protocol::ProjectileImpactEvent> m_projectileImpactEvents;
     bool m_voxelRemovalReplicationEnabled = false;
     bool m_weaponEventReplicationEnabled = false;
     std::uint64_t m_voxelCollisionPairCount;

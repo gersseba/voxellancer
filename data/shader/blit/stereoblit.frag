@@ -1,13 +1,13 @@
-#version 130
+#version 330
 
-uniform sampler2D texture;
+uniform sampler2D sourceTexture;
 uniform vec4 distortionKs;
 uniform float distortionScale;
 uniform vec2 lensCenter;
 
 in vec2 f_viewportC;
 
-out vec4 fragColor;
+layout(location = 0) out vec4 fragColor;
 
 
 vec2 HmdWarp(vec2 linear) {
@@ -25,13 +25,13 @@ void main() {
     vec2 lensC = f_viewportC - lensCenter;
     vec2 texC = HmdWarp(f_viewportC);
 
-    if(texC.x < 0 || texC.x > 1) {
+    if(texC.x < 0.0 || texC.x > 1.0) {
         discard;
     }
-    if(texC.y < 0 || texC.y > 1) {
+    if(texC.y < 0.0 || texC.y > 1.0) {
         discard;
     }
 
-    fragColor = texture2D(texture, texC);
+    fragColor = texture(sourceTexture, texC);
 }
 

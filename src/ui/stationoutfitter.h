@@ -5,20 +5,26 @@
 #include <memory>
 #include <optional>
 #include <vector>
+#include <map>
 #include <glow/ref_ptr.h>
 
 #include "etc/contextdependant.h"
 #include "protocol/serverprotocol.h"
+#include "equipment/weapontuning.h"
+#include "configurationmenu.h"
 
 namespace glow { class Program; class Buffer; class Texture; class VertexArrayObject; }
 class ScreenQuad;
+class Ship;
+class CombatEffects;
+class SettingsStore;
 
 class StationOutfitter : public ContextDependant {
 public:
     using Submit = std::function<std::optional<std::uint64_t>(
         voxellancer::protocol::ContractActionKind, std::uint8_t, glm::ivec3, std::uint8_t,
         voxellancer::protocol::RewardChoice, std::uint8_t)>;
-    explicit StationOutfitter(Submit submit);
+    StationOutfitter(SettingsStore& settings, CombatEffects& effects, Submit submit);
     ~StationOutfitter();
     void update(const std::optional<voxellancer::protocol::ContractStatus>& status,
         const voxellancer::protocol::EntityContentSnapshot* ship, float deltaSec);
@@ -28,10 +34,19 @@ public:
     bool closeEquipment();
     bool key(int key);
     bool mouse(int button, int action, glm::vec2 pointer);
+    void setDeveloper(bool enabled);
+    bool developerVisible() const { return m_developer && visible(); }
+    bool developerActive() const { return m_developer; }
+    void updateDeveloper(Ship* ship, float deltaSec);
+    void refreshDeveloper(World& world);
+    bool effectsVisible() const { return developerVisible() && m_effects; }
+    std::size_t effectGroup() const { return m_effectGroup; }
 
 private:
     struct Button { glm::vec4 bounds; std::string label; int id; bool enabled; };
     Submit m_submit;
+    SettingsStore& m_settings;
+    CombatEffects& m_combatEffects;
     voxellancer::protocol::ContractStatus m_status;
     std::vector<voxellancer::protocol::EntityVoxelState> m_voxels;
     std::vector<Button> m_buttons;
@@ -40,6 +55,13 @@ private:
     bool m_map = false;
     bool m_defense = false;
     bool m_market = false, m_bar = false;
+    bool m_developer = false, m_tuning = false;
+    bool m_effects = false;
+    bool m_saveAttempted = false;
+    std::string m_saveError;
+    std::size_t m_effectGroup = 0;
+    int m_tuningField = 0, m_slider = -1;
+    std::map<std::string, WeaponTuning> m_tunings;
     std::uint8_t m_shieldSelection = 1;
     int m_mount = -1, m_weapon = 0, m_pressed = -1, m_hover = -1;
     int m_rewardSelection = 0;
@@ -69,6 +91,13 @@ private:
         float width = 0.85f);
     glm::vec2 project(glm::vec3 cell) const;
     void drawShip();
+    void drawDeveloper();
+    ConfigurationMenu configuration();
+    ConfigurationLayout configurationLayout() const;
+    void configurationChanged();
+    void drawConfiguration();
+    WeaponTuning& tuning();
+    void tuneSlider(int index, float x);
     void drawRoute();
     void drawRewards();
     void drawSummary();

@@ -24,7 +24,7 @@ class VoxelMesh;
 class VoxelRenderer : public ContextDependant {
 public:
     void prepareDraw(const Camera& camera, bool withBorder = true);
-    void draw(VoxelCluster& cluster);
+    void draw(VoxelCluster& cluster, glm::vec3 visualOffset = glm::vec3(0));
     void afterDraw();
 
     bool prepared();

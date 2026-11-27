@@ -37,7 +37,6 @@ public:
     WeaponProfile profile;
     float impactBudget = 1.0f;
     bool impactCalibrated = false;
-    int penetratedVoxels = 0;
     float distanceTraveled = 0;
     glm::vec3 launchVelocity{0};
     std::shared_ptr<ShotRecord> shotRecord;

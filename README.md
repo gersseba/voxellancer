@@ -50,6 +50,8 @@ In VS Code, choose **Terminal: Run Task > start game** to build and launch the
 game and its local server. The scenarios are available from the main menu.
 Tests, multiplayer, and benchmarks remain available through the command-line
 harness; see the [build instructions](doc/3_buildinstructions.md#build-test-and-run-harness).
+To play solo in a browser without a hosted game server, see the
+[browser build instructions](doc/3_buildinstructions.md#browser-build).
 
 ### Compare dogfight AIs
 
@@ -93,6 +95,69 @@ legacy railgun and snow cannon. The selection appears briefly on screen.
 **0** resets the fighter and target. This standalone local test does not use a
 server or alter a contract run; rocket launchers are not included.
 
+**F2** opens the developer armory with all ten guns and free per-mount fitting.
+From Contracts it enters the local weapon range, leaving the contract run
+intact; choose Contracts in the menu to return. **T** switches between armory
+and live gun tuning. Drag sliders, or use Up/Down to select a stat and
+Left/Right for fine adjustments. F2 closes the console; Esc returns from tuning
+to the armory, then closes it. The local simulation pauses while it is open.
+Changes affect local guns and new projectiles immediately. **SAVE GUN** keeps
+the selected gun's configuration across launches; other drafts remain unsaved.
+Reset restores authored INI defaults and must also be saved to keep the reset.
+Legacy guns expose velocity, cadence, energy, and lifetime; profiled catalog
+guns also expose range, shield/hull damage, scatter, pellets, and common
+propagation radius/angle/fraction controls. A narrow cone drills into the hull;
+a wide cone spreads damage. There is no separate penetration setting.
+The range retains unlimited energy. Remote servers are never tuned by this console.
+
+**F2, then E** opens live combat-effects controls with an animated preview.
+Use **Q/R** to cycle all ten guns, hull/spherical shields, and global settings.
+Drag sliders or use the arrow keys to adjust muzzle flashes, projectile shapes,
+trails, impacts, recoil, shield idle/hit/break/recharge effects, camera kick, colors, and rendering
+budgets. **RESET EFFECT** restores the selected group. These visual settings
+also apply when returning to Contracts and affect only your client.
+**SAVE EFFECT** persists only the selected gun/shield/global effect group;
+reset is live but does not overwrite the saved configuration.
+The preview animates while the local simulation stays paused.
+Both editors use the same schema-driven numeric controls, bounds checking,
+slider/fine-adjust handling, and rendering. Gun edits apply to the next shot
+without reattaching; projectiles already in flight keep their damage profile.
+Effect edits apply on the next rendered animation frame.
+
+### Isolated effect analysis
+
+The **start effect lab** VS Code task builds/opens an isolated browser scene
+using the real combat-effect model and renderer, without ships, gameplay,
+audio, or a Contracts server. **Space** pauses, **Right** steps, **R** restarts.
+For automated frame-by-frame capture after building the browser target:
+
+```sh
+node tools/capture-effects.mjs --group plasmamortar --effect impact --fps 60 --frames 60 --out build/effect-captures/blast-impact
+```
+
+This captures every fixed-step frame, including frame zero and the fade-out,
+as PNGs, plus a contact sheet, an offline scrub/playback page, and JSON with
+timestamps, exact configuration, visible-pixel bounds/brightness metrics, and
+image hashes. The tool uses Node.js 22+ and local Chrome/Chromium; no packages
+or hosted services are needed. See [effect lab options](doc/3_buildinstructions.md#effect-lab-and-frame-capture)
+for isolated shield effects, configuration overrides, and reproducible comparisons.
+
+### Settings and audio
+
+**Esc > Settings** includes independent **Music** and **Sound effects** toggles.
+Sound effects covers weapons, engines, explosions, and combat cues; spoken
+mission dialogue remains audible. No background music track is currently
+configured. Changes apply immediately, including to playing/looping sounds.
+**Save settings** persists general/audio preferences, not unsaved weapon or
+effect drafts. There is no automatic save for these configuration menus.
+
+Preferences and explicitly saved gun/effect groups share `settings.ini` in the
+user configuration directory (`~/.voxellancer` on macOS/Linux,
+`%APPDATA%/voxellancer` on Windows). The browser keeps it in local IndexedDB
+storage for that site; clearing site data removes it. Save feedback reports
+pending, completed, or failed browser writes. Weapon tuning remains a local
+developer override and does not change remote or Contracts server rules.
+
 ## Station contracts (first progression slice)
 
 Normal graphical startup opens the main menu and automatically starts a local
@@ -104,8 +169,9 @@ contracts server. In VS Code, **start game** opens this menu;
   pirates, friendly fire, shield showcase, 800-ship combat, AI comparison,
   and weapon range. Selecting one starts it afresh.
 - **Resume** returns to the current Contracts or scenario session.
-- **Settings** changes VSync, antialiasing, the flight HUD, and invulnerability.
-  Changes apply immediately and are saved in the user configuration directory.
+- **Settings** changes VSync, antialiasing, the flight HUD, invulnerability,
+  and music/sound effects. Changes apply immediately; **Save settings** persists
+  them in the user configuration directory.
   Invulnerability defaults to **On** for now and protects your own pilot's
   shields and hull on the server, including co-op. Other pilots and enemies
   are not affected by your toggle. Turn it off for normal combat damage.
@@ -207,7 +273,9 @@ returns to station services. Purchases and fitting wait for server confirmation.
 2 s recovery, 100 CR), Bulwark (450 HP, 20 HP/s, 5 s, 150 CR), or Flux
 (150 HP, 50 HP/s, 1 s, 150 CR), then **Enter** to buy and equip. The Starter
 shield has 200 HP, 20 HP/s and 2 s recovery.
-Recovery begins after the last shield hit, even when depleted. Replacing a
+While active, recovery begins after the configured shield-hit delay. A broken
+shield needs at least five seconds without ship damage before recovery.
+Replacing a
 shield has no refund; switching builds costs the full price. Run capacity
 upgrades apply to every build. Purchases and fitting clear your ready state.
 Press **Enter** from station services to return to the route map.
@@ -299,14 +367,17 @@ waits in a lobby before creating the selected scenario and assigning player
 ships. Without a target it starts the scenario immediately, except contracts,
 which default to a one-pilot lobby and accept at most four pilots. Normal server
 operation prints per-client byte and visibility counters once per second.
-The version 31 protocol defines generation-protected entity IDs, tick-stamped
+The version 32 protocol defines generation-protected entity IDs, tick-stamped
 input commands, versioned snapshot deltas with entity kind and shield/hull
 fractions, uniform scale, and maximum mass, full voxel content, initial
 equipment slot/key state for newly visible entities, stable ship-definition
 keys, authoritative voxel damage/removal and shield-absorption events, and
 mission state notifications, and lobby player counts/world-start state.
 Shield-hit events include ship-local impact coordinates and projectile color
-for accurate client effects.
+for accurate client effects. Projectile-impact events carry the authoritative
+projectile definition, contact position, normal, and scale, including lethal
+hull contacts. Propagation waves reuse voxel damage/removal replication rather
+than emitting additional projectile contacts.
 Entity-content definition keys and equipment keys are limited to 63 bytes.
 Snapshot records are 66 bytes, using a compressed quaternion, 8-bit shield and
 hull fractions, a 32-bit scale and maximum-mass value, and three signed

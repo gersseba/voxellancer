@@ -82,17 +82,8 @@ void WeaponRangeScenario::selectGun(std::size_t index) {
     if (index >= GunCount) throw std::out_of_range("Unknown weapon range gun.");
     auto* player = m_player.get();
     if (!player) throw std::logic_error("Weapon range player ship is unavailable.");
-    std::string key;
-    std::string name;
-    if (index < WeaponCatalogSize) {
-        const auto weapon = catalogWeapon(static_cast<std::uint8_t>(index + 1));
-        key = weapon.key;
-        name = weapon.name;
-    } else {
-        const auto& weapon = LegacyGuns[index - WeaponCatalogSize];
-        key = weapon.key;
-        name = weapon.name;
-    }
+    const std::string key = gunKey(index);
+    const std::string name = gunName(index);
     for (const auto& mount : player->components().hardpoints()) {
         if (mount->voxel()->cell() == glm::ivec3(3, 2, 6)) {
             mount->setMountable(key, true);
@@ -104,6 +95,21 @@ void WeaponRangeScenario::selectGun(std::size_t index) {
         }
     }
     throw std::logic_error("Weapon range fighter is missing its test hardpoint.");
+}
+
+std::string WeaponRangeScenario::gunKey(std::size_t index) {
+    if (index >= GunCount) throw std::out_of_range("Unknown weapon range gun.");
+    if (index < WeaponCatalogSize) {
+        return catalogWeapon(static_cast<std::uint8_t>(index + 1)).key;
+    }
+    return LegacyGuns[index - WeaponCatalogSize].key;
+}
+
+std::string WeaponRangeScenario::gunName(std::size_t index) {
+    if (index >= GunCount) throw std::out_of_range("Unknown weapon range gun.");
+    if (index < WeaponCatalogSize)
+        return catalogWeapon(static_cast<std::uint8_t>(index + 1)).name;
+    return LegacyGuns[index - WeaponCatalogSize].name;
 }
 
 void WeaponRangeScenario::selectNumber(unsigned number) {

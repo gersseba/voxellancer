@@ -13,6 +13,12 @@ the current pilot's payload bonuses.
 
 ## Scope
 
+The F2 developer console has separate **T** weapon-balance and **E**
+combat-effects pages. The latter adjusts client-local muzzle flashes,
+projectile shapes/trails, hull sparks, and shield idle/hit/break/recharge
+effects with an animated preview. Art sliders never modify the budgets or
+travel/collision rules below. See the [controls](1_howto.md#controls).
+
 - Each weapon owns exactly one fixed projectile profile. Players equip and buy
   weapons, not separate ammunition/projectile variants.
 - Physical and energy shots share collision and damage resolution. Thermal and
@@ -30,9 +36,9 @@ the current pilot's payload bonuses.
 
 - Distances use world units (U), not an assumed conversion to meters.
 - Normal block: **50 HP**, matching [the current default](../data/voxels.ini).
-- Armor block: **150 HP**, density 3, encoded with the `0x000A` material prefix
-  in [voxel definitions](../data/voxels.ini). Crucial voxels remain a separate
-  material. Existing ships are not automatically converted to armored hulls.
+- Armor-coded block: temporarily **50 HP**, density 1, with the same projectile
+  damage as normal hull, for gun balancing. The `0x000A` prefix and appearance
+  remain compatible with existing ships. Special module voxels retain their HP.
 - Reference shield: **200 HP**, matching
   [the Starter shield](../data/equipment/shields/thinshield.ini).
 - Baseline gun: **Pulse Repeater I**, 10 shield and 10 hull damage per shot,
@@ -58,8 +64,8 @@ budgets must be shared among their contacts.
 | Pulse Repeater II | 600 | 780 | 15 | 15 | 15 | 0.40 s | 12 |
 | Heavy Autocannon | 400 | 800 | 5 | 30 | 30 | 0.50 s | 8 |
 | Railgun | 625 | 1,400 | 45 | 75 | 75 | 1.50 s | 30 |
-| Plasma Mortar | 375 | 450 | 40 | 10 total | 40 total | 1.00 s | 25 |
-| Scatter Cannon | 375 | 350 | 24 total | 8 total | 32 total | 0.80 s | 16 |
+| Plasma Mortar | 375 | 450 | 40 | 40 total | 40 total | 1.00 s | 25 |
+| Scatter Cannon | 375 | 350 | 24 total | 32 total | 32 total | 0.80 s | 16 |
 
 Authored gun projectiles, including legacy guns, stay between 375 and 625 U/s
 (0.75-1.25 times the Pulse Repeater I baseline of 500 U/s). These are launch
@@ -75,10 +81,10 @@ Ratios compare one gun at full rate with every shot landing, against Pulse I's
 |---|---|---:|---:|---:|---|
 | Pulse Repeater I | Baseline all-rounder | 20 (1×) | 20 / 20 (1×) | 20 (1×) | Reliable at 600 U. A pair exactly matches the reactor, so it never runs dry. |
 | Pulse Repeater II | High-output repeater | 37.5 (1.9×) | 37.5 / 37.5 (1.9×) | 30 (1.5×) | Straight upgrade with longer range and 25% more damage per energy. A pair overdraws the reactor by 20/s, emptying it in about five seconds before throttling. |
-| Heavy Autocannon | Hull and armor breaker | 10 (0.5×) | 60 / 60 (3×) | 16 (0.8×) | Weak against shields but cheap and brutal against bare or armored hulls; pair it with a pulse gun that strips shields. Penetrates two voxels. |
-| Railgun | Long-range penetrator | 30 (1.5×) | 50 / 50 (2.5×) | 20 (1×) | Same energy rate as Pulse I but 2.3× the range and large single hits. Rewards accuracy; penetrates up to six voxels. |
-| Plasma Mortar | Shield breaker / splash | 40 (2×) | 40 / 10 (2× / 0.5×) | 25 (1.25×) | Fastest shield removal, at short range with a slow shell. Splash spreads hull damage over exposed surface modules; poor against armor. |
-| Scatter Cannon | Close-range burst | 30 (1.5×) | 40 / 10 (2× / 0.5×) | 20 (1×) | Point-blank shotgun: needs to be within 350 U for most pellets to land. Same energy as Pulse I. |
+| Heavy Autocannon | Hull and armor breaker | 10 (0.5×) | 60 / 60 (3×) | 16 (0.8×) | Weak against shields but cheap and brutal against bare or armored hulls; pair it with a pulse gun that strips shields. Narrow propagation within 2 voxel lengths, if damage remains. |
+| Railgun | Long-range penetrator | 30 (1.5×) | 50 / 50 (2.5×) | 20 (1×) | Same energy rate as Pulse I but 2.3× the range and large single hits. Rewards accuracy; narrow propagation within 6 voxel lengths, if damage remains. |
+| Plasma Mortar | Shield breaker / splash | 40 (2×) | 40 / 40 (2×) | 25 (1.25×) | Fastest shield removal, at short range with a slow shell. Splash spreads hull damage over exposed surface modules. |
+| Scatter Cannon | Close-range burst | 30 (1.5×) | 40 / 40 (2×) | 20 (1×) | Point-blank shotgun: needs to be within 350 U for most pellets to land. Same energy as Pulse I. |
 
 Pulse II is the only straight tier upgrade. The other guns are sidegrades:
 each beats Pulse I at one job and pays with range, energy, cadence or a weak
@@ -107,9 +113,12 @@ under sustained fire. Projectile travel adds impact delay.
 | Bulwark | 450 | 20 | 5 s | 150 |
 | Flux | 150 | 50 | 1 s | 150 |
 
-Shield recharge is independent of weapon energy and resumes even after a
-continuous-HP shield breaks. Positive absorbed damage restarts the delay; a
-zero-damage hit does not. Run shield-capacity bonuses apply to each build's
+Shield recharge is independent of weapon energy. While active, positive
+absorbed damage restarts the listed delay. After a shield breaks, it waits at
+least five seconds without positive damage to the ship before recharging (or
+the listed delay, if longer); hull hits also restart this wait. Zero-damage
+hits do not. This also applies to legacy registered-hit shields.
+Run shield-capacity bonuses apply to each build's
 authored capacity, not its regeneration. At bases, **N** opens build selection;
 purchases equip immediately after server confirmation and discard the previous
 shield without refund. Switching builds is allowed at full price; rebuying the
@@ -127,10 +136,10 @@ unlimited firing unless reactor properties are authored.
 |---|---|---:|---|
 | Pulse Repeater I | Energy bolt | 1.20 s | Deposit budget into the first surface voxel; no penetration |
 | Pulse Repeater II | Energy bolt | 1.30 s | Same pattern, with higher damage and speed |
-| Heavy Autocannon | Physical slug | 2.00 s | Penetrate at most two successive voxels |
-| Railgun | Physical penetrator | 2.24 s | Penetrate at most six successive voxels; fires immediately, no charging |
+| Heavy Autocannon | Physical slug | 2.00 s | Deposit damage at the first voxel, then propagate unused budget in a zero-degree cone within 2 voxel lengths |
+| Railgun | Physical penetrator | 2.24 s | Same model within 6 voxel lengths; fires immediately, no charging |
 | Plasma Mortar | Energy blast | 1.20 s | Spread one budget within 2 voxel lengths, including newly exposed voxels; at most 12 recipients |
-| Scatter Cannon | Eight physical pellets per trigger event | 0.93 s | Each pellet: 3 shield / 1 armor / 4 normal damage; no penetration; 8-degree full spread cone |
+| Scatter Cannon | Eight physical pellets per trigger event | 0.93 s | Each pellet: 3 shield / 4 hull damage; no penetration; 8-degree full spread cone |
 
 ### Aim scatter
 
@@ -161,22 +170,29 @@ profile eight times; it does not offer a separate ammunition choice.
 Travel distance is a hard path-length limit measured relative to the launching
 ship's inertial velocity at firing, so firing while moving does not silently
 change the listed range. Expire at either that limit or the listed lifetime,
-whichever comes first. Listed range describes uninterrupted flight; penetration
-can shorten it by reducing speed. Stop a penetrator once its remaining budget
-is exhausted.
+whichever comes first. Listed range describes uninterrupted flight. Physical
+shield absorption can reduce speed and therefore shorten effective range.
+Hull contact consumes the projectile and resolves propagation at impact time.
 
 ### Impact propagation
 
-Profiled projectiles can configure `[impact]`:
+All six catalog guns use one target-local damage propagation model. The tuning
+page exposes radius, angle, and fraction for each gun, with no separate
+penetration control. Legacy unprofiled guns retain their old collision behavior
+and expose only their existing velocity/cadence/energy/lifetime controls.
+
+Profiled projectiles configure `[impact]`:
 
 - `isBlast` (default `false`): start distribution immediately at a virtual
   zero-HP impact point just outside the hull. Otherwise damage the struck
   voxel first; propagation starts only if it is destroyed.
 - `radius` (default 0, maximum 10): maximum distance from the impact point to
-  a recipient's center, measured in target voxel lengths. Zero disables area
-  propagation; a blast requires a positive radius.
+  a recipient's center, measured in target voxel lengths. Zero stops at the
+  struck voxel; a blast requires a positive radius.
 - `propagationAngle` (default 360): full cone angle in degrees around the
   projectile's direction, from 0 (straight ahead) to 360 (all directions).
+  Voxels intersected by the forward axis remain eligible even when their centers
+  lie outside a narrow cone, so off-center hits still drill forward.
 - `propagationFraction` (default 1): fraction of unused payload carried onward
   whenever a voxel is destroyed, from 0 to 1. For a blast this also applies to
   the virtual starting point; any undistributed fraction is lost.
@@ -187,13 +203,18 @@ checked from just outside the impact surface toward the nearest point of each
 voxel; intact voxels block it. Destructions in a wave can reveal recipients in
 the next wave, which receives only the unused shares of destroyed voxels.
 Recipients are ordered by distance and cell coordinates, with at most 12
-recipients in total. Remainder at the range or recipient limit is lost; visual
+recipients in total, including the initially struck voxel for non-blast shots.
+Remainder at the radius or recipient limit is lost; visual
 particles do not cause damage. Plasma uses a radius of 2 and a full-angle blast.
 
-Physical penetrators without area propagation continue to travel along their
-actual trajectory, slowing and carrying unused budget through destroyed voxels
-up to their `penetration` contact limit. Existing unprofiled projectiles,
-including legacy rockets, retain the legacy collision damage behavior.
+Autocannon and rail use the same waves with a zero-degree cone and radii 2 and 6.
+Their drilling no longer represents a projectile flying through successive
+layers: it resolves immediately within the struck object's hull, cannot cross
+to another object, and never creates additional damage budget. For example, a
+75-damage rail shot against fresh 50-HP blocks destroys one and deals 25 damage
+to the next, despite its radius of 6. Pulse and scatter default to radius zero.
+Existing unprofiled projectiles, including legacy rockets, retain the legacy
+collision damage behavior.
 
 ## Budget and physics rules
 
@@ -227,10 +248,10 @@ not once per pellet using the whole volley's 24 damage.
 - A voxel's damage capacity is that fraction times the listed damage for its
   material. Removing `h` voxel HP spends `h / listed material damage` of the
   original budget. Never reset the fraction after destroying a voxel.
-- Nonpenetrating shots deposit their budget at the first voxel. Unused
+- Radius-zero shots deposit their budget at the first voxel. Unused
   destructive capacity becomes local heating/deformation, not extra damage
-  to hidden blocks. Penetrators continue only through destroyed voxels and
-  within their profile's traversal limit.
+  to hidden blocks. Narrow propagation continues only after destruction and
+  within its configured radius.
 - Plasma apportions its fraction in visibility-checked waves; scatter apportions
   its volley through its eight pellets. Never apply the full budget to each
   recipient.
@@ -242,12 +263,14 @@ Physical projectiles retain mass, momentum, recoil, and swept collisions.
 The listed physical damage is calibrated at reference impact speed; changing
 relative impact energy scales the initial damage budget consistently. Evaluate
 that scaling once at the first contact, not again after shield absorption or
-each penetrated voxel. Penetration spends kinetic energy and reduces speed.
+each propagation recipient. Hull contact consumes the projectile; its residual
+budget is distributed by the same propagation model as energy shots.
 Projectile masses are 0.1 for autocannon, 0.03 for rail, and 0.01 per scatter
 pellet in engine mass units. Damage HP alone does not determine knockback.
 Off-center impacts approximate angular impulse using ship mass and bounds;
 this is not a full rigid-body inertia tensor. Physical shots resweep their
-remaining tick at the reduced velocity after each penetrating contact.
+remaining tick at reduced velocity after partial shield absorption, not between
+hull propagation waves.
 
 Energy projectiles carry one authored energy payload, rather than obtaining
 their damage from artificial mass. They cause negligible mechanical recoil
@@ -260,14 +283,14 @@ Isolated-block counts below assume repeated hits on the same healthy voxel;
 they are not whole-ship kill counts. Shield counts ignore regeneration and
 assume every shot/pellet lands. Rounded-up hit counts include partial final hits.
 
-| Weapon | Trigger events to exhaust 200 shield HP | Hits to destroy one 50-HP normal block | Hits to destroy one 150-HP armor block |
+| Weapon | Trigger events to exhaust 200 shield HP | Hits to destroy one 50-HP normal block | Hits to destroy one 50-HP armor-coded block |
 |---|---:|---:|---:|
-| Pulse Repeater I | 20 | 5 | 15 |
-| Pulse Repeater II | 14 | 4 | 10 |
-| Heavy Autocannon | 40 | 2 | 5 |
-| Railgun | 5 | 1 | 2 |
-| Plasma Mortar | 5 | 2 if it is the only recipient | 15 if it is the only recipient |
-| Scatter Cannon | 9 full volleys | 13 pellets | 150 pellets, requiring at least 19 volleys |
+| Pulse Repeater I | 20 | 5 | 5 |
+| Pulse Repeater II | 14 | 4 | 4 |
+| Heavy Autocannon | 40 | 2 | 2 |
+| Railgun | 5 | 1 | 1 |
+| Plasma Mortar | 5 | 2 if it is the only recipient | 2 if it is the only recipient |
+| Scatter Cannon | 9 full volleys | 13 pellets | 13 pellets |
 
 Expected damage patterns are more informative than isolated-block counts:
 
@@ -281,9 +304,8 @@ Expected damage patterns are more informative than isolated-block counts:
 - **Plasma:** if four normal surface voxels receive equal weights, each takes
   **10 damage**. A lone exposed voxel takes all 40. It does not damage blocks
   hidden behind the surface.
-- **Scatter:** each pellet deals **4 normal or 1 armor damage**, spread across
-  the target's surface. The all-hit volley totals are 32 normal or 8 armor
-  damage before overkill losses.
+- **Scatter:** each pellet deals **4 hull damage**, spread across the target's
+  surface. The all-hit volley total is 32 damage before overkill losses.
 
 Full-payload sustained DPS, useful for internal comparisons only:
 
@@ -293,8 +315,8 @@ Full-payload sustained DPS, useful for internal comparisons only:
 | Pulse Repeater II | 37.5 | 37.5 | 37.5 | 30 |
 | Heavy Autocannon | 10 | 60 | 60 | 16 |
 | Railgun | 30 | 50 | 50 | 20 |
-| Plasma Mortar | 40 | 10 | 40 | 25 |
-| Scatter Cannon | 30 | 10 | 40 | 20 |
+| Plasma Mortar | 40 | 40 | 40 | 25 |
+| Scatter Cannon | 30 | 40 | 40 | 20 |
 
 These are ideal budget rates while energy is available, not indefinitely
 sustainable reactor-limited rates or measured damage/time-to-kill guarantees.
@@ -321,7 +343,8 @@ storage capacity. The equipment screen swaps one exact mount and returns its
 previous gun to storage. Buying/fitting clears personal readiness.
 
 Focused [contract tests](../test/server/testtcpserver.cpp) cover surface versus
-penetrating damage, mixed armor/normal budgets, within-tick slowdown, plasma
+narrow-cone propagation (including off-center hits on scaled, rotated hulls),
+mixed armor/normal budgets, propagation depth and fraction, plasma
 occlusion, hard range, shield overflow, invulnerability, scatter totals,
 purchase/swap validation, shared energy and mount fairness, once-per-volley
 spending, depleted-shield recovery, partial-tick recharge, base refills,

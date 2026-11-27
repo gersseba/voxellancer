@@ -79,6 +79,10 @@ float Shield::hp() const {
 void Shield::setHP(float hp) {
     assert(hp <= maxHP() && hp >= 0);
     m_hp = hp;
+    if (m_maxHP > 0 && hp == 0) {
+        m_broken = true;
+        m_rechargeRemaining = std::max(m_rechargeRemaining, std::max(5.0f, m_rechargeDelay));
+    }
 }
 
 float Shield::maxHP() const {
@@ -117,6 +121,12 @@ void Shield::refill() {
     m_hp = m_maxHP;
     m_hitCount = 0;
     m_rechargeRemaining = 0;
+    m_broken = false;
+}
+
+void Shield::noteShipHit(float tickDuration) {
+    if (m_broken)
+        m_rechargeRemaining = std::max(5.0f, m_rechargeDelay) + tickDuration;
 }
 
 void Shield::setRegeneration(float regeneration) {
@@ -267,16 +277,20 @@ float Shield::compensate(float damage) {
 }
 
 void Shield::update(float deltaSec) {
-    if (m_hitCount >= static_cast<unsigned int>(m_maxHits)) {
-        m_hp = 0.0f;
-        return;
-    }
     const float blocked = std::min(deltaSec, m_rechargeRemaining);
     m_rechargeRemaining -= blocked;
-    m_hp += regeneration() * (deltaSec - blocked);
+    const float recovered = regeneration() * (deltaSec - blocked);
+    if (m_broken && recovered > 0) {
+        m_hitCount = 0;
+        m_broken = false;
+    }
+    m_hp += recovered;
     m_hp = std::min(m_hp, maxHP());
 }
 
 void Shield::onDamageTaken(float damage) {
-    if (damage > 0) m_rechargeRemaining = m_rechargeDelay;
+    if (damage > 0) {
+        if (depleted()) m_broken = true;
+        m_rechargeRemaining = m_broken ? std::max(5.0f, m_rechargeDelay) : m_rechargeDelay;
+    }
 }

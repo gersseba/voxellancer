@@ -28,6 +28,7 @@ constexpr std::uint8_t WeaponFiredEventMessageType = 10;
 constexpr std::uint8_t ShieldHitEventMessageType = 11;
 constexpr std::uint8_t MissionStateEventMessageType = 12;
 constexpr std::uint8_t LobbyStatusMessageType = 13;
+constexpr std::uint8_t ProjectileImpactEventMessageType = 16;
 
 void writeU16(std::uint8_t* destination, std::uint16_t value) {
     destination[0] = static_cast<std::uint8_t>(value);
@@ -602,7 +603,10 @@ bool encodeContractAction(const ContractAction& action, ContractActionPacket& pa
         (kind != 6 && action.cell != glm::ivec3(0)) ||
         (kind == 7 ? action.node >= MaxRouteNodes : action.node != NoRouteNode) ||
         (kind == 8 ? choice < 1 || choice > 3 : choice != 0) ||
-        (kind == 3 ? action.shield > ContractShieldKinds : action.shield != 0)) {
+        (kind == 3 ? action.shield > ContractShieldKinds : action.shield != 0) ||
+        (action.shieldShape != ShieldType::None && action.shieldShape != ShieldType::Hull &&
+         action.shieldShape != ShieldType::Sphere) ||
+        (kind != 1 && kind != 9 && action.shieldShape != ShieldType::None)) {
         return false;
     }
     packet[0] = ProtocolVersion;
@@ -617,6 +621,7 @@ bool encodeContractAction(const ContractAction& action, ContractActionPacket& pa
     packet[19] = action.node;
     packet[20] = choice;
     packet[21] = action.shield;
+    packet[22] = static_cast<std::uint8_t>(action.shieldShape);
     return true;
 }
 
@@ -634,6 +639,7 @@ DecodeError decodeContractAction(
     decoded.node = data[19];
     decoded.choice = static_cast<RewardChoice>(data[20]);
     decoded.shield = data[21];
+    decoded.shieldShape = static_cast<ShieldType>(data[22]);
     ContractActionPacket check{};
     if (!encodeContractAction(decoded, check)) {
         return DecodeError::InvalidValue;
@@ -1099,6 +1105,53 @@ DecodeError decodeVoxelDamageEvent(
     return DecodeError::None;
 }
 
+bool ProjectileImpactEvent::operator==(const ProjectileImpactEvent& other) const {
+    return tick == other.tick && position == other.position && normal == other.normal &&
+        scale == other.scale && projectileKey == other.projectileKey;
+}
+
+bool encodeProjectileImpactEvent(const ProjectileImpactEvent& event, ProjectileImpactEventPacket& packet) {
+    for (float value : {event.position.x,event.position.y,event.position.z,
+        event.normal.x,event.normal.y,event.normal.z,event.scale})
+        if (!std::isfinite(value)) return false;
+    const float normalLength = glm::dot(event.normal,event.normal);
+    if (normalLength < 0.99f || normalLength > 1.01f || event.scale <= 0 ||
+        event.projectileKey.empty() || event.projectileKey.size() > MaxEquipmentKeyBytes ||
+        event.projectileKey.find('\0') != std::string::npos) return false;
+    packet.fill(0);
+    packet[0] = ProtocolVersion; packet[1] = ProjectileImpactEventMessageType;
+    writeU64(packet.data()+2,event.tick);
+    for (int i = 0; i < 3; ++i) {
+        writeFloat(packet.data()+10+i*4,event.position[i]);
+        writeFloat(packet.data()+22+i*4,event.normal[i]);
+    }
+    writeFloat(packet.data()+34,event.scale);
+    packet[38] = static_cast<std::uint8_t>(event.projectileKey.size());
+    std::copy(event.projectileKey.begin(),event.projectileKey.end(),packet.begin()+39);
+    return true;
+}
+DecodeError decodeProjectileImpactEvent(const std::uint8_t* data, std::size_t size,
+    ProjectileImpactEvent& event) {
+    const auto error = validateHeader(data,size,ProjectileImpactEventPacketSize,
+        ProjectileImpactEventMessageType);
+    if (error != DecodeError::None) return error;
+    const auto length = data[38];
+    if (length == 0 || length > MaxEquipmentKeyBytes) return DecodeError::InvalidValue;
+    ProjectileImpactEvent decoded;
+    decoded.tick = readU64(data+2);
+    for (int i = 0; i < 3; ++i) {
+        decoded.position[i] = readFloat(data+10+i*4);
+        decoded.normal[i] = readFloat(data+22+i*4);
+    }
+    decoded.scale = readFloat(data+34);
+    decoded.projectileKey.assign(reinterpret_cast<const char*>(data+39),length);
+    ProjectileImpactEventPacket canonical{};
+    if (!encodeProjectileImpactEvent(decoded,canonical) ||
+        !std::equal(canonical.begin(),canonical.end(),data)) return DecodeError::InvalidValue;
+    event = std::move(decoded);
+    return DecodeError::None;
+}
+
 bool encodeShieldHitEvent(
     const ShieldHitEvent& event,
     ShieldHitEventPacket& packet
@@ -1288,7 +1341,9 @@ bool encodeEntityContent(
     if (!content.id.valid() ||
         content.voxels.size() > MaxEntityVoxels ||
         content.equipment.size() > MaxEntityEquipmentStates ||
-        content.definitionKey.size() > MaxEntityDefinitionKeyBytes) {
+        content.definitionKey.size() > MaxEntityDefinitionKeyBytes ||
+        (content.shieldType != ShieldType::None && content.shieldType != ShieldType::Hull &&
+         content.shieldType != ShieldType::Sphere)) {
         return false;
     }
 
@@ -1318,6 +1373,7 @@ bool encodeEntityContent(
     writeU16(encoded.data() + 10, static_cast<std::uint16_t>(content.voxels.size()));
     writeU16(encoded.data() + 12, static_cast<std::uint16_t>(content.equipment.size()));
     encoded[14] = static_cast<std::uint8_t>(content.definitionKey.size());
+    encoded[15] = static_cast<std::uint8_t>(content.shieldType);
     std::size_t offset = EntityContentHeaderSize;
     std::copy(
         content.definitionKey.begin(),
@@ -1361,7 +1417,8 @@ DecodeError decodeEntityContent(
         equipmentCount > MaxEntityEquipmentStates) {
         return DecodeError::InvalidCount;
     }
-    if (definitionKeyLength > MaxEntityDefinitionKeyBytes) {
+    if (definitionKeyLength > MaxEntityDefinitionKeyBytes ||
+        data[15] > static_cast<std::uint8_t>(ShieldType::Sphere)) {
         return DecodeError::InvalidValue;
     }
     const std::size_t minimumSize =
@@ -1372,6 +1429,7 @@ DecodeError decodeEntityContent(
     }
 
     EntityContentSnapshot decoded;
+    decoded.shieldType = static_cast<ShieldType>(data[15]);
     decoded.id = EntityId{readU32(data + 2), readU32(data + 6)};
     if (!decoded.id.valid()) {
         return DecodeError::InvalidValue;

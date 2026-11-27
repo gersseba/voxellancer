@@ -1,10 +1,16 @@
 #include "gameplay.h"
+#ifndef VOXELLANCER_HEADLESS_SERVER
+#include "voxeleffect/combateffects.h"
+#endif
 
 #include <stdexcept>
 
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 
+#ifdef __EMSCRIPTEN__
+#include <emscripten.h>
+#endif
 #include "gamestate/game.h"
 #include "gamestate/gameplay/running/gameplayrunning.h"
 #include "gamestate/gameplay/paused/gameplaypaused.h"
@@ -37,6 +43,7 @@
 #include "world/god.h"
 #include "worldobject/ship.h"
 #include "resource/worldobjectbuilder.h"
+#include "property/property.h"
 
 #include "player.h"
 #include "camera/camerahead.h"
@@ -147,6 +154,9 @@ void GamePlay::refreshMouseCursorMode() {
     const bool cursorVisible =
         m_game->mainMenuVisible() ||
         m_mouseCursorFree || m_scene->hudOverlay().focused();
+#ifdef __EMSCRIPTEN__
+    EM_ASM({ Module.canvas.style.cursor = $0 ? "default" : "none"; }, cursorVisible);
+#else
     const int desiredMode = cursorVisible
         ? GLFW_CURSOR_NORMAL
         : GLFW_CURSOR_HIDDEN;
@@ -161,6 +171,7 @@ void GamePlay::refreshMouseCursorMode() {
         glfwSetCursorPos(window, width / 2.0, height / 2.0);
     }
     glfwSetInputMode(window, GLFW_CURSOR, desiredMode);
+#endif
 }
 #endif
 
@@ -202,8 +213,10 @@ WeaponRangeScenario* GamePlay::weaponRange() const {
 }
 
 void GamePlay::loadScenario(int i) {
+#ifndef __EMSCRIPTEN__
     TextureRenderer loadRenderer("data/textures/loading.dds");
     loadRenderer.display("Loading Scenario...");
+#endif
 
     m_soundManager->stopAll();
 #ifndef VOXELLANCER_HEADLESS_SERVER
@@ -216,6 +229,7 @@ void GamePlay::loadScenario(int i) {
     }
     updateView();
     World& world = *World::instance();
+    world.setShieldShape(Property<std::string>("gameplay.shieldShape","SPHERE").get());
 
     switch (i) {
     case 0:
@@ -291,10 +305,15 @@ void GamePlay::createContractPresentation() {
 #endif
 
 void GamePlay::update(float deltaSec) {
+#ifndef VOXELLANCER_HEADLESS_SERVER
+    if (!m_scene->developerConsoleVisible() && !m_game->mainMenuVisible())
+        World::instance()->combatEffects().advance(deltaSec);
+#endif
     if (!m_game->mainMenuVisible()) {
         if (auto* range = weaponRange()) range->update(deltaSec);
     }
 #ifndef VOXELLANCER_HEADLESS_SERVER
+    m_scene->applyDeveloperConfiguration();
     refreshMouseCursorMode();
     if (m_scene->hudOverlay().focused()) {
         GLFWwindow* window = glfwGetCurrentContext();
@@ -313,6 +332,10 @@ void GamePlay::update(float deltaSec) {
         }
     }
 #endif
+#ifdef __EMSCRIPTEN__
+    // Read the latest local-server snapshot before targeting this frame's input.
+    GameState::update(deltaSec);
+#endif
     if (m_game->mainMenuVisible()) {
         m_runningState->submitRemoteInput(glm::vec3(0), glm::vec3(0), false);
     } else {
@@ -325,7 +348,9 @@ void GamePlay::update(float deltaSec) {
         m_soundManager->setListener(World::instance()->player().cameraHead().position(), World::instance()->player().cameraHead().orientation());
     }
 
+#ifndef __EMSCRIPTEN__
     GameState::update(deltaSec);
+#endif
     m_scene->update(deltaSec);
 }
 

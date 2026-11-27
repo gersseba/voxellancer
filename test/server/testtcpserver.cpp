@@ -18,6 +18,7 @@
 #include "ai/basictasks/fighttask.h"
 #include "ai/character.h"
 #include "client/tcpclient.h"
+#include "client/localcontractsession.h"
 #include "client/inputpredictor.h"
 #include "equipment/engineslot.h"
 #include "equipment/hardpoint.h"
@@ -47,6 +48,8 @@
 #include "voxel/specialvoxels/crucialvoxel.h"
 #include "equipment/weapons/bullet.h"
 #include "equipment/weaponcatalog.h"
+#include "equipment/weapontuning.h"
+#include "resource/colorcoder.h"
 #include "resource/weaponbuilder.h"
 #include "resource/shieldbuilder.h"
 #include "world/handler/mover.h"
@@ -123,6 +126,238 @@ namespace {
 
 go_bandit([]() {
     describe("TCP simulation client and server", []() {
+        it("preserves byte ordering, backpressure and disconnects in an in-process stream", []() {
+            auto streams = LocalStream::createPair();
+            std::vector<std::uint8_t> data(1024 * 1024 + 10, 42);
+            std::size_t count = 0;
+            AssertThat(streams.first->send(data.data(), data.size(), count),
+                Equals(LocalStream::Status::Done));
+            AssertThat(count, Equals(std::size_t(1024 * 1024)));
+            AssertThat(streams.first->send(data.data(), 1, count),
+                Equals(LocalStream::Status::NotReady));
+            std::array<std::uint8_t, 4> received{};
+            AssertThat(streams.second->receive(received.data(), received.size(), count),
+                Equals(LocalStream::Status::Done));
+            AssertThat(count, Equals(received.size()));
+            AssertThat(received[0], Equals(std::uint8_t(42)));
+            AssertThat(streams.first->send(data.data(), 4, count),
+                Equals(LocalStream::Status::Done));
+            AssertThat(count, Equals(std::size_t(4)));
+            streams.second->disconnect();
+            AssertThat(streams.first->send(data.data(), 1, count),
+                Equals(LocalStream::Status::Disconnected));
+            AssertThat(streams.first->receive(received.data(), received.size(), count),
+                Equals(LocalStream::Status::Disconnected));
+        });
+
+        it("runs a contracts client and server over an in-process stream", []() {
+            using namespace voxellancer::protocol;
+            loadSimulationData();
+            World::reset(false);
+            WorldResetGuard resetGuard;
+            World& world = *World::instance(World::Mode::Server);
+            SimulationSession session(world);
+            auto streams = LocalStream::createPair();
+            TcpServer server(world, session, 0, ContractInterestRadius,
+                std::nullopt, 1, std::move(streams.second));
+            TcpClient client;
+            AssertThat(client.connectInProcess(std::move(streams.first)), IsTrue());
+            server.poll();
+            AssertThat(server.clientCount(), Equals(std::size_t(1)));
+            const auto players = ContractRun::createPlayers(world, 1);
+            server.enableContracts(players);
+            server.startWorldForPlayers(players);
+            const auto exchange = [&]() {
+                for (int i = 0; i < 8; ++i) {
+                    session.advance(SimulationTickRunner::TickDurationSeconds);
+                    server.poll();
+                    AssertThat(client.poll(), IsTrue());
+                }
+            };
+            exchange();
+            AssertThat(client.actor().has_value(), IsTrue());
+            AssertThat(*client.actor(), Equals(players.front()));
+            AssertThat(client.lobbyStatus().has_value(), IsTrue());
+            AssertThat(client.lobbyStatus()->worldStarted, IsTrue());
+            AssertThat(client.snapshotSequence() > 0, IsTrue());
+            AssertThat(client.contractStatus().has_value(), IsTrue());
+            AssertThat(client.contractStatus()->phase, Equals(ContractPhase::Station));
+            AssertThat(client.sendContractAction(ContractActionKind::DisableInvulnerability), IsTrue());
+            exchange();
+            AssertThat(client.contractStatus()->invulnerable, IsFalse());
+            AssertThat(client.contractStatus()->result, Equals(ContractResult::Accepted));
+            AssertThat(client.sendContractAction(ContractActionKind::Ready,0,glm::ivec3(0),
+                NoRouteNode,RewardChoice::None,0,ShieldType::Hull),IsTrue());
+            exchange();
+            AssertThat(client.contractStatus()->phase, Equals(ContractPhase::Mission));
+            AssertThat(world.shieldShape() == ShieldType::Sphere,IsTrue());
+            client.disconnect();
+            server.poll();
+            AssertThat(server.clientCount(), Equals(std::size_t(0)));
+        });
+
+        it("starts and advances a self-contained in-process contracts session", []() {
+            using namespace voxellancer::protocol;
+            loadSimulationData();
+            LocalContractSession session({});
+            auto client = session.takeClient();
+            AssertThrows(std::logic_error, session.takeClient());
+            const auto exchange = [&]() {
+                for (int i = 0; i < 8; ++i) {
+                    session.advance(SimulationTickRunner::TickDurationSeconds);
+                    AssertThat(client->poll(), IsTrue());
+                }
+            };
+            exchange();
+            AssertThat(client->lobbyStatus().has_value(), IsTrue());
+            AssertThat(client->lobbyStatus()->worldStarted, IsTrue());
+            AssertThat(client->contractStatus().has_value(), IsTrue());
+            AssertThat(client->contractStatus()->phase, Equals(ContractPhase::Station));
+            AssertThat(client->sendContractAction(ContractActionKind::DisableInvulnerability), IsTrue());
+            exchange();
+            AssertThat(client->contractStatus()->invulnerable, IsFalse());
+            AssertThat(client->contractStatus()->result, Equals(ContractResult::Accepted));
+            AssertThat(client->sendContractAction(
+                ContractActionKind::SelectNode, 0, glm::ivec3(0), 2), IsTrue());
+            exchange();
+            AssertThat(client->contractStatus()->selectedNode, Equals(std::uint8_t(2)));
+            AssertThat(client->sendContractAction(ContractActionKind::Ready,0,glm::ivec3(0),
+                NoRouteNode,RewardChoice::None,0,ShieldType::Hull), IsTrue());
+            exchange();
+            AssertThat(client->contractStatus()->phase, Equals(ContractPhase::Mission));
+            const auto actorContent = std::find_if(client->entityContents().begin(),
+                client->entityContents().end(),[&](const auto& content) {
+                    return content.id == *client->actor();
+                });
+            AssertThat(actorContent != client->entityContents().end(),IsTrue());
+            AssertThat(actorContent->shieldType == ShieldType::Hull,IsTrue());
+            AssertThat(client->contractStatus()->remaining, Equals(std::uint16_t(2)));
+            AssertThat(std::count_if(client->replicaState().begin(), client->replicaState().end(),
+                [](const auto& contact) { return contact.hostile; }) > 0, IsTrue());
+            InputCommand command;
+            command.sequence = 1;
+            command.tick = client->snapshotTick() + 2;
+            command.moveZ = -32768;
+            AssertThat(client->sendInput(command), IsTrue());
+            session.advance(0.15);
+            AssertThat(client->poll(), IsTrue());
+            const auto acknowledgements = client->drainAcknowledgements();
+            AssertThat(std::any_of(acknowledgements.begin(), acknowledgements.end(),
+                [](const auto& ack) {
+                    return ack.sequence == 1 && ack.result == InputCommandResult::Accepted;
+                }), IsTrue());
+        });
+
+        it("tunes fitted guns live and restores their starting configuration", []() {
+            loadSimulationData();
+            World::reset(false);
+            WorldResetGuard resetGuard;
+            auto& world = *World::instance(World::Mode::Server);
+            WeaponRangeScenario range(world);
+            range.load();
+            for (std::size_t i = 0; i < WeaponRangeScenario::GunCount; ++i) {
+                range.selectGun(i);
+                WeaponTuning tuning(WeaponRangeScenario::gunKey(i));
+                for (std::size_t field = 0; field < tuning.fields().size(); ++field) {
+                    AssertThat(tuning.fields()[field].property.find("penetration"),
+                        Equals(std::string::npos));
+                    tuning.set(field, tuning.value(field));
+                }
+                tuning.set(0, 900);
+                tuning.set(1, 0.25f);
+                tuning.refresh(world);
+                Gun* gun = nullptr;
+                for (const auto& mount : range.playerShip()->components().hardpoints())
+                    if (mount->weapon()) gun = dynamic_cast<Gun*>(mount->weapon().get());
+                AssertThat(gun != nullptr, IsTrue());
+                AssertThat(gun->bulletSpeed(), Equals(900.0f));
+                AssertThat(gun->cooldownTime(), Equals(0.25f));
+                if (i < WeaponCatalogSize) {
+                    tuning.set(5, 80);
+                    tuning.set(7, 3);
+                    tuning.set(8, 3);
+                    tuning.set(9, 2);
+                    tuning.set(10, 0.5f);
+                    tuning.refresh(world);
+                    AssertThat(gun->profile().normal, Equals(80.0f));
+                    AssertThat(gun->profile().armor, Equals(80.0f));
+                    AssertThat(gun->profile().pellets, Equals(3));
+                    AssertThrows(std::invalid_argument, tuning.set(7, 1.5f));
+                    const auto count = world.worldObjects().size();
+                    gun->fireAtPoint(range.targetShip()->position(),false);
+                    world.god().spawn();
+                    AssertThat(world.worldObjects().size(), Equals(count + 3));
+                    for (auto* object : world.worldObjects()) {
+                        if (object->objectType() != WorldObjectType::Bullet) continue;
+                        const auto* bullet = static_cast<Bullet*>(object);
+                        AssertThat(bullet->profile.normal, Equals(80.0f));
+                        AssertThat(bullet->profile.speed, Equals(900.0f));
+                        AssertThat(bullet->profile.radius, Equals(3.0f));
+                        AssertThat(bullet->profile.propagationAngle, Equals(2.0f));
+                        AssertThat(bullet->profile.propagationFraction, Equals(0.5f));
+                    }
+                    AssertThat(WeaponProfile::load(gun->projectileName()).normal,
+                        Equals(tuning.fields()[5].initial));
+                }
+                AssertThrows(std::invalid_argument, tuning.set(0, 0));
+                AssertThrows(std::invalid_argument, tuning.set(0, std::numeric_limits<float>::quiet_NaN()));
+                tuning.reset();
+                tuning.refresh(world);
+                AssertThat(gun->bulletSpeed(), Equals(tuning.fields()[0].initial));
+                AssertThat(gun->cooldownTime(), Equals(tuning.fields()[1].initial));
+            }
+        });
+
+        it("uses a live tuning edit for the very next shot without rewriting in-flight damage", []() {
+            loadSimulationData();
+            World::reset(false);
+            WorldResetGuard resetGuard;
+            auto& world = *World::instance(World::Mode::Server);
+            WeaponRangeScenario range(world);
+            range.load();
+            Gun* gun = nullptr;
+            for (const auto& mount : range.playerShip()->components().hardpoints())
+                if (mount->weapon()) gun = dynamic_cast<Gun*>(mount->weapon().get());
+            AssertThat(gun != nullptr,IsTrue());
+            WeaponTuning tuning("pulselaser");
+            tuning.set(5,80);
+            tuning.refresh(world);
+            gun->fireAtPoint(range.targetShip()->position(),false);
+            world.god().spawn();
+            Bullet* first = nullptr;
+            for (auto* object : world.worldObjects())
+                if (object->objectType() == WorldObjectType::Bullet) first = static_cast<Bullet*>(object);
+            AssertThat(first != nullptr,IsTrue());
+            tuning.set(5,120);
+            tuning.set(0,450);
+            tuning.refresh(world);
+            gun->update(1);
+            gun->fireAtPoint(range.targetShip()->position(),false);
+            world.god().spawn();
+            int next = 0;
+            for (auto* object : world.worldObjects()) {
+                if (object->objectType() != WorldObjectType::Bullet || object == first) continue;
+                const auto* bullet = static_cast<Bullet*>(object);
+                AssertThat(bullet->profile.normal,Equals(120.0f));
+                AssertThat(bullet->profile.speed,Equals(450.0f));
+                ++next;
+            }
+            AssertThat(next,Equals(1));
+            AssertThat(first->profile.normal,Equals(80.0f));
+        });
+
+        it("loads armor-coded hull with normal block durability and density", []() {
+            loadSimulationData();
+            Voxel source(glm::ivec3(1), 0x000A00, 1, 50);
+            std::unique_ptr<Voxel> decoded(ColorCoder().newCodedVoxel(source));
+            AssertThat(decoded->hp(), Equals(Property<float>("voxels.default.hp").get()));
+            AssertThat(decoded->density(), Equals(Property<float>("voxels.default.density").get()));
+            for (std::uint8_t id = 1; id <= WeaponCatalogSize; ++id) {
+                const auto profile = catalogWeapon(id).profile;
+                AssertThat(profile.armor, Equals(profile.normal));
+            }
+        });
+
         it("provides a resettable single-gun range with unlimited firing for every gun", []() {
             loadSimulationData();
             World::reset(false);
@@ -315,9 +550,10 @@ go_bandit([]() {
                 const auto profile = catalogShield(id);
                 std::unique_ptr<Shield> shield(ShieldBuilder(profile.key).build());
                 AssertThat(shield->compensate(profile.capacity+100),EqualsWithDelta(100.0f,0.01f));
-                shield->update(profile.rechargeDelay*0.5f);
+                const float brokenDelay = std::max(5.0f, profile.rechargeDelay);
+                shield->update(brokenDelay*0.5f);
                 AssertThat(shield->hp(),Equals(0.0f));
-                shield->update(profile.rechargeDelay*0.5f+0.25f);
+                shield->update(brokenDelay*0.5f+0.25f);
                 AssertThat(shield->hp(),EqualsWithDelta(profile.regeneration*0.25f,0.001f));
                 shield->compensate(1);
                 const auto hp = shield->hp();
@@ -333,7 +569,46 @@ go_bandit([]() {
             }
         });
 
-        it("resolves contract surface damage and bounded kinetic penetration", []() {
+        it("waits five full simulation seconds after the last hull hit on a broken shield", []() {
+            loadSimulationData();
+            World::reset(false);
+            WorldResetGuard resetGuard;
+            auto& world = *World::instance(World::Mode::Server);
+            auto* target = new Ship(world);
+            target->setWorld(world);
+            target->setShieldType(ShieldType::Sphere);
+            auto* voxel = new Voxel(glm::ivec3(10,10,20),0x778899,1,50);
+            target->addVoxel(voxel);
+            auto slot = std::make_shared<ShieldSlot>(&target->components(),0);
+            slot->setShield(std::shared_ptr<Shield>(ShieldBuilder("thinshield").build()));
+            target->components().addShieldSlot(slot);
+            world.god().scheduleSpawn(target);
+            world.god().spawn();
+            auto shield = slot->shield();
+            shield->setHP(10);
+            const auto fire = [&]() {
+                auto* bullet = WorldObjectBuilder("pulselaser_bullet",world).buildBullet();
+                bullet->transform().setPosition(voxel->position()+glm::vec3(0,0,10));
+                bullet->physics().setSpeed(Speed(glm::vec3(0,0,-bullet->profile.speed),glm::vec3(0)));
+                world.god().scheduleSpawn(bullet);
+                world.update(0.1f);
+            };
+            fire();
+            AssertThat(shield->hp(),Equals(0.0f));
+            AssertThat(shield->rechargeRemaining(),EqualsWithDelta(5.0f,0.0001f));
+            for (int i = 0; i < 40; ++i) world.update(0.1f);
+            fire();
+            AssertThat(voxel->hp() < 50.0f,IsTrue());
+            AssertThat(shield->rechargeRemaining(),EqualsWithDelta(5.0f,0.0001f));
+            for (int i = 0; i < 49; ++i) world.update(0.1f);
+            AssertThat(shield->hp(),Equals(0.0f));
+            world.update(0.1f);
+            AssertThat(shield->hp(),EqualsWithDelta(0.0f,0.0001f));
+            world.update(0.1f);
+            AssertThat(shield->hp() > 0,IsTrue());
+        });
+
+        it("resolves contract hull budgets through surface or narrow-cone propagation", []() {
             loadSimulationData();
             for (const auto& test : std::vector<std::tuple<std::string,int,float>>{
                     {"pulselaser_bullet",0,40},{"pulselasermk2_bullet",0,35},
@@ -341,6 +616,7 @@ go_bandit([]() {
                 World::reset(false);
                 WorldResetGuard resetGuard;
                 auto& world = *World::instance(World::Mode::Server);
+                world.worldLogic().setWeaponEventReplicationEnabled(true);
                 auto* target = blockTarget(world,8);
                 const auto origin = target->voxel(glm::ivec3(10,10,20))->position()+glm::vec3(0,0,10);
                 shootProfile(world,std::get<0>(test),origin);
@@ -349,25 +625,78 @@ go_bandit([]() {
                 AssertThat(target->voxel(glm::ivec3(10,10,20-destroyed))->hp(),
                     EqualsWithDelta(std::get<2>(test),0.001f));
                 AssertThat(target->voxel(glm::ivec3(10,10,19-destroyed))->hp(),Equals(50.0f));
+                const auto impacts = world.worldLogic().drainProjectileImpactEvents();
+                AssertThat(impacts.size(),Equals(std::size_t(1)));
+                for (const auto& impact : impacts) {
+                    AssertThat(impact.projectileKey,Equals(std::get<0>(test)));
+                    AssertThat(impact.normal.z,Equals(1.0f));
+                    AssertThat(impact.position.z < origin.z,IsTrue());
+                }
             }
         });
 
-        it("slows contract penetrators before sweeping the remainder of the same tick", []() {
+        it("bounds narrow propagation by radius and consumes the projectile at impact", []() {
+            loadSimulationData();
+            World::reset(false);
+            WorldResetGuard resetGuard;
+            auto& world = *World::instance(World::Mode::Server);
+            auto* target = blockTarget(world,4);
+            for (int z : {20,19,18}) {
+                target->removeVoxel(target->voxel(glm::ivec3(10,10,z)));
+                target->addVoxel(new Voxel(glm::ivec3(10,10,z),0x778899,1,5));
+            }
+            const auto origin = target->voxel(glm::ivec3(10,10,20))->position()+glm::vec3(0,0,10);
+            shootProfile(world,"heavyautocannon_bullet",origin);
+            AssertThat(target->voxelCount(),Equals(2));
+            AssertThat(target->voxel(glm::ivec3(10,10,18))->hp(),Equals(5.0f));
+            AssertThat(target->voxel(glm::ivec3(10,10,17))->hp(),Equals(50.0f));
+            for (auto* object : world.worldObjects())
+                AssertThat(object->objectType() == WorldObjectType::Bullet,IsFalse());
+        });
+
+        it("propagates narrow cones along off-center hits on scaled rotated hulls", []() {
+            loadSimulationData();
+            for (float scale : {1.0f,2.0f}) for (float angle : {0.0f,1.0f}) {
+                World::reset(false);
+                WorldResetGuard resetGuard;
+                auto& world = *World::instance(World::Mode::Server);
+                auto* target = blockTarget(world,3);
+                target->addVoxel(new Voxel(glm::ivec3(11,10,19),0x778899,1,50));
+                const auto rotation = glm::angleAxis(0.6f,glm::vec3(0,0,1));
+                target->transform().setScale(scale);
+                target->updateTransformAndGeode({30,40,-20},rotation);
+                const auto origin = target->voxel(glm::ivec3(10,10,20))->position() +
+                    rotation*glm::vec3(0.4f*scale,0.1f*scale,10*scale);
+                auto profile = WeaponProfile::load("kineticrailgun_bullet");
+                profile.propagationAngle = angle;
+                shootProfile(world,"kineticrailgun_bullet",origin,0.1f,&profile);
+                AssertThat(target->voxel(glm::ivec3(10,10,20)) == nullptr,IsTrue());
+                AssertThat(target->voxel(glm::ivec3(10,10,19))->hp(),
+                    EqualsWithDelta(25.0f,0.001f));
+                AssertThat(target->voxel(glm::ivec3(10,10,18))->hp(),Equals(50.0f));
+                AssertThat(target->voxel(glm::ivec3(11,10,19))->hp(),Equals(50.0f));
+            }
+        });
+
+        it("includes the initial surface voxel in the shared propagation recipient limit", []() {
             loadSimulationData();
             World::reset(false);
             WorldResetGuard resetGuard;
             auto& world = *World::instance(World::Mode::Server);
             auto* target = blockTarget(world,1);
             target->removeVoxel(target->voxel(glm::ivec3(10,10,20)));
-            target->addVoxel(new Voxel(glm::ivec3(10,10,20),0x778899,1,10));
-            target->addVoxel(new Voxel(glm::ivec3(10,10,15),0x778899,1,15));
+            target->addVoxel(new Voxel(glm::ivec3(10,10,20),0x778899,1,1));
+            for (int x = 8; x <= 12; ++x) for (int y = 9; y <= 11; ++y) {
+                if ((x == 10 && y == 10) || target->voxelCount() >= 13) continue;
+                target->addVoxel(new Voxel(glm::ivec3(x,y,20),0x778899,1,1));
+            }
+            auto profile = WeaponProfile::load("pulselaser_bullet");
+            profile.normal = profile.armor = 500;
+            profile.radius = 10;
             const auto origin = target->voxel(glm::ivec3(10,10,20))->position()+glm::vec3(0,0,10);
-            shootProfile(world,"heavyautocannon_bullet",origin,0.037f);
+            shootProfile(world,"pulselaser_bullet",origin,0.1f,&profile);
             AssertThat(target->voxelCount(),Equals(1));
-            AssertThat(target->voxel(glm::ivec3(10,10,15))->hp(),Equals(15.0f));
-            Mover(world).moveProfiledProjectiles(0.01f);
-            world.god().remove();
-            AssertThat(target->voxelCount(),Equals(0));
+            AssertThat(target->voxelMap().begin()->second->hp(),Equals(1.0f));
         });
 
         it("spends contract rail energy across armor and normal blocks without duplication", []() {
@@ -457,7 +786,7 @@ go_bandit([]() {
             }
         });
 
-        it("spends blast overflow in material-specific budget fractions", []() {
+        it("balances blast damage equally against armor and normal blocks", []() {
             loadSimulationData();
             World::reset(false);
             WorldResetGuard resetGuard;
@@ -470,9 +799,9 @@ go_bandit([]() {
             const auto origin = armor->position()+glm::vec3(0,0,10);
             shootProfile(world,"plasmamortar_bullet",origin);
             AssertThat(target->voxel(glm::ivec3(10,10,20)) == nullptr,IsTrue());
-            // Five of ten armor damage consumes half the payload.
+            // Armor spends the same 40-point budget as normal hull.
             AssertThat(target->voxel(glm::ivec3(10,10,19))->hp(),
-                EqualsWithDelta(30.0f,0.001f));
+                EqualsWithDelta(15.0f,0.001f));
         });
 
         it("carries successive blast waves only within the configured range", []() {
@@ -613,6 +942,66 @@ go_bandit([]() {
             shootProfile(world,"pulselaser_bullet",origin);
             AssertThat(slot->shield()->hp(),Equals(0.0f));
             AssertThat(voxel->hp(),EqualsWithDelta(44.0f,0.001f));
+        });
+
+        it("continues shield overflow without damaging a hull the shot has not reached", []() {
+            loadSimulationData();
+            World world(World::Mode::Server);
+            auto* target = new Ship(world);
+            target->setShieldType(ShieldType::Sphere);
+            auto* voxel = new Voxel(glm::ivec3(0),0x778899,1,50);
+            target->addVoxel(voxel);
+            auto slot = std::make_shared<ShieldSlot>(&target->components(),0);
+            auto shield = std::shared_ptr<Shield>(ShieldBuilder("thinshield").build());
+            shield->setHP(4);
+            slot->setShield(shield);
+            target->components().addShieldSlot(slot);
+            world.god().scheduleSpawn(target);
+            world.god().spawn();
+            auto* bullet = WorldObjectBuilder("pulselaser_bullet",world).buildBullet();
+            bullet->transform().setPosition({0,0,1.5f});
+            bullet->physics().setSpeed(Speed({0,0,-bullet->profile.speed},{0,0,0}));
+            world.god().scheduleSpawn(bullet);
+            world.god().spawn();
+            Mover mover(world);
+            mover.moveProfiledProjectiles(0.8f/bullet->profile.speed);
+            AssertThat(shield->hp(),Equals(0.0f));
+            AssertThat(voxel->hp(),Equals(50.0f));
+            AssertThat(bullet->spawnState() == SpawnState::Spawned,IsTrue());
+            mover.moveProfiledProjectiles(1.0f/bullet->profile.speed);
+            AssertThat(voxel->hp(),EqualsWithDelta(44.0f,0.001f));
+        });
+
+        it("intercepts a legacy projectile spawned inside an active sphere", []() {
+            loadSimulationData();
+            World world(World::Mode::Server);
+            auto* target = new Ship(world);
+            target->setShieldType(ShieldType::Sphere);
+            auto* voxel = new Voxel(glm::ivec3(0),0x778899,1,50);
+            target->addVoxel(voxel);
+            auto slot = std::make_shared<ShieldSlot>(&target->components(),0);
+            auto shield = std::shared_ptr<Shield>(ShieldBuilder("thinshield").build());
+            slot->setShield(shield);
+            target->components().addShieldSlot(slot);
+            world.god().scheduleSpawn(target);
+            world.god().spawn();
+            auto* bullet = WorldObjectBuilder("gunbullet",world).buildBullet();
+            bullet->transform().setPosition({0,0,0});
+            world.god().scheduleSpawn(SpawnRequest(bullet,false));
+            world.god().spawn();
+            AssertThat(bullet->spawnState() == SpawnState::Spawned,IsTrue());
+            world.worldLogic().update(0.01f);
+            AssertThat(shield->hp() < shield->maxHP(),IsTrue());
+            AssertThat(voxel->hp(),Equals(50.0f));
+            const float hp = shield->hp();
+            target->info().setInvulnerable(true);
+            auto* next = WorldObjectBuilder("gunbullet",world).buildBullet();
+            next->transform().setPosition({0,0,0});
+            world.god().scheduleSpawn(next);
+            world.god().spawn();
+            world.worldLogic().update(0.01f);
+            AssertThat(shield->hp(),Equals(hp));
+            AssertThat(voxel->hp(),Equals(50.0f));
         });
 
         it("fires eight contract scatter pellets with one shared volley budget", []() {
@@ -2955,6 +3344,22 @@ go_bandit([]() {
             AssertThat(events.front().group, Equals(
                 static_cast<std::uint16_t>(hardpoint->group())));
             AssertThat(events.front().cell, Equals(hardpoint->voxel()->cell()));
+            auto* projectile = WorldObjectBuilder("plasmamortar_bullet",world).buildBullet();
+            world.god().scheduleSpawn(projectile);
+            world.god().spawn();
+            const auto position = ship->position()+glm::vec3(3,0,-10);
+            world.worldLogic().recordProjectileImpact(*projectile,position,{0,1,0},0.5f);
+            std::vector<voxellancer::protocol::ProjectileImpactEvent> impacts;
+            AssertThat(pollUntil([&]() {
+                server.poll();
+                AssertThat(client.poll(),IsTrue());
+                const auto received = client.drainProjectileImpactEvents();
+                impacts.insert(impacts.end(),received.begin(),received.end());
+            },[&]() { return !impacts.empty(); }),IsTrue());
+            AssertThat(impacts.front().projectileKey,Equals(std::string("plasmamortar_bullet")));
+            AssertThat(impacts.front().position,Equals(position));
+            AssertThat(impacts.front().normal,Equals(glm::vec3(0,1,0)));
+            AssertThat(impacts.front().scale,Equals(0.5f));
             client.disconnect();
         });
 
@@ -3411,6 +3816,7 @@ go_bandit([]() {
                 return ship;
             };
             Ship* actorShip = spawnShip(glm::vec3(0.0f));
+            actorShip->setShieldType(ShieldType::Hull);
 
             SimulationSession session(*world);
             TcpServer server(*world, session, 0, 250.0f);
@@ -3426,6 +3832,11 @@ go_bandit([]() {
             }), IsTrue());
             AssertThat(client.actor().has_value(), IsTrue());
             AssertThat(*client.actor(), Equals(*world->entityId(actorShip)));
+            const auto actorContent = std::find_if(
+                client.entityContents().begin(),client.entityContents().end(),
+                [&](const auto& content) { return content.id == *world->entityId(actorShip); });
+            AssertThat(actorContent != client.entityContents().end(),IsTrue());
+            AssertThat(actorContent->shieldType == ShieldType::Hull,IsTrue());
             const auto initialContentChanges =
                 client.drainEntityContentChanges();
             AssertThat(

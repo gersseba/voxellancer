@@ -69,6 +69,7 @@ public:
     drainRemoteVoxelDamageEvents();
     std::vector<voxellancer::protocol::ShieldHitEvent>
     drainShieldHitEvents();
+    std::vector<voxellancer::protocol::ProjectileImpactEvent> drainProjectileImpactEvents();
     std::vector<voxellancer::protocol::MissionStateEvent>
     drainRemoteMissionStateEvents();
     std::vector<voxellancer::protocol::WeaponFiredEvent>

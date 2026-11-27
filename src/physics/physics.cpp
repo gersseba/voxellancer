@@ -76,13 +76,20 @@ const Transform Physics::projectedTransformIn(float deltaSec){
     return targetTransform;
 }
 
-std::list<VoxelCollision> &Physics::move(float deltaSec) {
-    updateSpeed(deltaSec);
+std::list<VoxelCollision> &Physics::move(float deltaSec, Mover* mover) {
+    prepareMove(deltaSec);
+    return movePrepared(deltaSec,mover);
+}
 
+void Physics::prepareMove(float deltaSec) {
+    updateSpeed(deltaSec);
+}
+
+std::list<VoxelCollision> &Physics::movePrepared(float deltaSec, Mover* mover) {
     if (m_speed.directional() != glm::vec3(0.0f) || m_speed.angular() != glm::vec3(0.0f)) {
         Transform targetTransform = projectedTransformIn(deltaSec);
 
-        Movement movement(m_worldObject, m_worldObject.transform(), targetTransform);
+        Movement movement(m_worldObject, m_worldObject.transform(), targetTransform, mover);
         movement.perform();
     }
 

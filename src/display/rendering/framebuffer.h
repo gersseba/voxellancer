@@ -37,6 +37,10 @@ protected:
     bool m_useDepthAttachment;
     glm::ivec2 m_resolution;
     glow::ref_ptr<glow::FrameBufferObject> m_fbo;
+#ifdef __EMSCRIPTEN__
+    std::vector<glow::ref_ptr<glow::Texture>> m_textures;
+    std::size_t m_activeAttachments = 0;
+#endif
 
     void setupFBO();
     virtual void beforeContextDestroy() override;

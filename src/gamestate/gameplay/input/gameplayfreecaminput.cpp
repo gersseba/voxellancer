@@ -10,6 +10,7 @@
 #include "camera/camerahead.h"
 
 #include "input/inputmapping.h"
+#include "input/windowfocus.h"
 
 #include "utils/safenormalize.h"
 
@@ -46,7 +47,7 @@ GamePlayFreecamInput::GamePlayFreecamInput(GamePlay& gamePlay) :
 {
     addActionsToVector();
 
-    m_lastfocus = glfwGetWindowAttrib(glfwGetCurrentContext(), GLFW_FOCUSED);
+    m_lastfocus = gameWindowFocused();
     m_cursorMaxDistance = glm::min(ContextProvider::instance()->resolution().width(), ContextProvider::instance()->resolution().height()) / 2.0f;
 
     retrieveInputValues();
@@ -61,7 +62,7 @@ void GamePlayFreecamInput::onResizeEvent(const unsigned int width, const unsigne
 }
 
 void GamePlayFreecamInput::update(float deltaSec) {
-    if (glfwGetWindowAttrib(glfwGetCurrentContext(), GLFW_FOCUSED)) {
+    if (gameWindowFocused()) {
         if (m_lastfocus) {
             if (glfwJoystickPresent(GLFW_JOYSTICK_1)) {
                 retrieveInputValues();
@@ -75,7 +76,7 @@ void GamePlayFreecamInput::update(float deltaSec) {
             resetHeadOrientation();
         }
     }
-    m_lastfocus = glfwGetWindowAttrib(glfwGetCurrentContext(), GLFW_FOCUSED);
+    m_lastfocus = gameWindowFocused();
 
 
     m_cameraDolly->follow(m_position, m_orientation, deltaSec);

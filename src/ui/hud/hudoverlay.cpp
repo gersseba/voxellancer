@@ -10,6 +10,7 @@
 
 #include "camera/camera.h"
 #include "display/rendering/screenquad.h"
+#include "display/rendering/shaderloader.h"
 #include "ui/uifont.h"
 
 namespace {
@@ -462,9 +463,9 @@ void HudOverlay::drawText(const Camera& camera) const {
 void HudOverlay::initialize() {
     m_program = new glow::Program();
     m_program->attach(
-        glowutils::createShaderFromFile(
+        createShaderFromFile(
             GL_VERTEX_SHADER, "data/shader/hud/hudoverlay.vert"),
-        glowutils::createShaderFromFile(
+        createShaderFromFile(
             GL_FRAGMENT_SHADER, "data/shader/hud/hudoverlay.frag"));
 }
 

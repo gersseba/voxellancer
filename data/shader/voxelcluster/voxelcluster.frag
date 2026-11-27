@@ -1,7 +1,5 @@
 #version 330
 
-uniform float withBorder;
-
 layout(location = 0) out vec4 fragColor;
 layout(location = 1) out vec4 normalz;
 layout(location = 2) out vec4 emissiveness;

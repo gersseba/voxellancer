@@ -25,6 +25,10 @@ void GamePlayInput::onResizeEvent(const unsigned int width, const unsigned int h
 
 void GamePlayInput::onKeyEvent(int key, int scancode, int action, int mods) {
     if (action == GLFW_PRESS) {
+        if (key == GLFW_KEY_F2 || m_gamePlay.scene().developerConsoleVisible()) {
+            m_gamePlay.scene().stationKey(key);
+            return;
+        }
         if (key == GLFW_KEY_P && m_gamePlay.running().localScenarioActive()) {
             m_gamePlay.game()->toggleMainMenu();
             return;

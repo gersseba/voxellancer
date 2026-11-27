@@ -27,8 +27,12 @@ void main() {
     gl_Position = viewProjection * model * (vec4(v_vertex + v_position, 1.0));
 
     f_normal = (model * vec4(v_normal, 0.0)).xyz;
+#ifdef GL_ES
+    f_color = v_color.bgr;
+#else
     f_color = v_color.rgb;
-    f_emissiveness = clamp(emissiveness + v_emissiveness, 0, 1);
+#endif
+    f_emissiveness = clamp(emissiveness + v_emissiveness, 0.0, 1.0);
     f_modelposition = v_vertex;
 }
 

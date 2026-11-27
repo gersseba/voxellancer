@@ -1,4 +1,7 @@
 #include "gun.h"
+#ifndef VOXELLANCER_HEADLESS_SERVER
+#include "voxeleffect/combateffects.h"
+#endif
 
 #include <stdexcept>
 
@@ -17,6 +20,7 @@
 
 #ifndef VOXELLANCER_HEADLESS_SERVER
 #include "sound/soundmanager.h"
+#include "player.h"
 #endif
 
 #include "voxel/voxelclusterbounds.h"
@@ -123,6 +127,13 @@ void Gun::fireAtPoint(const glm::vec3& point, bool checkFriendlyFire,
 #ifndef VOXELLANCER_HEADLESS_SERVER
     if (world->hasPresentation()) {
         SoundManager::current()->play(fireSound(), hardpoint()->voxel()->position());
+        if (const auto effect = CombatEffectSettings::gun(equipmentKey())) {
+            const auto direction = safeNormalize(point-hardpoint()->voxel()->position(),glm::vec3(0,0,-1));
+            world->combatEffects().fire(*effect,hardpoint()->voxel()->position() +
+                direction*bulletSpawnOffset(),direction,owner->transform().scale(),world->entityId(owner));
+            if (world->player().ship() == owner && (*effect == 2 || *effect == 3 || *effect == 4 || *effect == 8))
+                world->combatEffects().kick(0.35f);
+        }
     }
 #endif
 
@@ -173,6 +184,8 @@ void Gun::update(float deltaSec) {
 }
 
 void Gun::setupBullet(Bullet* bullet, const glm::vec3& point) {
+    bullet->profile = m_profile;
+    bullet->setLifetime(m_bulletLifetime);
     Transform bulletTransform(bullet->transform());
 
     WorldObject* firingWorldObject = m_hardpoint->components()->worldObject();
@@ -228,6 +241,11 @@ void Gun::setBulletExtend() {
 void Gun::onProjectileNameChanged() {
     m_profile = WeaponProfile::load(projectileName());
     setBulletExtend();
+}
+
+void Gun::setProjectileConfiguration(const WeaponProfile& profile, float lifetime) {
+    m_profile = profile;
+    m_bulletLifetime = lifetime;
 }
 
 float Gun::bulletLifetime() const {

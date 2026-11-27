@@ -1,0 +1,75 @@
+name: Deploy browser game
+
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: github-pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    if: github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out game
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          submodules: recursive
+
+      - name: Check out Emscripten SDK
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          repository: emscripten-core/emsdk
+          ref: a7c808831a666cc903fedb906c171a718cd97341 # 7.0.1
+          path: .ci/emsdk
+
+      - name: Check out vcpkg
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          repository: microsoft/vcpkg
+          ref: e1ff419d28c7f0a94abaf0a848fe0aeeb69b2de3
+          path: .ci/vcpkg
+
+      - name: Build browser game
+        shell: bash
+        run: |
+          set -euo pipefail
+          "$GITHUB_WORKSPACE/.ci/emsdk/emsdk" install 7.0.1
+          "$GITHUB_WORKSPACE/.ci/emsdk/emsdk" activate 7.0.1
+          source "$GITHUB_WORKSPACE/.ci/emsdk/emsdk_env.sh"
+          export VCPKG_ROOT="$GITHUB_WORKSPACE/.ci/vcpkg"
+          "$VCPKG_ROOT/bootstrap-vcpkg.sh" -disableMetrics
+          emcmake cmake -S web -B build/web -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_TOOLCHAIN_FILE="$VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake" \
+            -DVCPKG_CHAINLOAD_TOOLCHAIN_FILE="$EMSDK/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake" \
+            -DVCPKG_TARGET_TRIPLET=wasm32-emscripten
+          cmake --build build/web --parallel 2
+          mkdir -p build/pages
+          cp build/web/voxellancer-web.html build/pages/index.html
+          cp build/web/voxellancer-web.js build/web/voxellancer-web.wasm \
+            build/web/voxellancer-web.data build/pages/
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@56afc609e74202658d3ffba0e8f6dda462b719fa # v3
+        with:
+          path: build/pages
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e # v4

@@ -13,6 +13,9 @@
 #include <stdexcept>
 #include <utility>
 
+#ifdef __EMSCRIPTEN__
+#include "web/persistence.h"
+#endif
 #include "ai/basictasks/fighttask.h"
 #include "ai/character.h"
 #include "equipment/hardpoint.h"
@@ -82,9 +85,10 @@ std::vector<EntityId> ContractRun::createPlayers(World& world, std::size_t count
 }
 
 ContractRun::ContractRun(World& world, const std::vector<EntityId>& players,
-    std::filesystem::path checkpoint):
+    std::filesystem::path checkpoint, bool allowClientShieldShape):
     m_world(world),
     m_checkpoint(std::move(checkpoint)),
+    m_allowClientShieldShape(allowClientShieldShape),
     m_damageBonus(Property<float>("contracts.damageRewardBonus")),
     m_shieldBonus(Property<float>("contracts.shieldRewardBonus"))
 {
@@ -112,7 +116,7 @@ ContractRun::ContractRun(World& world, const std::vector<EntityId>& players,
     contractLevel(FlagshipLevel);
     for (std::uint8_t id = 0; id <= ShieldCatalogSize; ++id) catalogShield(id);
     m_startTick = m_world.simulationTickIndex();
-    if (!m_checkpoint.empty() && players.size() != 1)
+    if ((!m_checkpoint.empty() || m_allowClientShieldShape) && players.size() != 1)
         throw std::invalid_argument("Checkpoints require a solo contract.");
     if (!loadCheckpoint()) {
         generateRoute();
@@ -156,6 +160,9 @@ void ContractRun::saveCheckpoint() const {
         out.close();
         if (!out) throw std::runtime_error("Could not write " + temporary.string());
         std::filesystem::rename(temporary, m_checkpoint);
+#ifdef __EMSCRIPTEN__
+        persistBrowserFiles();
+#endif
     } catch (const std::runtime_error&) {
         std::error_code cleanupError;
         std::filesystem::remove(temporary, cleanupError);
@@ -429,6 +436,11 @@ void ContractRun::act(EntityId actor, const ContractAction& action) {
         action.kind != ContractActionKind::SellGun) {
         throw std::invalid_argument("Unknown contract action.");
     }
+    if ((action.shieldShape != ShieldType::None && action.shieldShape != ShieldType::Hull &&
+         action.shieldShape != ShieldType::Sphere) ||
+        (action.kind != ContractActionKind::Ready && action.kind != ContractActionKind::NewRun &&
+         action.shieldShape != ShieldType::None))
+        throw std::invalid_argument("Invalid requested shield shape.");
     auto& player = m_players.at(playerKey(actor));
     const bool protectionSetting =
         action.kind == ContractActionKind::EnableInvulnerability ||
@@ -457,8 +469,10 @@ void ContractRun::act(EntityId actor, const ContractAction& action) {
         player.ready = true;
         player.result = ContractResult::Accepted;
         if (std::all_of(m_players.begin(), m_players.end(),
-                [](const auto& entry) { return entry.second.ready; }))
+                [](const auto& entry) { return entry.second.ready; })) {
+            applyRequestedShieldShape(action.shieldShape);
             startNewRun();
+        }
         return;
     }
     if (!alive(player)) {
@@ -511,6 +525,7 @@ void ContractRun::act(EntityId actor, const ContractAction& action) {
                 ++m_basesVisited;
                 visitBase();
             } else {
+                applyRequestedShieldShape(action.shieldShape);
                 deploy();
             }
         }
@@ -718,6 +733,13 @@ namespace {
         value = (value ^ (value >> 27)) * 0x94D049BB133111EBull;
         return value ^ (value >> 31);
     }
+}
+
+void ContractRun::applyRequestedShieldShape(ShieldType shape) {
+    if (!m_allowClientShieldShape || shape == ShieldType::None) return;
+    m_world.setShieldShape(shape == ShieldType::Sphere ? "SPHERE" : "HULL");
+    for (Ship* ship : m_world.ships())
+        if (ship->shieldType() != ShieldType::None) ship->setShieldType(shape);
 }
 
 void ContractRun::deploy() {

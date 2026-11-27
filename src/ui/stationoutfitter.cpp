@@ -15,6 +15,7 @@
 #include <glowutils/global.h>
 
 #include "display/rendering/screenquad.h"
+#include "display/rendering/shaderloader.h"
 #include "equipment/weaponcatalog.h"
 #include "equipment/shieldcatalog.h"
 #include "property/property.h"
@@ -22,6 +23,19 @@
 #include "simulation/contractlevel.h"
 #include "ui/uifont.h"
 #include "utils/simulationtickrunner.h"
+#include "equipment/hardpoint.h"
+#include "equipment/weapon.h"
+#include "player.h"
+#include "resource/weaponbuilder.h"
+#include "scenarios/weaponrangescenario.h"
+#include "voxel/voxel.h"
+#include "voxel/specialvoxels/hardpointvoxel.h"
+#include "world/world.h"
+#include "worldobject/ship.h"
+#include "worldobject/worldobjectcomponents.h"
+#include "voxeleffect/combateffects.h"
+#include "settings/settingsstore.h"
+#include <glow/logging.h>
 
 using namespace voxellancer::protocol;
 namespace {
@@ -60,9 +74,102 @@ namespace {
     }
 }
 
-StationOutfitter::StationOutfitter(Submit submit):
-    m_submit(std::move(submit)), m_quad(new ScreenQuad()) {}
+StationOutfitter::StationOutfitter(SettingsStore& settings, CombatEffects& effects, Submit submit):
+    m_submit(std::move(submit)), m_settings(settings), m_combatEffects(effects), m_quad(new ScreenQuad()) {
+    m_combatEffects.settings.restore(settings);
+    for (std::size_t i = 0; i < WeaponRangeScenario::GunCount; ++i) {
+        const auto key = WeaponRangeScenario::gunKey(i);
+        if (!settings.group("weapon_" + key).empty())
+            m_tunings.try_emplace(key,key).first->second.restore(settings);
+    }
+}
 StationOutfitter::~StationOutfitter() = default;
+
+void StationOutfitter::setDeveloper(bool enabled) {
+    m_developer = enabled;
+    m_visible = enabled;
+    m_equipment = enabled;
+    m_tuning = false;
+    m_effects = false;
+    m_station = false;
+    m_weapon = enabled ? 1 : 0;
+    m_mount = -1;
+    m_slider = -1;
+    m_pending = 0;
+}
+
+void StationOutfitter::updateDeveloper(Ship* ship, float deltaSec) {
+    ContractStatus status;
+    status.alive = ship != nullptr;
+    EntityContentSnapshot content;
+    if (ship) {
+        for (const auto& entry : ship->voxelMap())
+            content.voxels.push_back({entry.first});
+        for (const auto& mount : ship->components().hardpoints()) {
+            std::uint8_t id = 0;
+            if (mount->weapon()) {
+                for (std::size_t i = 0; i < WeaponRangeScenario::GunCount; ++i)
+                    if (WeaponRangeScenario::gunKey(i) == mount->weapon()->equipmentKey())
+                        id = static_cast<std::uint8_t>(i + 1);
+            }
+            status.mounts.push_back({mount->voxel()->cell(), id});
+        }
+    }
+    const bool shown = m_visible;
+    update(status, &content, deltaSec);
+    m_visible = shown;
+    m_equipment = true;
+    if (m_mount < 0 && !status.mounts.empty()) m_mount = 0;
+    layout();
+}
+
+WeaponTuning& StationOutfitter::tuning() {
+    const auto key = WeaponRangeScenario::gunKey(m_weapon - 1);
+    auto inserted = m_tunings.try_emplace(key,key);
+    if (inserted.second) inserted.first->second.restore(m_settings);
+    return inserted.first->second;
+}
+
+void StationOutfitter::refreshDeveloper(World& world) {
+    for (const auto& entry : m_tunings) entry.second.refresh(world);
+}
+
+void StationOutfitter::tuneSlider(int index, float x) {
+    const auto layout = configurationLayout();
+    configuration().slide(index,(x-layout.sliderLeft)/layout.sliderWidth);
+    m_tuningField = index;
+}
+
+void StationOutfitter::configurationChanged() {
+    m_saveAttempted = false;
+    m_saveError.clear();
+}
+
+ConfigurationLayout StationOutfitter::configurationLayout() const {
+    return m_effects ? ConfigurationLayout{0.29f,0.04f,0.34f,0.15f,0.515f,0.24f,0.09f,0.013f} :
+        ConfigurationLayout{0.28f,0.042f,0.46f,0.29f,0.78f,0.35f,0.13f,0.014f};
+}
+
+ConfigurationMenu StationOutfitter::configuration() {
+    if (m_effects) {
+        const auto group = m_effectGroup;
+        return {m_combatEffects.settings.fields(group),
+            [this,group](std::size_t field) { return m_combatEffects.settings.value(group,field); },
+            [this,group](std::size_t field,float value) {
+                m_combatEffects.settings.set(group,field,value); configurationChanged();
+            },
+            [this,group]() { m_combatEffects.settings.reset(group); configurationChanged(); },
+            [this,group]() { m_combatEffects.settings.persist(m_settings,group); }};
+    }
+    auto& gun = tuning();
+    return {gun.fields(),
+        [&gun](std::size_t field) { return gun.value(field); },
+        [this,&gun](std::size_t field,float value) {
+            gun.set(field,value); gun.refresh(*World::instance()); configurationChanged();
+        },
+        [this,&gun]() { gun.reset(); gun.refresh(*World::instance()); configurationChanged(); },
+        [this,&gun]() { gun.persist(m_settings); }};
+}
 
 void StationOutfitter::update(const std::optional<ContractStatus>& state,
     const EntityContentSnapshot* ship, float deltaSec) {
@@ -99,7 +206,7 @@ void StationOutfitter::update(const std::optional<ContractStatus>& state,
     }
     m_voxels = ship ? ship->voxels : std::vector<EntityVoxelState>{};
     if (m_mount >= static_cast<int>(m_status.mounts.size())) m_mount = -1;
-    if (m_weapon > 0 && !m_status.inventory[m_weapon-1]) m_weapon = 0;
+    if (!m_developer && m_weapon > 0 && !m_status.inventory[m_weapon-1]) m_weapon = 0;
     if (!m_voxels.empty()) {
         glm::vec3 lower(255), upper(0);
         for (const auto& voxel : m_voxels) {
@@ -115,6 +222,37 @@ void StationOutfitter::update(const std::optional<ContractStatus>& state,
 
 void StationOutfitter::layout() {
     m_buttons.clear();
+    if (m_developer) {
+        m_buttons.push_back({{0.79f,0.12f,0.14f,0.04f},"CLOSE / F2",1,true});
+        m_buttons.push_back({{0.065f,0.855f,0.24f,0.06f},
+            m_tuning ? "ARMORY / T" : "TUNE GUN / T",50,true});
+        m_buttons.push_back({{0.33f,0.855f,0.24f,0.06f},
+            m_effects ? "ARMORY / E" : "EFFECTS / E",52,true});
+        if (m_tuning || m_effects)
+            m_buttons.push_back({{0.69f,0.18f,0.24f,0.045f},
+                m_effects ? "SAVE EFFECT" : "SAVE GUN",58,
+                m_settings.status() != SettingsStore::Status::Saving});
+        if (m_effects) {
+            m_buttons.push_back({{0.69f,0.855f,0.24f,0.06f},"RESET EFFECT",51,true});
+            m_buttons.push_back({{0.065f,0.23f,0.08f,0.04f},"Q PREV",53,true});
+            m_buttons.push_back({{0.53f,0.23f,0.08f,0.04f},"NEXT R",54,true});
+            m_buttons.push_back({{0.65f,0.70f,0.27f,0.04f},"HULL SHIELD",55,true});
+            m_buttons.push_back({{0.65f,0.75f,0.27f,0.04f},"SPHERICAL SHIELD",56,true});
+            m_buttons.push_back({{0.65f,0.80f,0.27f,0.04f},"GLOBAL / BUDGET",57,true});
+        } else if (m_tuning) {
+            m_buttons.push_back({{0.69f,0.855f,0.24f,0.06f},"RESET GUN",51,true});
+        } else {
+            for (std::size_t i = 0; i < WeaponRangeScenario::GunCount; ++i)
+                m_buttons.push_back({{0.63f,0.28f+i*0.049f,0.29f,0.044f},
+                    WeaponRangeScenario::gunName(i),100+static_cast<int>(i),true});
+            m_buttons.push_back({{0.69f,0.855f,0.24f,0.06f},"FIT WEAPON / ENTER",8,
+                m_status.alive && m_mount >= 0});
+        }
+        m_mountPositions.clear();
+        for (const auto& mount : m_status.mounts)
+            m_mountPositions.push_back(project(glm::vec3(mount.cell)));
+        return;
+    }
     const bool idle = m_pending == 0;
     m_buttons.push_back({{0.87f,0.12f,0.065f,0.04f},"HIDE",1,true});
     if (m_status.phase == ContractPhase::Complete || m_status.phase == ContractPhase::Defeat) {
@@ -242,6 +380,52 @@ void StationOutfitter::activate(int id) {
     const auto button = std::find_if(m_buttons.begin(), m_buttons.end(),
         [id](const auto& b) { return b.id == id; });
     if (button == m_buttons.end() || !button->enabled) return;
+    if (m_developer) {
+        m_saveAttempted = false;
+        m_saveError.clear();
+        if (id == 58) {
+            try {
+                configuration().save();
+                m_saveAttempted = true;
+            } catch (const std::exception& error) {
+                glow::warning("Could not save developer configuration: %;",error.what());
+                m_saveError = "COULD NOT SAVE - SEE LOG AND RETRY";
+            }
+        }
+        if (id == 1) m_visible = false;
+        if (id == 50) { m_tuning = !m_tuning; m_effects = false; m_slider = -1; m_tuningField = 0; }
+        if (id == 51) configuration().reset();
+        if (id == 52) {
+            m_effects = !m_effects; m_tuning = false;
+            if (m_effects) m_effectGroup = m_weapon-1;
+            m_slider = -1; m_tuningField = 0;
+        }
+        if (id >= 53 && id <= 57) {
+            if (id == 53) m_effectGroup = (m_effectGroup+CombatEffectSettings::GroupCount-1) %
+                CombatEffectSettings::GroupCount;
+            if (id == 54) m_effectGroup = (m_effectGroup+1) % CombatEffectSettings::GroupCount;
+            if (id == 55) m_effectGroup = CombatEffectSettings::HullShield;
+            if (id == 56) m_effectGroup = CombatEffectSettings::SphereShield;
+            if (id == 57) m_effectGroup = CombatEffectSettings::Global;
+            m_slider = -1; m_tuningField = 0;
+        }
+        if (id >= 100 && id < 110) { m_weapon = id - 99; m_tuningField = 0; }
+        if (id == 8) {
+            auto* ship = World::instance()->player().ship();
+            if (!ship) throw std::logic_error("Developer armory ship is unavailable.");
+            const auto key = WeaponRangeScenario::gunKey(m_weapon - 1);
+            const auto cell = m_status.mounts.at(m_mount).cell;
+            const auto& mounts = ship->components().hardpoints();
+            const auto mount = std::find_if(mounts.begin(), mounts.end(),
+                [&](const auto& entry) { return entry->voxel()->cell() == cell; });
+            if (mount == mounts.end()) throw std::logic_error("Developer armory mount no longer exists.");
+            (*mount)->setMountable(key, true);
+            (*mount)->setWeapon(std::shared_ptr<Weapon>(WeaponBuilder(key).build()));
+            refreshDeveloper(*World::instance());
+        }
+        layout();
+        return;
+    }
     if (id == 1) { m_visible = false; m_equipment = false; }
     if (id == 2) m_equipment = !m_equipment;
     if (id == 3) { m_defense = !m_defense; m_equipment = false; m_market = false; m_bar = false; }
@@ -280,6 +464,11 @@ void StationOutfitter::activate(int id) {
 }
 
 bool StationOutfitter::closeEquipment() {
+    if (developerVisible()) {
+        if (m_tuning || m_effects) { m_tuning = false; m_effects = false; m_slider = -1; layout(); }
+        else m_visible = false;
+        return true;
+    }
     if (visible() && (m_market || m_bar)) {
         m_market = false;
         m_bar = false;
@@ -306,6 +495,34 @@ bool StationOutfitter::closeEquipment() {
 }
 
 bool StationOutfitter::key(int key) {
+    if (developerVisible()) {
+        if (key == GLFW_KEY_T) activate(50);
+        if (key == GLFW_KEY_E) { activate(52); return true; }
+        if (m_effects) {
+            if (key == GLFW_KEY_Q) activate(53);
+            if (key == GLFW_KEY_R) activate(54);
+        }
+        if (m_effects || m_tuning) {
+            const auto menu = configuration();
+            const int count = static_cast<int>(menu.fields.size());
+            if (key == GLFW_KEY_UP) m_tuningField = (m_tuningField + count - 1) % count;
+            if (key == GLFW_KEY_DOWN) m_tuningField = (m_tuningField + 1) % count;
+            if (key == GLFW_KEY_LEFT || key == GLFW_KEY_RIGHT) {
+                menu.nudge(m_tuningField,key == GLFW_KEY_LEFT ? -1 : 1);
+            }
+        } else {
+            const int mounts = static_cast<int>(m_status.mounts.size());
+            if (mounts && (key == GLFW_KEY_LEFT || key == GLFW_KEY_RIGHT))
+                m_mount = (m_mount + (key == GLFW_KEY_LEFT ? mounts-1 : 1) + mounts) % mounts;
+            if (key == GLFW_KEY_UP || key == GLFW_KEY_DOWN)
+                m_weapon = (m_weapon - 1 + (key == GLFW_KEY_UP ? 9 : 1)) % 10 + 1;
+            if (key == GLFW_KEY_Q) m_rotation -= 0.4f;
+            if (key == GLFW_KEY_R) m_rotation += 0.4f;
+            if (key == GLFW_KEY_ENTER) activate(8);
+        }
+        layout();
+        return true;
+    }
     if (!m_station) return false;
     if (key == GLFW_KEY_TAB || key == GLFW_KEY_O) {
         m_visible = key == GLFW_KEY_O || !m_visible;
@@ -408,12 +625,19 @@ bool StationOutfitter::key(int key) {
 
 bool StationOutfitter::mouse(int button, int action, glm::vec2 pointer) {
     if (!visible()) return false;
+    if (m_developer && (m_tuning || m_effects)) {
+        if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE) m_slider = -1;
+        if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
+            m_slider = configuration().rowAt(configurationLayout(),pointer);
+        }
+        if (m_slider >= 0) tuneSlider(m_slider, pointer.x);
+    }
     m_hover = -1;
     for (const auto& b : m_buttons)
         if (contains(b.bounds,pointer)) m_hover = b.id;
     if (button != GLFW_MOUSE_BUTTON_LEFT) return true;
     int hit = m_hover;
-    if (m_equipment) {
+    if (m_equipment && !m_tuning && !m_effects) {
         float nearest = 0.025f;
         for (std::size_t i = 0; i < m_mountPositions.size(); ++i) {
             const float distance = glm::length(pointer-m_mountPositions[i]);
@@ -441,15 +665,15 @@ glm::vec2 StationOutfitter::project(glm::vec3 cell) const {
 
 void StationOutfitter::initialize() {
     m_panel = new glow::Program();
-    m_panel->attach(glowutils::createShaderFromFile(GL_VERTEX_SHADER,"data/shader/hud/hudoverlay.vert"),
-        glowutils::createShaderFromFile(GL_FRAGMENT_SHADER,"data/shader/hud/hudoverlay.frag"));
+    m_panel->attach(createShaderFromFile(GL_VERTEX_SHADER,"data/shader/hud/hudoverlay.vert"),
+        createShaderFromFile(GL_FRAGMENT_SHADER,"data/shader/hud/hudoverlay.frag"));
     m_wire = new glow::Program();
-    m_wire->attach(glowutils::createShaderFromFile(GL_VERTEX_SHADER,"data/shader/ui/wire.vert"),
-        glowutils::createShaderFromFile(GL_FRAGMENT_SHADER,"data/shader/ui/wire.frag"));
+    m_wire->attach(createShaderFromFile(GL_VERTEX_SHADER,"data/shader/ui/wire.vert"),
+        createShaderFromFile(GL_FRAGMENT_SHADER,"data/shader/ui/wire.frag"));
     m_backgroundProgram = new glow::Program();
     m_backgroundProgram->attach(
-        glowutils::createShaderFromFile(GL_VERTEX_SHADER,"data/shader/ui/stationbackground.vert"),
-        glowutils::createShaderFromFile(GL_FRAGMENT_SHADER,"data/shader/ui/stationbackground.frag"));
+        createShaderFromFile(GL_VERTEX_SHADER,"data/shader/ui/stationbackground.vert"),
+        createShaderFromFile(GL_FRAGMENT_SHADER,"data/shader/ui/stationbackground.frag"));
     const char* names[]{"overview", "armory", "market", "bar", "hangar"};
     for (std::size_t i = 0; i < m_backgrounds.size(); ++i) {
         const std::string path = std::string("data/ui/station/") + names[i] + ".dds";
@@ -721,6 +945,8 @@ void StationOutfitter::drawDefense() {
             {x+0.015f,0.465f},0.018f,glm::vec3(1),0.24f);
         text("AFTER HIT  "+number(shield.rechargeDelay,1)+" S",
             {x+0.015f,0.515f},0.018f,glm::vec3(1),0.24f);
+        text("BROKEN  "+number(std::max(5.0f,shield.rechargeDelay),1)+" S QUIET",
+            {x+0.015f,0.545f},0.014f,Muted,0.24f);
         text(m_status.shieldBuild == id ? "EQUIPPED" : std::to_string(shield.price)+" CR",
             {x+0.015f,0.575f},0.021f,Accent,0.24f);
     }
@@ -776,6 +1002,75 @@ void StationOutfitter::drawFlightResources() {
             {0.672f,0.916f},0.013f,Muted,0.275f);
 }
 
+void StationOutfitter::drawConfiguration() {
+    const auto menu = configuration();
+    const auto layout = configurationLayout();
+    for (std::size_t i = 0; i < menu.fields.size(); ++i) {
+        const auto& field = menu.fields[i];
+        const float value = menu.value(i);
+        const float y = layout.top+i*layout.step;
+        text(field.label,{0.085f,y+0.01f},layout.fontHeight,
+            static_cast<int>(i) == m_tuningField ? Accent : Muted,layout.labelWidth);
+        rectangle({layout.sliderLeft,y+0.012f,layout.sliderWidth,0.016f},Surface);
+        const float fraction = glm::clamp((value-field.minimum)/(field.maximum-field.minimum),0.0f,1.0f);
+        rectangle({layout.sliderLeft,y+0.012f,layout.sliderWidth*fraction,0.016f},Accent*0.55f);
+        rectangle({layout.sliderLeft+(layout.sliderWidth-0.004f)*fraction,y+0.007f,0.004f,0.026f},Accent);
+        text(number(value,field.integer ? 0 : 2),{layout.valueLeft,y+0.01f},
+            layout.fontHeight+0.002f,glm::vec3(1),layout.valueWidth);
+    }
+}
+
+void StationOutfitter::drawDeveloper() {
+    rectangle({0.035f,0.085f,0.93f,0.87f},Panel);
+    text(m_effects ? "DEVELOPER / COMBAT EFFECTS" :
+        m_tuning ? "DEVELOPER / GUN TUNING" : "DEVELOPER / ARMORY",
+        {0.065f,0.12f},0.028f,Accent,0.65f);
+    text("LIVE CHANGES / EXPLICIT SAVE / CONTRACT RUN UNCHANGED",
+        {0.065f,0.19f},0.013f,Muted,0.56f);
+    if (m_tuning || m_effects) {
+        const auto status = m_settings.status();
+        const std::string message = !m_saveError.empty() ? m_saveError :
+            !m_saveAttempted ? "SAVE KEEPS THIS GROUP ONLY / RESET RESTORES AUTHORED DEFAULTS" :
+            status == SettingsStore::Status::Saving ? "SAVING IN THIS BROWSER..." :
+            status == SettingsStore::Status::Failed ? "BROWSER SAVE FAILED - CHECK STORAGE AND RETRY" :
+            "CONFIGURATION SAVED";
+        text(message,{0.065f,0.925f},0.012f,Muted,0.87f);
+    }
+    if (m_effects) {
+        auto& settings = m_combatEffects.settings;
+        text(settings.name(m_effectGroup),{0.16f,0.24f},0.021f,Accent,0.35f);
+        drawConfiguration();
+        rectangle({0.64f,0.30f,0.28f,0.39f},Surface*0.55f);
+        text("LIVE PREVIEW",{0.66f,0.31f},0.016f,Accent,0.24f);
+        text("SHIELDS: IDLE / HIT / BREAK / RECHARGE",{0.65f,0.67f},0.009f,Muted,0.27f);
+        text("Q-R GROUP / ARROWS FINE ADJUST / DRAG SLIDERS",
+            {0.085f,0.81f},0.012f,Muted,0.53f);
+    } else if (m_tuning) {
+        text(WeaponRangeScenario::gunName(m_weapon-1),{0.065f,0.235f},0.022f,Accent);
+        drawConfiguration();
+        text("DRAG SLIDERS / UP-DOWN SELECT / LEFT-RIGHT FINE ADJUST",
+            {0.085f,0.81f},0.013f,Muted,0.83f);
+    } else {
+        background(1,{0.065f,0.26f,0.53f,0.55f});
+        rectangle({0.065f,0.26f,0.53f,0.55f},Panel,0.75f);
+        drawShip();
+        text(m_mount >= 0 ? "MOUNT "+std::to_string(m_mount+1)+" SELECTED" : "NO WEAPON MOUNTS",
+            {0.085f,0.76f},0.017f,Accent,0.49f);
+        if (m_mount >= 0) {
+            const auto id = m_status.mounts[m_mount].weapon;
+            text(id ? "FITTED: "+WeaponRangeScenario::gunName(id-1) : "FITTED: EMPTY",
+                {0.085f,0.79f},0.015f,Muted,0.49f);
+        }
+        text("ARROWS SELECT / ENTER FIT / Q-R ROTATE",{0.085f,0.82f},0.012f,Muted,0.49f);
+    }
+    for (const auto& button : m_buttons) {
+        const bool selected = button.id == m_hover || button.id == m_weapon+99;
+        rectangle(button.bounds,selected ? Accent*0.45f : Surface);
+        text(button.label,{button.bounds.x+0.012f,button.bounds.y+0.012f},
+            0.014f,button.enabled ? glm::vec3(1) : Muted,button.bounds.z-0.024f);
+    }
+}
+
 void StationOutfitter::draw() {
     const bool flight = m_status.phase == ContractPhase::Mission && m_status.alive &&
         Property<bool>("vfx.drawhud").get();
@@ -800,7 +1095,9 @@ void StationOutfitter::draw() {
     glfwGetCursorPos(glfwGetCurrentContext(),&x,&y);
     glfwGetWindowSize(glfwGetCurrentContext(),&w,&h);
     if (w>0 && h>0) mouse(-1,-1,{x/w,y/h});
-    if (flight) {
+    if (m_developer) {
+        drawDeveloper();
+    } else if (flight) {
         drawFlightResources();
     } else {
     rectangle({0.035f,0.085f,0.93f,0.87f},Panel);
@@ -815,6 +1112,7 @@ void StationOutfitter::draw() {
         if (image != 0 && image != 3)
             rectangle({0.065f,0.26f,0.87f,0.55f},Panel,0.35f);
     }
+
     text(summary ? "RUN "+std::to_string(m_status.run)+" / DEBRIEF" : rewards ? "CHOOSE YOUR SALVAGE" :
         m_map ? "HANGAR / SECTOR ROUTE" : m_defense ? "SHIELDS / REACTOR" :
         m_market ? "STATION MARKET" : m_bar ? "STATION BAR" :

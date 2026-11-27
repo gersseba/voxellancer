@@ -7,6 +7,10 @@
 #include "sound/soundmanager.h"
 
 #include "voxeleffect/voxelexplosiongenerator.h"
+#ifndef VOXELLANCER_HEADLESS_SERVER
+#include "voxeleffect/combateffects.h"
+#include "worldobject/worldobjectinfo.h"
+#endif
 
 #include "world/god.h"
 #include "world/world.h"
@@ -32,6 +36,14 @@ bool Bullet::passiveForCollisionDetection() {
 }
 
 void Bullet::spawnExplosion() {
+#ifndef VOXELLANCER_HEADLESS_SERVER
+    if (world() && world()->hasPresentation()) {
+        if (const auto effect = CombatEffectSettings::gun(info().definitionKey())) {
+            world()->combatEffects().impact(*effect,position(),-physics().speed().directional());
+            return;
+        }
+    }
+#endif
     VoxelExplosionGenerator generator(this);
 
     generator.setPosition(m_transform.position());

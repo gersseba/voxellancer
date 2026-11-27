@@ -1,5 +1,3 @@
-#version 330
-
 uniform float withBorder;
 uniform vec3 lightdir;
 
@@ -14,13 +12,13 @@ vec4 voxelFragmentColor(vec3 color, float emissiveness, vec3 normal, vec3 positi
     // get 2nd greatest component, sorting in glsl :D
     float borderDistance = min(max(absPositionInModel.x, absPositionInModel.y),
                                min(max(absPositionInModel.y, absPositionInModel.z),
-                                   max(absPositionInModel.x, absPositionInModel.z))) * 2;
+                                   max(absPositionInModel.x, absPositionInModel.z))) * 2.0;
 
     float border = smoothstep(1.0 - borderWidth, 1.0 - borderWidth + 0.01, borderDistance) * borderDarkness;
 
     vec3 n_normal = normalize(normal);
     float diffuse = dot(n_normal, lightdir);
-    diffuse = max(0, diffuse) + ambient;
+    diffuse = max(0.0, diffuse) + ambient;
 
     return vec4(min(color * diffuse, vec3(1.0)) - vec3(border * float(withBorder)), 1.0);
 }

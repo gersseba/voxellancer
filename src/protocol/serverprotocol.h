@@ -11,11 +11,13 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>
 
+#include "equipment/shieldtype.h"
+
 namespace voxellancer {
 namespace protocol {
 
-constexpr std::uint8_t ProtocolVersion = 31;
-constexpr std::size_t ContractActionPacketSize = 22;
+constexpr std::uint8_t ProtocolVersion = 34;
+constexpr std::size_t ContractActionPacketSize = 23;
 constexpr std::size_t MaxContractMounts = 32;
 constexpr std::size_t ContractWeaponKinds = 6;
 constexpr std::size_t ContractInventoryCapacity = 64;
@@ -34,12 +36,13 @@ constexpr std::size_t InputCommandAcknowledgementPacketSize = 11;
 constexpr std::size_t SnapshotResyncRequestPacketSize = 2;
 constexpr std::size_t VoxelRemovalPacketSize = 22;
 constexpr std::size_t VoxelDamagePacketSize = 26;
-constexpr std::size_t EntityContentHeaderSize = 15;
+constexpr std::size_t EntityContentHeaderSize = 16;
 constexpr std::size_t EntityVoxelStateSize = 28;
 constexpr std::size_t EntityEquipmentStateHeaderSize = 16;
 constexpr std::size_t EntityEquipmentSnapshotHeaderSize = 12;
 constexpr std::size_t WeaponFiredEventPacketSize = 32;
 constexpr std::size_t ShieldHitEventPacketSize = 50;
+constexpr std::size_t ProjectileImpactEventPacketSize = 102;
 constexpr std::size_t MissionStateEventPacketSize = 75;
 constexpr std::size_t MaxEquipmentKeyBytes = 63;
 constexpr std::size_t MaxEntityDefinitionKeyBytes = 63;
@@ -94,6 +97,7 @@ struct ContractAction {
     std::uint8_t node = NoRouteNode;
     RewardChoice choice = RewardChoice::None;
     std::uint8_t shield = 0;
+    ShieldType shieldShape = ShieldType::None;
 };
 
 enum class RouteNodeKind : std::uint8_t { Attack = 1, Base = 2, Encounter = 3 };
@@ -197,6 +201,14 @@ struct ShieldHitEvent {
     bool operator==(const ShieldHitEvent& other) const;
 };
 
+struct ProjectileImpactEvent {
+    std::uint64_t tick = 0;
+    glm::vec3 position{0}, normal{0,1,0};
+    float scale = 1;
+    std::string projectileKey;
+    bool operator==(const ProjectileImpactEvent& other) const;
+};
+
 enum class MissionEventState : std::uint8_t {
     Started = 1,
     Failed = 2,
@@ -241,6 +253,7 @@ struct EntityContentSnapshot {
     std::vector<EntityVoxelState> voxels;
     std::vector<EntityEquipmentState> equipment;
     std::string definitionKey;
+    ShieldType shieldType = ShieldType::None;
 };
 
 struct EntityEquipmentSnapshot {
@@ -377,6 +390,8 @@ using WeaponFiredEventPacket =
     std::array<std::uint8_t, WeaponFiredEventPacketSize>;
 using ShieldHitEventPacket =
     std::array<std::uint8_t, ShieldHitEventPacketSize>;
+using ProjectileImpactEventPacket =
+    std::array<std::uint8_t, ProjectileImpactEventPacketSize>;
 using MissionStateEventPacket =
     std::array<std::uint8_t, MissionStateEventPacketSize>;
 using LobbyStatusPacket = std::array<std::uint8_t, LobbyStatusPacketSize>;
@@ -433,6 +448,8 @@ bool encodeShieldHitEvent(
     const ShieldHitEvent& event,
     ShieldHitEventPacket& packet
 );
+bool encodeProjectileImpactEvent(const ProjectileImpactEvent& event, ProjectileImpactEventPacket& packet);
+DecodeError decodeProjectileImpactEvent(const std::uint8_t* data, std::size_t size, ProjectileImpactEvent& event);
 DecodeError decodeShieldHitEvent(
     const std::uint8_t* data,
     std::size_t size,

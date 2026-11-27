@@ -4,7 +4,11 @@
 template<typename T>
 ThreadPool<T>::ThreadPool(int threadcount, int chunksize) :
     m_chunksize(chunksize),
+#ifdef __EMSCRIPTEN__
+    m_workers(),
+#else
     m_workers(threadcount),
+#endif
     m_tasks(nullptr),
     m_exit(false),
     m_startWorkers(),
@@ -13,20 +17,27 @@ ThreadPool<T>::ThreadPool(int threadcount, int chunksize) :
     m_currentIndex(),
     m_endIndex()
 {
+#ifdef __EMSCRIPTEN__
+    (void)threadcount;
+#endif
     m_startWorkers = 0;
     m_stoppedWorkers = m_workers.size();
+#ifndef __EMSCRIPTEN__
     for (int i = 0; i < m_workers.size(); i++) {
         m_workers[i] = std::thread(&ThreadPool<T>::worker, this);
     }
+#endif
 }
 
 template<typename T>
 ThreadPool<T>::~ThreadPool() {
+#ifndef __EMSCRIPTEN__
     m_exit = true;
     startWorkers();
     for (std::thread& thread : m_workers) {
         thread.join();
     }
+#endif
 }
 
 template<typename T>
@@ -39,6 +50,11 @@ void ThreadPool<T>::map(std::function<void(T&)> function, std::vector<T>& data, 
     if (end - start == 0) {
         return;
     }
+#ifdef __EMSCRIPTEN__
+    for (int i = start; i < end; i++) {
+        function(data[i % data.size()]);
+    }
+#else
     m_function = function;
     m_tasks = &data;
     m_currentIndex = start;
@@ -49,6 +65,7 @@ void ThreadPool<T>::map(std::function<void(T&)> function, std::vector<T>& data, 
     std::mutex m;
     std::unique_lock<std::mutex> lock(m);
     m_stopSignal.wait(lock); // wait for workers to finish
+#endif
 }
 
 template<typename T>

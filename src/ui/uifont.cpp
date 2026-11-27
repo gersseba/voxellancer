@@ -12,6 +12,7 @@
 #include <glowutils/global.h>
 
 #include "camera/camera.h"
+#include "display/rendering/shaderloader.h"
 #include "resource/ddstexture.h"
 
 namespace {
@@ -125,8 +126,8 @@ void UiFont::drawScreen(
 void UiFont::initialize() {
     m_program = new glow::Program();
     m_program->attach(
-        glowutils::createShaderFromFile(GL_VERTEX_SHADER, "data/shader/ui/font.vert"),
-        glowutils::createShaderFromFile(GL_FRAGMENT_SHADER, "data/shader/ui/font.frag"));
+        createShaderFromFile(GL_VERTEX_SHADER, "data/shader/ui/font.vert"),
+        createShaderFromFile(GL_FRAGMENT_SHADER, "data/shader/ui/font.frag"));
     m_atlas = new glow::Texture(GL_TEXTURE_2D);
     if (!DdsTexture::loadImage2d(m_atlas, "data/ui/fonts/voxellancer-flight.dds")) {
         throw std::runtime_error("Could not load the Voxellancer Flight UI font atlas.");

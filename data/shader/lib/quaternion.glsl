@@ -1,11 +1,9 @@
-#version 330
-
 vec3 qtransform(vec4 q, vec3 v) {
     vec3 QuatVector = vec3(q.x, q.y, q.z);
     vec3 uv = cross(QuatVector, v);
     vec3 uuv = cross(QuatVector, uv);
-    uv *= (2 * q.w);
-    uuv *= 2;
+    uv *= (2.0 * q.w);
+    uuv *= 2.0;
 
     return v + uv + uuv;
 }

@@ -31,6 +31,8 @@ class WorldTreeRenderer;
 #include "protocol/serverprotocol.h"
 class HudOverlay;
 class StationOutfitter;
+#include "voxeleffect/combateffects.h"
+class CombatEffectRenderer;
 #endif
 
 class GamePlayScene: public Scene {
@@ -48,6 +50,8 @@ public:
     bool stationKey(int key);
     bool stationMouse(int button, int action, glm::vec2 pointer);
     bool closeEquipment();
+    bool developerConsoleVisible() const;
+    void applyDeveloperConfiguration();
     std::optional<voxellancer::protocol::EntityId> remoteLeadTarget() const;
     std::optional<CrosshairAim> remoteAimPoint(
         const glm::vec3& origin, const glm::vec3& direction) const;
@@ -68,6 +72,8 @@ protected:
 #ifndef VOXELLANCER_HEADLESS_SERVER
     mutable std::unique_ptr<HudOverlay> m_hudOverlay;
     mutable std::unique_ptr<StationOutfitter> m_outfitter;
+    std::unique_ptr<CombatEffectRenderer> m_effectRenderer;
+    float m_effectPreviewTime = 0;
     struct RemoteVoxelProxy;
     std::vector<std::unique_ptr<RemoteVoxelProxy>> m_remoteVoxelProxies;
     std::unordered_map<std::uint64_t, RemoteVoxelProxy*> m_remoteVoxelProxyIndex;
@@ -83,28 +89,20 @@ protected:
         glm::vec3 point;
     };
     mutable std::optional<RemoteLeadCue> m_remoteLeadCue;
-    float m_shieldShimmerAccumulator = 0.0f;
-    float m_shieldPulseTime = 0.0f;
-    std::uint32_t m_shieldShimmerRandomState = 0xA341316Cu;
-    struct ShieldSurfacePoint {
-        glm::ivec3 cell;
-        glm::ivec3 normal;
-    };
     struct ShieldSurfaceCache {
+        const VoxelCluster* cluster = nullptr;
         std::uint64_t voxelRevision = 0;
-        int minimumX = 0;
-        int maximumX = 0;
-        bool initialized = false;
-        std::vector<ShieldSurfacePoint> points;
+        std::size_t voxelCount = 0;
+        ShieldType type = ShieldType::None;
+        std::shared_ptr<const std::vector<ShieldEffectPoint>> points;
     };
-    std::unordered_map<const Ship*, ShieldSurfaceCache>
-        m_shieldSurfaceCache;
+    std::unordered_map<std::uint64_t, ShieldSurfaceCache> m_shieldSurfaceCache;
     void updateRemoteVoxelProxies();
     void updateRemoteInfoOverlay();
     void drawRemoteContacts(const Camera& camera) const;
-    void updateShieldShimmer(float deltaSec);
+    void updateCombatEffects();
+    void drawEffectPreview() const;
     void announceMission(const voxellancer::protocol::ContractStatus& contract);
-    float nextShieldShimmerRandom();
 #endif
 
 

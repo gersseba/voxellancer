@@ -30,7 +30,6 @@ WeaponProfile WeaponProfile::load(const std::string& projectile) {
     p.propagationFraction = Property<float>(root + "propagationFraction", 1);
     p.mass = Property<float>(root + "mass", 0);
     p.physical = p.mass > 0;
-    p.penetration = Property<int>(root + "penetration", 1);
     p.pellets = Property<int>(root + "pellets", 1);
     p.scatter = Property<float>(root + "scatter", 0);
     for (float value : {p.speed, p.range, p.shield, p.armor, p.normal}) {
@@ -45,7 +44,6 @@ WeaponProfile WeaponProfile::load(const std::string& projectile) {
         !std::isfinite(p.propagationFraction) || p.propagationFraction < 0 ||
         p.propagationFraction > 1 ||
         !std::isfinite(p.mass) || p.mass < 0 ||
-        p.penetration < 1 || p.penetration > 6 ||
         p.pellets < 1 || p.pellets > 8 ||
         !std::isfinite(p.scatter) || p.scatter < 0 || p.scatter > 5) {
         throw std::invalid_argument("Invalid weapon traversal limits: " + projectile);

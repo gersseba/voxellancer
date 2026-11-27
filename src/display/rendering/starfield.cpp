@@ -13,6 +13,7 @@
 #include "utils/randfloat.h"
 #include "display/rendering/framebuffer.h"
 #include "display/rendering/buffernames.h"
+#include "display/rendering/shaderloader.h"
 #include "utils/randvec3.h"
 #include "etc/contextdependant.h"
 #include "camera/camera.h"
@@ -93,7 +94,7 @@ void Starfield::apply(FrameBuffer& frameBuffer, const RenderMetaData& metadata) 
     glEnable(GL_DEPTH_TEST);
     glDepthMask(GL_FALSE);
 
-    frameBuffer.setDrawBuffers({ BufferNames::Color, BufferNames::Emissisiveness });
+    frameBuffer.setDrawBuffers({ BufferNames::Color });
 
     glm::mat4 m1 = metadata.camera().viewProjection();
     glm::mat4 m2 = getMatrixFromPast(metadata.camera(), side);
@@ -102,7 +103,7 @@ void Starfield::apply(FrameBuffer& frameBuffer, const RenderMetaData& metadata) 
     m_shaderProgram->setUniform("oldViewProjection", m2);
     m_shaderProgram->setUniform("sizeFactor", m_starSize.get());
     m_shaderProgram->use();
-    m_vertexArrayObject->drawArrays(GL_POINTS, 0, m_starCount);
+    m_vertexArrayObject->drawArraysInstanced(GL_TRIANGLES, 0, 18, m_starCount);
 
     glDepthMask(GL_TRUE);
     glDisable(GL_BLEND);
@@ -110,13 +111,11 @@ void Starfield::apply(FrameBuffer& frameBuffer, const RenderMetaData& metadata) 
 }
 
 void Starfield::createAndSetupShaders() {
-    glow::Shader* vertexShader = glowutils::createShaderFromFile(GL_VERTEX_SHADER, "data/shader/starfield/starfield.vert");
-    glow::Shader* geometryShader = glowutils::createShaderFromFile(GL_GEOMETRY_SHADER, "data/shader/starfield/starfield.geo");
-    glow::Shader* fragmentShader = glowutils::createShaderFromFile(GL_FRAGMENT_SHADER, "data/shader/starfield/starfield.frag");
+    glow::Shader* vertexShader = createShaderFromFile(GL_VERTEX_SHADER, "data/shader/starfield/starfield.vert");
+    glow::Shader* fragmentShader = createShaderFromFile(GL_FRAGMENT_SHADER, "data/shader/starfield/starfield.frag");
 
     m_shaderProgram = new glow::Program();
-    m_shaderProgram->attach(vertexShader, geometryShader, fragmentShader);
-    m_shaderProgram->bindFragDataLocation(0, "fragColor");
+    m_shaderProgram->attach(vertexShader, fragmentShader);
 }
 
 void Starfield::createAndSetupGeometry() {
@@ -143,6 +142,7 @@ void Starfield::createBinding(int index, std::string name, int offset, int size)
     binding->setBuffer(m_gpuBuffer, 0, sizeof(StarData));
     binding->setFormat(size, GL_FLOAT, GL_FALSE, offset);
     m_vertexArrayObject->enable(location);
+    m_vertexArrayObject->setAttributeDivisor(location, 1);
 }
 
 void Starfield::addLocation(const Camera& camera, int side) {

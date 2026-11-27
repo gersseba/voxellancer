@@ -10,10 +10,13 @@
 #include <unordered_set>
 #include <vector>
 
+#ifndef __EMSCRIPTEN__
 #include <SFML/Network/TcpListener.hpp>
 #include <SFML/Network/TcpSocket.hpp>
+#endif
 
 #include "protocol/serverprotocol.h"
+#include "protocol/localstream.h"
 
 class SimulationSession;
 class World;
@@ -36,7 +39,8 @@ public:
         float interestRadius = 650.0f,
         std::optional<voxellancer::protocol::EntityId> preferredActor =
             std::nullopt,
-        std::size_t targetPlayers = 0
+        std::size_t targetPlayers = 0,
+        std::unique_ptr<LocalStream> localStream = {}
     );
     ~TcpServer();
 
@@ -52,11 +56,17 @@ public:
     std::vector<ClientStatistics> clientStatistics() const;
     void poll();
     void enableContracts(const std::vector<voxellancer::protocol::EntityId>& players,
-        std::filesystem::path checkpoint = {});
+        std::filesystem::path checkpoint = {}, bool allowClientShieldShape = false);
 
 private:
     struct Connection {
+#ifndef __EMSCRIPTEN__
         std::unique_ptr<sf::TcpSocket> socket;
+#endif
+        std::unique_ptr<LocalStream> localStream;
+        void disconnect();
+        LocalStream::Status receive(void* data, std::size_t size, std::size_t& received);
+        LocalStream::Status send(const void* data, std::size_t size, std::size_t& sent);
         voxellancer::protocol::EntityId actor;
         std::vector<std::uint8_t> incoming;
         std::deque<std::vector<std::uint8_t>> outgoing;
@@ -84,7 +94,11 @@ private:
 
     World& m_world;
     SimulationSession& m_session;
+#ifndef __EMSCRIPTEN__
     sf::TcpListener m_listener;
+#endif
+    std::unique_ptr<LocalStream> m_localStream;
+    bool m_inProcess;
     std::uint16_t m_port;
     float m_interestRadiusSquared;
     std::optional<voxellancer::protocol::EntityId> m_preferredActor;
@@ -127,6 +141,7 @@ private:
     void sendShieldHitEvents(
         const std::vector<voxellancer::protocol::ShieldHitEvent>& events
     );
+    void sendProjectileImpactEvents(const std::vector<voxellancer::protocol::ProjectileImpactEvent>& events);
     void sendMissionStateEvents(
         const std::vector<voxellancer::protocol::MissionStateEvent>& events
     );

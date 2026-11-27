@@ -8,6 +8,7 @@
 
 #include "screenquad.h"
 #include "framebuffer.h"
+#include "shaderloader.h"
 
 
 PostProcessingPass::PostProcessingPass(const std::string& name, std::shared_ptr<ScreenQuad> quad):
@@ -68,8 +69,8 @@ void PostProcessingPass::setFragmentShader(const std::string& fragmentShader) {
 void PostProcessingPass::initialize() {
     m_program = new glow::Program();
 
-    glow::Shader* vertShader = glowutils::createShaderFromFile(GL_VERTEX_SHADER, m_vertexShader);
-    glow::Shader* fragShader = glowutils::createShaderFromFile(GL_FRAGMENT_SHADER, m_fragmentShader);
+    glow::Shader* vertShader = createShaderFromFile(GL_VERTEX_SHADER, m_vertexShader);
+    glow::Shader* fragShader = createShaderFromFile(GL_FRAGMENT_SHADER, m_fragmentShader);
 
     m_program->attach(vertShader, fragShader);
     m_program->link();

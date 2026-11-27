@@ -198,6 +198,11 @@ GamePlayRunning::drainRemoteWeaponFiredEvents() {
         : std::vector<voxellancer::protocol::WeaponFiredEvent>();
 }
 
+std::vector<voxellancer::protocol::ProjectileImpactEvent> GamePlayRunning::drainProjectileImpactEvents() {
+    return m_remotePreview ? m_remotePreview->drainProjectileImpactEvents() :
+        std::vector<voxellancer::protocol::ProjectileImpactEvent>{};
+}
+
 std::optional<voxellancer::protocol::ContractStatus> GamePlayRunning::contractStatus() const {
     return m_localScenarioActive ? std::nullopt : connectedContractStatus();
 }
@@ -227,7 +232,11 @@ bool GamePlayRunning::submitContractAction(voxellancer::protocol::ContractAction
         glow::warning("Cannot send a station action while playing a local scenario.");
         return false;
     }
-    if (!m_remotePreview || !m_remotePreview->sendContractAction(action, weapon, cell, node, choice, shield)) {
+    const auto shape = action == voxellancer::protocol::ContractActionKind::Ready ||
+        action == voxellancer::protocol::ContractActionKind::NewRun
+        ? shieldShapeFromString(Property<std::string>("gameplay.shieldShape","SPHERE").get())
+        : ShieldType::None;
+    if (!m_remotePreview || !m_remotePreview->sendContractAction(action, weapon, cell, node, choice, shield, shape)) {
         glow::warning("Could not send station action: %;",
             m_remotePreview ? m_remotePreview->lastError() : "not connected");
         return false;
@@ -355,7 +364,8 @@ void GamePlayRunning::update(float deltaSec) {
 #endif
 
 #ifndef VOXELLANCER_HEADLESS_SERVER
-    if ((m_localScenarioActive && !m_gamePlay->game()->mainMenuVisible()) ||
+    if ((m_localScenarioActive && !m_gamePlay->game()->mainMenuVisible() &&
+            !m_gamePlay->scene().developerConsoleVisible()) ||
         (!m_remotePreview && !m_contractSessionEnded &&
          !m_gamePlay->game()->mainMenuEnabled())) {
         m_simulationSession.advance(deltaSec);
@@ -408,6 +418,7 @@ void GamePlayRunning::update(float deltaSec) {
             m_remotePreview->drainShieldHitEvents();
             m_remotePreview->drainMissionStateEvents();
             m_remotePreview->drainWeaponFiredEvents();
+            m_remotePreview->drainProjectileImpactEvents();
             queueRemoteInput(glm::vec3(0), glm::vec3(0), false);
             return;
         }

@@ -35,7 +35,9 @@ bool FileSystem::copyFile(const std::string& from, const std::string& to) {
 
 std::string FileSystem::userConfigDir() {
     std::string path;
-#ifdef WIN32
+#ifdef __EMSCRIPTEN__
+    path = "/persist";
+#elif defined(WIN32)
     path = getenv("APPDATA");
     path += "/voxellancer";
 #else

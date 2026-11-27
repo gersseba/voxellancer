@@ -20,6 +20,9 @@
 #include "equipment/shieldslot.h"
 #include "equipment/weapon.h"
 #include "simulation/simulationsession.h"
+#ifndef __EMSCRIPTEN__
+#include "protocol/localstream_sfml.h"
+#endif
 #include "voxel/specialvoxels/engineslotvoxel.h"
 #include "voxel/specialvoxels/hardpointvoxel.h"
 #include "voxel/voxel.h"
@@ -133,10 +136,13 @@ TcpServer::TcpServer(
     std::uint16_t port,
     float interestRadius,
     std::optional<voxellancer::protocol::EntityId> preferredActor,
-    std::size_t targetPlayers
+    std::size_t targetPlayers,
+    std::unique_ptr<LocalStream> localStream
 ) :
     m_world(world),
     m_session(session),
+    m_localStream(std::move(localStream)),
+    m_inProcess(m_localStream != nullptr),
     m_port(port),
     m_interestRadiusSquared(interestRadius * interestRadius),
     m_preferredActor(preferredActor),
@@ -150,13 +156,23 @@ TcpServer::TcpServer(
         !std::isfinite(m_interestRadiusSquared)) {
         throw std::invalid_argument("Interest radius must be a positive finite value.");
     }
-    const sf::Socket::Status listenStatus =
-        m_listener.listen(port, sf::IpAddress::LocalHost);
-    if (listenStatus != sf::Socket::Status::Done) {
-        throw std::runtime_error("Could not listen on the requested local TCP port.");
+    if (m_inProcess) {
+        if (port != 0 || targetPlayers > 1 || !m_localStream->connected()) {
+            throw std::invalid_argument("Invalid in-process server configuration.");
+        }
+    } else {
+#ifndef __EMSCRIPTEN__
+        const sf::Socket::Status listenStatus =
+            m_listener.listen(port, sf::IpAddress::LocalHost);
+        if (listenStatus != sf::Socket::Status::Done) {
+            throw std::runtime_error("Could not listen on the requested local TCP port.");
+        }
+        m_listener.setBlocking(false);
+        m_port = m_listener.getLocalPort();
+#else
+        throw std::invalid_argument("TCP listeners are unavailable in the browser.");
+#endif
     }
-    m_listener.setBlocking(false);
-    m_port = m_listener.getLocalPort();
     m_world.worldLogic().setVoxelReplicationEnabled(true);
     m_world.worldLogic().setShieldHitEventReplicationEnabled(true);
     m_world.worldLogic().setWeaponEventReplicationEnabled(true);
@@ -169,8 +185,43 @@ TcpServer::~TcpServer() {
     m_world.worldLogic().setWeaponEventReplicationEnabled(false);
     m_world.missionSystem().setStateEventReplicationEnabled(false);
     for (Connection& connection : m_connections) {
-        connection.socket->disconnect();
+        connection.disconnect();
     }
+}
+
+void TcpServer::Connection::disconnect() {
+    if (localStream) {
+        localStream->disconnect();
+    }
+#ifndef __EMSCRIPTEN__
+    else if (socket) {
+        socket->disconnect();
+    }
+#endif
+}
+
+LocalStream::Status TcpServer::Connection::receive(
+    void* data, std::size_t size, std::size_t& received)
+{
+    if (localStream) return localStream->receive(data, size, received);
+#ifndef __EMSCRIPTEN__
+    return socket ? localStreamStatus(socket->receive(data, size, received))
+                  : LocalStream::Status::Error;
+#else
+    return LocalStream::Status::Error;
+#endif
+}
+
+LocalStream::Status TcpServer::Connection::send(
+    const void* data, std::size_t size, std::size_t& sent)
+{
+    if (localStream) return localStream->send(data, size, sent);
+#ifndef __EMSCRIPTEN__
+    return socket ? localStreamStatus(socket->send(data, size, sent))
+                  : LocalStream::Status::Error;
+#else
+    return LocalStream::Status::Error;
+#endif
 }
 
 std::uint16_t TcpServer::port() const {
@@ -283,6 +334,7 @@ void TcpServer::poll() {
     sendMissionStateEvents(m_world.missionSystem().drainStateEvents());
     sendVoxelRemovalEvents(m_session.drainVoxelRemovalEvents());
     sendWeaponFiredEvents(m_world.worldLogic().drainWeaponFiredEvents());
+    sendProjectileImpactEvents(m_world.worldLogic().drainProjectileImpactEvents());
     if (m_session.tickIndex() >= m_nextSnapshotTick) {
         broadcastSnapshot();
         const std::uint64_t completedTicks =
@@ -304,24 +356,37 @@ bool TcpServer::acceptConnections() {
         ? MaxClients
         : m_targetPlayers;
     while (m_connections.size() < connectionLimit) {
-        auto socket = std::make_unique<sf::TcpSocket>();
-        const sf::Socket::Status status = m_listener.accept(*socket);
-        if (status == sf::Socket::Status::NotReady) {
-            return true;
-        }
-        if (status != sf::Socket::Status::Done) {
+        Connection connection;
+        std::unique_ptr<LocalStream> localStream;
+        if (m_inProcess) {
+            if (!m_localStream) return true;
+            localStream = std::move(m_localStream);
+            if (!localStream->connected()) return true;
+        } else {
+#ifndef __EMSCRIPTEN__
+            connection.socket = std::make_unique<sf::TcpSocket>();
+            const sf::Socket::Status status = m_listener.accept(*connection.socket);
+            if (status == sf::Socket::Status::NotReady) {
+                return true;
+            }
+            if (status != sf::Socket::Status::Done) {
+                return false;
+            }
+#else
             return false;
+#endif
         }
+        connection.localStream = std::move(localStream);
 
         const auto actor = m_worldStarted ? availableActor() : std::nullopt;
         if (m_worldStarted && !actor) {
-            socket->disconnect();
+            connection.disconnect();
             continue;
         }
 
-        Connection connection;
-        connection.socket = std::move(socket);
-        connection.socket->setBlocking(false);
+#ifndef __EMSCRIPTEN__
+        if (connection.socket) connection.socket->setBlocking(false);
+#endif
 
         if (actor) {
             Ship* ship = static_cast<Ship*>(m_world.worldObject(*actor));
@@ -332,7 +397,7 @@ bool TcpServer::acceptConnections() {
             if (!voxellancer::protocol::encodeEntityId(*actor, actorPacket) ||
                 !queuePacket(connection, actorPacket.data(), actorPacket.size()) ||
                 !sendSnapshot(connection, ++m_snapshotSequence)) {
-                connection.socket->disconnect();
+                connection.disconnect();
                 m_controlledActors.erase(entityIdKey(*actor));
                 continue;
             }
@@ -346,13 +411,12 @@ bool TcpServer::receiveInput(Connection& connection) {
     std::array<std::uint8_t, 4096> buffer{};
     while (true) {
         std::size_t received = 0;
-        const sf::Socket::Status status =
-            connection.socket->receive(buffer.data(), buffer.size(), received);
-        if (status == sf::Socket::Status::NotReady) {
+        const LocalStream::Status status = connection.receive(buffer.data(), buffer.size(), received);
+        if (status == LocalStream::Status::NotReady) {
             return true;
         }
-        if (status == sf::Socket::Status::Disconnected ||
-            status == sf::Socket::Status::Error) {
+        if (status == LocalStream::Status::Disconnected ||
+            status == LocalStream::Status::Error) {
             return false;
         }
         if (received == 0) {
@@ -392,7 +456,17 @@ bool TcpServer::processInputFrames(Connection& connection) {
                     packet, packetSize, action) != voxellancer::protocol::DecodeError::None) {
                 return false;
             }
+            const auto previousShape = m_world.shieldShape();
             m_contracts->act(connection.actor, action);
+            if (previousShape != m_world.shieldShape()) {
+                for (auto* ship : m_world.ships()) {
+                    const auto id = m_world.entityId(ship);
+                    if (!id) continue;
+                    for (auto& peer : m_connections)
+                        if (std::find(peer.contentRefresh.begin(),peer.contentRefresh.end(),*id) ==
+                            peer.contentRefresh.end()) peer.contentRefresh.push_back(*id);
+                }
+            }
             if (action.kind == voxellancer::protocol::ContractActionKind::RepairHull &&
                 m_contracts->status(connection.actor).result == voxellancer::protocol::ContractResult::Accepted) {
                 const auto actor = m_contracts->controlledActor(connection.actor);
@@ -467,16 +541,13 @@ bool TcpServer::sendPending(Connection& connection) {
         }
         std::vector<std::uint8_t>& packet = connection.outgoing.front();
         std::size_t sent = 0;
-        const sf::Socket::Status status = connection.socket->send(
-            packet.data() + connection.outgoingOffset,
-            packet.size() - connection.outgoingOffset,
-            sent
-        );
-        if (status == sf::Socket::Status::NotReady) {
+        const LocalStream::Status status = connection.send(packet.data() + connection.outgoingOffset,
+            packet.size() - connection.outgoingOffset, sent);
+        if (status == LocalStream::Status::NotReady) {
             return true;
         }
-        if (status == sf::Socket::Status::Disconnected ||
-            status == sf::Socket::Status::Error) {
+        if (status == LocalStream::Status::Disconnected ||
+            status == LocalStream::Status::Error) {
             return false;
         }
         if (sent == 0) {
@@ -761,6 +832,29 @@ void TcpServer::sendShieldHitEvents(
     }
 }
 
+void TcpServer::sendProjectileImpactEvents(
+    const std::vector<voxellancer::protocol::ProjectileImpactEvent>& events) {
+    for (std::size_t index = 0; index < m_connections.size();) {
+        auto& connection = m_connections[index];
+        bool failed = false;
+        for (const auto& event : events) {
+            const bool interested = std::any_of(connection.snapshotBaseline.begin(),
+                connection.snapshotBaseline.end(),[&](const auto& body) {
+                    const auto delta = body.position-event.position;
+                    return body.kind == voxellancer::protocol::EntitySnapshot::Kind::Ship &&
+                        glm::dot(delta,delta) <= m_interestRadiusSquared;
+                });
+            if (!interested) continue;
+            voxellancer::protocol::ProjectileImpactEventPacket packet{};
+            if (!voxellancer::protocol::encodeProjectileImpactEvent(event,packet))
+                throw std::runtime_error("Simulation produced an invalid projectile-impact event.");
+            if (!queuePacket(connection,packet.data(),packet.size())) { failed = true; break; }
+        }
+        if (failed) removeConnection(index,"projectile-impact event send failed");
+        else ++index;
+    }
+}
+
 void TcpServer::sendMissionStateEvents(
     const std::vector<voxellancer::protocol::MissionStateEvent>& events
 ) {
@@ -833,6 +927,8 @@ bool TcpServer::sendEntityContent(
     voxellancer::protocol::EntityContentSnapshot content;
     content.id = entity;
     content.definitionKey = worldObject->info().definitionKey();
+    if (worldObject->objectType() == WorldObjectType::Ship)
+        content.shieldType = static_cast<Ship*>(worldObject)->shieldType();
     content.voxels.reserve(worldObject->voxelMap().size());
     for (const auto& entry : worldObject->voxelMap()) {
         const Voxel* voxel = entry.second;
@@ -1011,7 +1107,7 @@ void TcpServer::removeConnection(std::size_t index, const char* reason) {
     }
     std::cerr << "Client disconnected from local simulation at simulation "
         "interval " << m_session.tickIndex() << ": " << reason << ".\n";
-    connection.socket->disconnect();
+    connection.disconnect();
     if (connection.actor.valid()) {
         m_controlledActors.erase(entityIdKey(connection.actor));
     }
@@ -1024,12 +1120,12 @@ void TcpServer::removeConnection(std::size_t index, const char* reason) {
 
 void TcpServer::enableContracts(
     const std::vector<voxellancer::protocol::EntityId>& players,
-    std::filesystem::path checkpoint
+    std::filesystem::path checkpoint, bool allowClientShieldShape
 ) {
     if (m_contracts) {
         throw std::logic_error("Contracts are already enabled.");
     }
-    m_contracts = std::make_unique<ContractRun>(m_world, players, std::move(checkpoint));
+    m_contracts = std::make_unique<ContractRun>(m_world, players, std::move(checkpoint),allowClientShieldShape);
     m_session.setPlayerInputEnabled(false);
 }
 

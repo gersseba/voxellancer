@@ -12,6 +12,7 @@
 #include <glm/gtx/transform.hpp>
 
 #include "camera/camera.h"
+#include "display/rendering/shaderloader.h"
 
 #include "voxel/voxelrenderer.h"
 #include "voxel/voxelcluster.h"
@@ -50,13 +51,17 @@ void VoxelRenderer::prepareDraw(const Camera& camera, bool withBorder) {
 
     m_program->use();
 
+#ifndef __EMSCRIPTEN__
     glProvokingVertex(GL_LAST_VERTEX_CONVENTION);
+#endif
 
     m_prepared = true;
 }
 
-void VoxelRenderer::draw(VoxelCluster& cluster) {
-    m_modelMatrixUniform->set(cluster.transform().matrix());
+void VoxelRenderer::draw(VoxelCluster& cluster, glm::vec3 visualOffset) {
+    const auto model = cluster.transform().matrix();
+    m_modelMatrixUniform->set(visualOffset == glm::vec3(0) ? model :
+        glm::translate(glm::mat4(1),visualOffset) * model);
     m_emissivenessUniform->set(cluster.emissiveness());
 
     VoxelRenderData* renderData = cluster.voxelRenderData();
@@ -83,9 +88,11 @@ bool VoxelRenderer::prepared() {
 void VoxelRenderer::createAndSetupShaders() {
     m_program = new glow::Program();
     m_program->attach(
-        glowutils::createShaderFromFile(GL_VERTEX_SHADER, "data/shader/voxelcluster/voxelcluster.vert"),
-        glowutils::createShaderFromFile(GL_FRAGMENT_SHADER, "data/shader/voxelcluster/voxelcluster.frag"),
-        glowutils::createShaderFromFile(GL_FRAGMENT_SHADER, "data/shader/lib/voxel.frag")
+        createShaderFromFile(GL_VERTEX_SHADER, "data/shader/voxelcluster/voxelcluster.vert"),
+        createShaderFromFiles(GL_FRAGMENT_SHADER, {
+            "data/shader/voxelcluster/voxelcluster.frag",
+            "data/shader/lib/voxel.frag"
+        })
     );
 }
 

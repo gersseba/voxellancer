@@ -12,6 +12,7 @@
 
 #include "resource/ddstexture.h"
 #include "camera/camera.h"
+#include "display/rendering/shaderloader.h"
 
 Skybox::Skybox() :
     m_texture(0),
@@ -41,8 +42,8 @@ void Skybox::initialize() {
     m_texture->setParameter(GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
 
     /* Shaders */
-    glow::Shader* vertexShader = glowutils::createShaderFromFile(GL_VERTEX_SHADER, "data/shader/skybox/skybox.vert");
-    glow::Shader* fragmentShader = glowutils::createShaderFromFile(GL_FRAGMENT_SHADER, "data/shader/skybox/skybox.frag");
+    glow::Shader* vertexShader = createShaderFromFile(GL_VERTEX_SHADER, "data/shader/skybox/skybox.vert");
+    glow::Shader* fragmentShader = createShaderFromFile(GL_FRAGMENT_SHADER, "data/shader/skybox/skybox.frag");
 
     m_shaderProgram = new glow::Program();
     m_shaderProgram->attach(vertexShader, fragmentShader);

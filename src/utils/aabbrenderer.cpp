@@ -9,6 +9,7 @@
 #include <glowutils/File.h>
 
 #include "camera/camera.h"
+#include "display/rendering/shaderloader.h"
 
 #include "utils/cubemesh.h"
 
@@ -64,8 +65,8 @@ void AABBRenderer::initialize() {
 void AABBRenderer::initializeProgram() {
     m_program = new glow::Program();
     m_program->attach(
-        glowutils::createShaderFromFile(GL_VERTEX_SHADER, "data/shader/utils/aabb.vert"),
-        glowutils::createShaderFromFile(GL_FRAGMENT_SHADER, "data/shader/utils/aabb.frag")
+        createShaderFromFile(GL_VERTEX_SHADER, "data/shader/utils/aabb.vert"),
+        createShaderFromFile(GL_FRAGMENT_SHADER, "data/shader/utils/aabb.frag")
     );
 }
 

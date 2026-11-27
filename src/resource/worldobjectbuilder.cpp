@@ -1,4 +1,5 @@
 #include "worldobjectbuilder.h"
+#include "world/world.h"
 
 #include <cassert>
 #include <stdexcept>
@@ -132,7 +133,7 @@ Ship* WorldObjectBuilder::buildShip() {
     }
     Ship* ship = makeWorldObject<Ship>(*m_world);
     ship->setShipType(parsedShipType);
-    ship->setShieldType(parsedShieldType);
+    ship->setShieldType(parsedShieldType == ShieldType::None ? ShieldType::None : m_world->shieldShape());
     ship->components().configureWeaponEnergy(
         Property<float>(m_name + ".general.weaponEnergyCapacity", 0),
         Property<float>(m_name + ".general.weaponEnergyRegeneration", 0),

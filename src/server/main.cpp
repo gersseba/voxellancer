@@ -35,6 +35,8 @@
 #include "world/world.h"
 #include "worldobject/ship.h"
 #include "worldobject/worldobjectinfo.h"
+#include "settings/settingsstore.h"
+#include "property/property.h"
 
 namespace {
     using Clock = std::chrono::steady_clock;
@@ -238,6 +240,11 @@ namespace {
 
     void loadSimulationData() {
         PropertyManager::instance()->load("data/config.ini");
+        const SettingsStore settings(std::filesystem::path(FileSystem::userConfigDir()) / "settings.ini");
+        const auto& gameplay = settings.group("gameplay");
+        const auto shape = gameplay.find("shieldShape");
+        if (shape != gameplay.end())
+            Property<std::string>("gameplay.shieldShape","SPHERE").set(shape->second);
         PropertyManager::instance()->load("data/voxels.ini", "voxels");
         PropertyDirectory("data/worldobjects").read();
         PropertyDirectory("data/equipment/engines").read();
@@ -481,6 +488,7 @@ int main(int argc, char* argv[]) {
         std::srand(LargeCombatScenario::SimulationRandomSeed);
 
         World* world = World::instance(World::Mode::Server);
+        world->setShieldShape(Property<std::string>("gameplay.shieldShape","SPHERE").get());
         if (options.scenario == "ai-comparison") {
             AiComparisonScenario comparison(*world);
             comparison.load();
@@ -527,7 +535,7 @@ int main(int argc, char* argv[]) {
             }
             server->enableContracts(actors, options.soloCheckpoint
                 ? std::filesystem::path(FileSystem::userConfigDir()) / "solo-contract.checkpoint"
-                : std::filesystem::path{});
+                : std::filesystem::path{}, options.soloCheckpoint);
             if (options.targetPlayers != 0) {
                 server->startWorldForPlayers(actors);
             }

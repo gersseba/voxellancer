@@ -4,6 +4,35 @@ How to play
 You can fly around, fight and destroy other ships or do missions.
 
 ## Controls
+For weapon balancing, **F2** opens the developer armory; **T** opens live stat
+sliders. All ten guns are available for free fitting. From Contracts this
+enters the local weapon range without changing the saved contract run.
+The local simulation pauses while the console is open. Edits apply live;
+**SAVE GUN** persists only the selected gun across restart/reload.
+Unsaved edits are discarded on restart and do not change a remote server. See the
+[developer armory guide](../README.md#weapon-test-range).
+
+Catalog guns share **PROPAGATION RADIUS**, **PROPAGATION DEGREES**, and
+**PROPAGATION FRACTION** controls. Radius zero stops at the first voxel;
+zero degrees drills straight ahead using leftover damage, while a wider angle
+spreads it. Autocannon and rail start with zero-degree cones of radius 2 and 6.
+There is no separate penetration slider; legacy gun behavior is unchanged.
+
+Inside that console, **E** opens the combat-effects editor. **Q/R** cycles the
+ten guns, hull shield, spherical shield, and global controls; the shield/global
+buttons jump directly to those groups. Drag a slider, or use **Up/Down** to
+select it and **Left/Right** for fine adjustment. **RESET EFFECT** resets only
+the current group. The animated preview keeps running while the local game is
+paused. **Esc** returns to the armory; **F2** closes the console.
+Effects edits apply live to this client's visuals, including existing
+projectiles and returning to Contracts. They do not change damage, projectile
+speed, collision, shield charge, or another player's settings.
+**SAVE EFFECT** keeps only the current effect group across restart/reload;
+reset restores authored defaults but does not save them automatically.
+A zero master brightness hides the luminous voxel effects.
+Set **CAMERA KICK** in global effects to zero to disable the optional visual
+camera movement; gun recoil has a separate per-gun control. Neither affects aim.
+
 The game opens on a main menu and connects to an automatically started local
 contracts server. **Contracts** enters the station/mission/shop loop once pilot
 assignment and initial world/contract state arrive. **Scenarios** offers the
@@ -26,7 +55,10 @@ checkpoint, including combat and salvage before the next base, are lost.
 Co-op runs do not use this checkpoint.
 
 Choose **start game** in VS Code to build and
-launch the menu. At a base, **Enter / H** opens the branching sector map.
+launch the menu. The [browser build](3_buildinstructions.md#browser-build)
+also runs solo contracts locally, without a hosted server; click the game to
+focus its controls. Browser saves belong to the site's local storage.
+At a base, **Enter / H** opens the branching sector map.
 Click a connected node or use the arrow keys to select it, then **TRAVEL / Enter**
 confirms your destination. Every surviving co-op pilot must confirm; changing the shared
 destination resets all readiness. **Esc** returns to the base from its map.
@@ -100,8 +132,9 @@ The flight HUD shows **shield HP** on the left and **weapon energy** on the
 right, including shield recharge countdowns. Contract guns share 100 energy,
 recovering 40/s at all times. Stronger guns and extra mounts can spend faster
 than that; an unaffordable gun does not fire until the reserve recovers.
-Scatter spends once for the whole volley. Shields
-recharge independently after their build's hit delay, including after depletion.
+Scatter spends once for the whole volley. Active shields recharge after their
+build's hit delay. Broken shields require at least five seconds without damage
+to the ship; further hull hits restart that wait.
 Bulwark favors capacity, Flux favors recovery, and Balanced sits between them.
 Bases refill both reserves for free; hull repair is a separate purchase. These meters follow
 the HUD visibility setting and are hidden for dead spectators. Prototype
@@ -146,8 +179,8 @@ mission/developer overlays, not the fixed station/equipment screens.
 Player invulnerability is **On** by default for testing. Open **Esc > Settings >
 Invulnerability** to toggle it, including during a mission. It prevents shield
 and hull damage to your own pilot on the authoritative server, not enemies or
-other pilots. The preference is saved across launches (on macOS, in
-`~/.voxellancer/settings.ini`). Disabling it restores normal combat damage;
+other pilots. Choose **Save settings** to keep the preference across launches
+(on macOS, in `~/.voxellancer/settings.ini`). Disabling it restores normal combat damage;
 it does not repair previously damaged hull.
 
 You can configure the controls as you want. The instructions are currently only displayed in the console.
@@ -183,8 +216,23 @@ The VS Code **start game** task builds the client and local server and opens
 the main menu. Multiplayer and benchmark commands remain available through the
 [build and run harness](3_buildinstructions.md#build-test-and-run-harness).
 
-Settings offers VSync, antialiasing (SSAA / FXAA / Off), and the flight HUD.
-Preferences are saved in `settings.ini` in the user configuration directory.
+Settings offers VSync, antialiasing (SSAA / FXAA / Off), the flight HUD,
+invulnerability, independent Music/Sound effects switches, and shield shape
+(sphere by default, or hull). Shield shape applies to shielded ships in the
+next local scenario or solo Contracts sortie; it does not add shields to
+unshielded ships. Remote servers choose their own setting. Spherical shields
+have a voxel-grid visual shell and a spherical collision boundary. Impacts and
+continued thrust at the boundary damage shields; once a shield breaks, the
+other ship can reach the hull.
+Effects includes
+weapons, engines, explosions, and combat cues, not spoken mission dialogue.
+There is currently no background music track. Audio changes affect existing
+and future sounds without losing their configured volume on unmute.
+**Save settings** writes these preferences to `settings.ini` in the user
+configuration directory (browser: site-local IndexedDB). It does not save
+unsaved gun/effect edits; use their own save buttons. Configuration edits and
+resets are never persisted automatically; browser save feedback waits for the
+storage write to complete. Clearing browser site data removes saved settings.
 The generated Voxellancer Flight font replaces voxel letters throughout the UI.
 
 The seeded large-combat workload contains 400 AI ships per team. The server

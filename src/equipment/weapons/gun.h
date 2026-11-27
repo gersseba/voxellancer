@@ -28,6 +28,7 @@ public:
     float bulletLifetime() const;
     float bulletSpawnOffset() const;
     const WeaponProfile& profile() const { return m_profile; }
+    void setProjectileConfiguration(const WeaponProfile& profile, float lifetime);
 
     const SoundProperties& fireSound() const;
     void setFireSound(const SoundProperties& fireSound);

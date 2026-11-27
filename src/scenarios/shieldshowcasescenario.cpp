@@ -47,7 +47,7 @@ void ShieldShowcaseScenario::populateWorld() {
     hullShieldCruiser->transform().setPosition(glm::vec3(-450.0f, 0.0f, 0.0f));
     hullShieldCruiser->transform().setOrientation(
         glm::angleAxis(-glm::half_pi<float>(), glm::vec3(0.0f, 1.0f, 0.0f)));
-    hullShieldCruiser->info().setName("Hull-shield cruiser");
+    hullShieldCruiser->info().setName("Shielded cruiser");
     hullShieldCruiser->info().setShowOnHud(true);
     hullShieldCruiser->info().setCanLockOn(true);
     hullShieldCruiser->character()->setFaction(policeFaction);
@@ -58,7 +58,7 @@ void ShieldShowcaseScenario::populateWorld() {
     sphereShieldCruiser->transform().setPosition(glm::vec3(450.0f, 0.0f, 0.0f));
     sphereShieldCruiser->transform().setOrientation(
         glm::angleAxis(glm::half_pi<float>(), glm::vec3(0.0f, 1.0f, 0.0f)));
-    sphereShieldCruiser->info().setName("Sphere-shield cruiser");
+    sphereShieldCruiser->info().setName("Shielded cruiser");
     sphereShieldCruiser->info().setShowOnHud(true);
     sphereShieldCruiser->info().setCanLockOn(true);
     sphereShieldCruiser->character()->setFaction(policeFaction);

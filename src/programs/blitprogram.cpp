@@ -36,7 +36,7 @@ void BlitProgram::blit() {
     glActiveTexture(GL_TEXTURE0);
     m_source->bind();
 
-    setUniform<GLint>("texture", 0);
+    setUniform<GLint>("sourceTexture", 0);
     setUniform<glm::vec2>("viewportPosition", m_destinationViewport.offset());
     setUniform<glm::vec2>("viewportSize", m_destinationViewport.scale());
 

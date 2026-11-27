@@ -13,6 +13,9 @@
 #include "world/world.h"
 #include "player.h"
 
+#ifdef __EMSCRIPTEN__
+#include "web/persistence.h"
+#endif
 
 InputConfigurator::InputConfigurator(std::vector<ActionKeyMapping*>* actions, SecondaryInputValues *secondaryInputValues, Property<float>* deadzone, HUD* hud):
     m_hud(hud),
@@ -194,8 +197,13 @@ void InputConfigurator::setConfigurationState(int state, InputClass inputClass) 
 }
 
 void InputConfigurator::writeConfig() {
-    InputConfigWriter writer(FileSystem::userConfigDir() + "/controls.ini");
-    for (ActionKeyMapping* mapping : *m_actions) {
-        writer.write(*mapping);
+    {
+        InputConfigWriter writer(FileSystem::userConfigDir() + "/controls.ini");
+        for (ActionKeyMapping* mapping : *m_actions) {
+            writer.write(*mapping);
+        }
     }
+#ifdef __EMSCRIPTEN__
+    persistBrowserFiles();
+#endif
 }

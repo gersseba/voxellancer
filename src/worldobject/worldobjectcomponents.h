@@ -105,6 +105,7 @@ public:
      * and thus is to be applied to the voxels.
      */
     float compensateDamage(float damage);
+    void noteShipHit(float tickDuration);
 
 
     /**

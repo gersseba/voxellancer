@@ -14,10 +14,13 @@
 #include "gamestate/gameplay/running/gameplayrunning.h"
 #include "gamestate/intro/intro.h"
 #include "ui/mainmenu.h"
+#include "settings/settingsstore.h"
+#include "utils/filesystem.h"
 
 
 Game::Game(bool showIntro):
     GameState("Game", nullptr),
+    m_settings(std::make_unique<SettingsStore>(FileSystem::userConfigDir() + "/settings.ini")),
     m_viewer(new Viewer(Viewport(0, 0, ContextProvider::instance()->resolution().width(), ContextProvider::instance()->resolution().height()))),
     m_gamePlay(new GamePlay(this)),
     m_intro(new Intro(this)),
@@ -63,8 +66,11 @@ Viewer& Game::viewer() {
     return *m_viewer;
 }
 
+SettingsStore& Game::settings() { return *m_settings; }
+
 void Game::enableMainMenu() {
     m_mainMenu = std::make_unique<MainMenu>(
+        *m_settings,
         [this]() { m_gamePlay->returnToContracts(); },
         [this](int scenario) { m_gamePlay->startLocalScenario(scenario); });
     setInitialSubState(m_gamePlay);

@@ -6,6 +6,7 @@
 #include <unordered_map>
 #include <unordered_set>
 
+#include "equipment/shieldtype.h"
 #include "protocol/serverprotocol.h"
 
 class EventPoller;
@@ -17,6 +18,7 @@ class Ship;
 class Skybox;
 class ScriptEngine;
 class VoxelParticleEngine;
+class CombatEffects;
 class WorldObject;
 class WorldLogic;
 class WorldTree;
@@ -51,6 +53,9 @@ public:
     WorldTree& worldTree();
     ScriptEngine& scriptEngine();
     VoxelParticleEngine& particleEngine();
+#ifndef VOXELLANCER_HEADLESS_SERVER
+    CombatEffects& combatEffects();
+#endif
     FactionMatrix& factionMatrix();
     EventPoller& eventPoller();
     MissionSystem& missionSystem();
@@ -70,6 +75,8 @@ public:
     const WorldUpdateTimings& lastUpdateTimings() const;
 
     float deltaSec() const;
+    ShieldType shieldShape() const;
+    void setShieldShape(const std::string& value);
 
     static World* instance();
     static World* instance(Mode mode);
@@ -89,6 +96,7 @@ protected:
     float m_deltaSec;
     std::uint64_t m_simulationTickIndex;
     Mode m_mode;
+    ShieldType m_shieldShape = ShieldType::Sphere;
     WorldUpdateTimings m_lastUpdateTimings;
 
 #ifndef VOXELLANCER_HEADLESS_SERVER
@@ -103,6 +111,7 @@ protected:
     std::unique_ptr<God> m_god;
 #ifndef VOXELLANCER_HEADLESS_SERVER
     std::unique_ptr<VoxelParticleEngine> m_particleEngine;
+    std::unique_ptr<CombatEffects> m_combatEffects;
 #endif
     std::unique_ptr<FactionMatrix> m_factionMatrix;
     std::unique_ptr<EventPoller> m_eventPoller;

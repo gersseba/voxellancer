@@ -8,6 +8,7 @@
 #include <glowutils/global.h>
 
 #include "camera/camera.h"
+#include "display/rendering/shaderloader.h"
 
 #include "utils/math.h"
 
@@ -64,13 +65,16 @@ void VoxelParticleRenderer::draw(const Camera& camera) {
 
 void VoxelParticleRenderer::loadProgram() {
     m_program->attach(
-        glowutils::createShaderFromFile(GL_VERTEX_SHADER, "data/shader/voxelparticle/voxelparticle.vert"),
-        glowutils::createShaderFromFile(GL_VERTEX_SHADER, "data/shader/lib/quaternion.glsl"),
-        glowutils::createShaderFromFile(GL_FRAGMENT_SHADER, "data/shader/voxelparticle/voxelparticle.frag"),
-        glowutils::createShaderFromFile(GL_FRAGMENT_SHADER, "data/shader/lib/voxel.frag")
+        createShaderFromFiles(GL_VERTEX_SHADER, {
+            "data/shader/voxelparticle/voxelparticle.vert",
+            "data/shader/lib/quaternion.glsl"
+        }),
+        createShaderFromFiles(GL_FRAGMENT_SHADER, {
+            "data/shader/voxelparticle/voxelparticle.frag",
+            "data/shader/lib/voxel.frag"
+        })
     );
 
-    m_program->bindFragDataLocation(0, "fragColor");
     m_program->setUniform("withBorder", 1.0f);
 }
 
@@ -86,7 +90,11 @@ void VoxelParticleRenderer::setupVertexAttributes() {
     setupVertexAttribute(offsetof(VoxelParticleData, creationTime), "creationTime", 1, GL_FLOAT, GL_FALSE, b++);
     setupVertexAttribute(offsetof(VoxelParticleData, deathTime), "deathTime", 1, GL_FLOAT, GL_FALSE, b++);
     setupVertexAttribute(offsetof(VoxelParticleData, scale), "scale", 1, GL_FLOAT, GL_FALSE, b++);
+#ifdef __EMSCRIPTEN__
+    setupVertexAttribute(offsetof(VoxelParticleData, color), "color", 4, GL_UNSIGNED_BYTE, GL_TRUE, b++);
+#else
     setupVertexAttribute(offsetof(VoxelParticleData, color), "color", GL_BGRA, GL_UNSIGNED_BYTE, GL_TRUE, b++);
+#endif
     setupVertexAttribute(offsetof(VoxelParticleData, emissiveness), "emissiveness", 1, GL_FLOAT, GL_FALSE, b++);
 }
 

@@ -12,6 +12,7 @@
 #include "collisionfilter.h"
 #include "voxel/voxelclusterbounds.h"
 #include "equipment/weapons/projectile.h"
+#include "shieldcontact.h"
 
 
 CollisionDetector::CollisionDetector(WorldObject& worldObject) :
@@ -85,6 +86,8 @@ std::list<VoxelCollision>& CollisionDetector::checkCollisions(const std::unorder
         const auto* selfProjectile = dynamic_cast<const Projectile*>(&m_worldObject);
         if ((projectile && projectile->profile.enabled) ||
             (selfProjectile && selfProjectile->profile.enabled)) continue;
+        if ((selfProjectile && hasSphericalShield(*other)) ||
+            (projectile && hasSphericalShield(m_worldObject))) continue;
 
         assert(m_worldObject.collisionFilter().isCollideableWith(&other->collisionFilter()));
         checkCollisions(m_voxelTree->root(), other->collisionDetector().voxelTree().root());

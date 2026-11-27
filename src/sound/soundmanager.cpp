@@ -1,12 +1,18 @@
 #include "soundmanager.h"
 
+#ifndef __EMSCRIPTEN__
 #include <SFML/Audio.hpp>
+#endif
 
 #include <glow/logging.h>
 
 #include "sound.h"
 #include "soundproperties.h"
+#include "property/property.h"
 
+#ifdef __EMSCRIPTEN__
+extern "C" void setWebSoundListener(float x, float y, float z);
+#endif
 
 SoundManager* SoundManager::s_current;
 static const int CLEANUP_PERIOD = 100;
@@ -26,23 +32,42 @@ SoundManager::~SoundManager() {
 }
 
 void SoundManager::setListener(const glm::vec3& p, const glm::quat& orientation) {
+    const bool music = Property<bool>("audio.musicEnabled",true).get();
+    const bool effects = Property<bool>("audio.effectsEnabled",true).get();
+    if (music != m_musicEnabled || effects != m_effectsEnabled) {
+        m_musicEnabled = music;
+        m_effectsEnabled = effects;
+        for (auto& entry : m_sounds) entry.sound->setMuted(muted(entry.category));
+    }
     m_listenerPosition = p;
+#ifndef __EMSCRIPTEN__
     glm::vec3 d = orientation * glm::vec3(0, 0, -1);
     sf::Listener::setPosition(sf::Vector3f(p.x, p.y, p.z));
     sf::Listener::setDirection(sf::Vector3f(d.x, d.y, d.z));
+#else
+    (void)orientation;
+    setWebSoundListener(p.x, p.y, p.z);
+#endif
 }
 
-std::shared_ptr<Sound> SoundManager::play(std::string soundFile, const glm::vec3& position, bool relative) {
+bool SoundManager::muted(Category category) const {
+    return category == Category::Music ? !m_musicEnabled :
+        category == Category::Effects ? !m_effectsEnabled : false;
+}
+
+std::shared_ptr<Sound> SoundManager::play(std::string soundFile, const glm::vec3& position,
+    bool relative, Category category) {
     if (soundFile == "null") {
         return std::make_shared<Sound>();
     }
-    std::shared_ptr<Sound> sound = create(soundFile);
+    std::shared_ptr<Sound> sound = create(soundFile,category);
     sound->setPosition(position).setRelativeToListener(relative).play();
     return sound;
 }
 
-std::shared_ptr<Sound> SoundManager::play(const SoundProperties& soundProperties, const glm::vec3& position, bool relative) {
-    std::shared_ptr<Sound> sound = play(soundProperties.sound(), position, relative);
+std::shared_ptr<Sound> SoundManager::play(const SoundProperties& soundProperties, const glm::vec3& position,
+    bool relative, Category category) {
+    std::shared_ptr<Sound> sound = play(soundProperties.sound(), position, relative,category);
     sound->setVolume(soundProperties.volume());
     sound->setLooping(soundProperties.looping());
     sound->setAttenuation(soundProperties.attenuation());
@@ -83,9 +108,16 @@ void SoundManager::stopCombatCues() {
     m_combatVoices.clear();
 }
 
-std::shared_ptr<Sound> SoundManager::create(std::string soundFile) {
+std::shared_ptr<Sound> SoundManager::create(std::string soundFile, Category category) {
     cleanUp();
 
+#ifdef __EMSCRIPTEN__
+    std::shared_ptr<Sound> sound(std::make_shared<Sound>(soundFile));
+    if (sound->status() == Sound::Status::Null) {
+        glow::warning("SoundManager: could not load %;", soundFile);
+        return sound;
+    }
+#else
     sf::SoundBuffer* buffer = obtain(soundFile);
     if (!buffer) {
         return createNullSound();
@@ -96,13 +128,16 @@ std::shared_ptr<Sound> SoundManager::create(std::string soundFile) {
     }
 
     std::shared_ptr<Sound> sound(std::make_shared<Sound>(*buffer));
+#endif
     sound->setAttenuation(0.1f);
     sound->setMinDistance(5.0f);
-    m_sounds.push_back(sound);
+    sound->setMuted(muted(category));
+    m_sounds.push_back({sound,category});
 
     return sound;
 }
 
+#ifndef __EMSCRIPTEN__
 sf::SoundBuffer* SoundManager::obtain(std::string soundFile) {
     sf::SoundBuffer* buffer = m_buffer[soundFile];
     if (buffer == nullptr) {
@@ -115,14 +150,15 @@ sf::SoundBuffer* SoundManager::obtain(std::string soundFile) {
     }
     return buffer;
 }
+#endif
 
 void SoundManager::cleanUp() {
     if (m_nextCleanup++ < CLEANUP_PERIOD) {
         return;
     }
-    for (std::list<std::shared_ptr<Sound>>::iterator iter = m_sounds.begin(); iter != m_sounds.end();)
+    for (auto iter = m_sounds.begin(); iter != m_sounds.end();)
     {
-        if ((*iter)->status() == Sound::Status::Stopped) {
+        if (iter->sound.use_count() == 1 && iter->sound->status() == Sound::Status::Stopped) {
             iter = m_sounds.erase(iter);
         } else {
             ++iter;
@@ -149,7 +185,8 @@ void SoundManager::activate() {
 
     s_current = this;
 
-    for (std::shared_ptr<Sound>& sound : m_sounds) {
+    for (auto& entry : m_sounds) {
+        const auto& sound = entry.sound;
         if (sound->status() == Sound::Status::Paused) {
             sound->play();
         }
@@ -163,7 +200,8 @@ void SoundManager::deactivate() {
     forcedCleanup();
 
 
-    for (std::shared_ptr<Sound>& sound : m_sounds) {
+    for (auto& entry : m_sounds) {
+        const auto& sound = entry.sound;
         if (sound->status() == Sound::Status::Playing) {
             sound->pause();
         }
@@ -171,7 +209,8 @@ void SoundManager::deactivate() {
 }
 
 void SoundManager::stopAll() {
-    for (std::shared_ptr<Sound>& sound : m_sounds) {
+    for (auto& entry : m_sounds) {
+        const auto& sound = entry.sound;
         if (sound->status() != Sound::Status::Stopped) {
             sound->stop();
         }

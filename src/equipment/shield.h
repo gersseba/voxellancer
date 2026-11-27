@@ -32,6 +32,7 @@ public:
     float rechargeRemaining() const;
     void setRechargeDelay(float delay);
     void refill();
+    void noteShipHit(float tickDuration = 0);
 
     bool depleted() const;
     bool registerHit();
@@ -58,6 +59,7 @@ protected:
     unsigned int m_hitCount;
     int m_maxHits;
     float m_rechargeDelay = 0, m_rechargeRemaining = 0;
+    bool m_broken = false;
 
     virtual void onDamageTaken(float damage);
 };

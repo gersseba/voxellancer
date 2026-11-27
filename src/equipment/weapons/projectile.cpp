@@ -10,6 +10,9 @@
 
 #include "world/god.h"
 #include "world/world.h"
+#include "world/worldlogic.h"
+#include "physics/physics.h"
+#include "utils/safenormalize.h"
 
 #include "worldobject/worldobjectinfo.h"
 
@@ -82,6 +85,8 @@ void Projectile::onCollision() {
     if (owningWorld == nullptr) {
         throw std::logic_error("Projectile is not attached to a world.");
     }
+    owningWorld->worldLogic().recordProjectileImpact(*this,position(),
+        safeNormalize(-physics().speed().directional(),glm::vec3(0,1,0)),1);
 #ifndef VOXELLANCER_HEADLESS_SERVER
     if (owningWorld->hasPresentation()) {
         SoundManager::current()->play(hitSound(), position());

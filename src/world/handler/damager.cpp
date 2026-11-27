@@ -1,6 +1,8 @@
 #include "damager.h"
 
+#include <algorithm>
 #include <cmath>
+#include <limits>
 #include <set>
 #include <stdexcept>
 
@@ -22,6 +24,7 @@
 
 #ifndef VOXELLANCER_HEADLESS_SERVER
 #include "player.h"
+#include "voxeleffect/combateffects.h"
 #endif
 
 
@@ -31,24 +34,27 @@ Damager::Damager(World& world) :
 {
 }
 
+bool Damager::canDamage(WorldObject& object) const {
+    if (object.info().invulnerable()) return false;
+#ifndef VOXELLANCER_HEADLESS_SERVER
+    if (m_playerShipUndestroyable && m_world.hasPresentation() &&
+        m_world.player().ship() == &object) return false;
+#endif
+    return true;
+}
+
 void Damager::applyDamages(std::list<DamageImpact> &damageImpacts) {
     m_dampedDeadlyDamageImpacts.clear();
     m_deadlyDamageImpacts.clear();
     m_deadVoxels.clear();
 
     for(DamageImpact &damageImpact : damageImpacts) {
-        if (damageImpact.worldObject()->info().invulnerable()) {
-            continue;
-        }
-#ifndef VOXELLANCER_HEADLESS_SERVER
-        if (m_playerShipUndestroyable && m_world.hasPresentation() &&
-            m_world.player().ship() == damageImpact.worldObject()) {
-            continue;
-        }
-#endif
+        if (!canDamage(*damageImpact.worldObject())) continue;
 
         const float incomingDamage = damageImpact.damage();
         if (!damageImpact.resolvedProjectile()) applyShields(damageImpact);
+        if (incomingDamage > 0)
+            damageImpact.worldObject()->components().noteShipHit(m_world.deltaSec());
         const float absorbedDamage = incomingDamage - damageImpact.damage();
         if (m_shieldHitEventReplicationEnabled && absorbedDamage > 0.0f) {
             const auto entity = m_world.entityId(damageImpact.worldObject());
@@ -99,6 +105,10 @@ void Damager::applyDamages(std::list<DamageImpact> &damageImpacts) {
             continue;
         }
 
+#ifndef VOXELLANCER_HEADLESS_SERVER
+        if (m_world.hasPresentation() && m_world.player().ship() == damageImpact.worldObject())
+            m_world.combatEffects().kick(std::min(0.6f,damageImpact.damage()/80.0f));
+#endif
         Voxel *voxel = damageImpact.voxel();
 
         float hpBeforeDamage = voxel->hp();
@@ -119,6 +129,33 @@ void Damager::applyDamages(std::list<DamageImpact> &damageImpacts) {
             }
         }
     }
+}
+
+void Damager::applyShieldContact(WorldObject& object, float damage, glm::vec3 position) {
+    if (damage <= 0 || !canDamage(object)) return;
+    const float overflow = object.components().compensateDamage(damage);
+    object.components().noteShipHit(m_world.deltaSec());
+    const float absorbed = damage-overflow;
+    if (!m_shieldHitEventReplicationEnabled || absorbed <= 0) return;
+    const auto entity = m_world.entityId(&object);
+    if (!entity) throw std::logic_error("Shield impact owner has no server entity ID.");
+    if (m_shieldHitEvents.size() >= MaxQueuedShieldHitEvents || !std::isfinite(absorbed))
+        throw std::overflow_error("Shield-hit event queue exceeded its valid limit.");
+    const auto local = object.transform().inverseApplyTo(position);
+    glm::ivec3 cell(0);
+    float nearest = std::numeric_limits<float>::max();
+    for (const auto& entry : object.voxelMap()) {
+        const auto offset = glm::vec3(entry.first)-local;
+        const float distance = glm::dot(offset,offset);
+        if (distance < nearest || (distance == nearest &&
+            (entry.first.x < cell.x ||
+             (entry.first.x == cell.x && entry.first.y < cell.y) ||
+             (entry.first.x == cell.x && entry.first.y == cell.y && entry.first.z < cell.z)))) {
+            nearest = distance;
+            cell = entry.first;
+        }
+    }
+    m_shieldHitEvents.push_back({*entity,m_world.simulationTickIndex(),cell,local,0xffffff,absorbed});
 }
 
 void Damager::setShieldHitEventReplicationEnabled(bool enabled) {

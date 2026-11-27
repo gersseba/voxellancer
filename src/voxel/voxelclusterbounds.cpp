@@ -87,8 +87,9 @@ void VoxelClusterBounds::calculateMinimalGridAABB() {
 
 void VoxelClusterBounds::calculateMinimalGridSphere() {
     m_minimalGridSphere.setPosition(glm::vec3(minimalGridAABB().urb() + minimalGridAABB().llf()) / 2.0f);
-    // m_gridAABB only contains the center of each voxel so add sqrt(2) to add the distance from center to edge
-    m_minimalGridSphere.setRadius((glm::length(glm::vec3(minimalGridAABB().urb() - minimalGridAABB().llf())) + glm::root_two<float>()) / 2.f);
+    // The grid bounds contain voxel centers; include each voxel's half-width on every axis.
+    m_minimalGridSphere.setRadius(glm::length(
+        glm::vec3(minimalGridAABB().urb() - minimalGridAABB().llf()) + glm::vec3(1.0f)) / 2.f);
     m_minimalGridSphereValid = true;
 }
 
@@ -96,8 +97,8 @@ const IAABB VoxelClusterBounds::calculateAABB(const Transform& transform) {
     glm::vec3 middle = transform.applyTo(minimalGridSphere().position());
     float radius = minimalGridSphere().radius() * transform.scale();
 
-    glm::ivec3 llf(static_cast<glm::ivec3>(middle - glm::vec3(radius, radius, radius)));
-    glm::ivec3 urb(static_cast<glm::ivec3>(middle + glm::vec3(radius + 1, radius + 1, radius + 1)));
+    glm::ivec3 llf(glm::floor(middle - glm::vec3(radius)));
+    glm::ivec3 urb(glm::ceil(middle + glm::vec3(radius)));
 
     return IAABB(llf, urb);
 }

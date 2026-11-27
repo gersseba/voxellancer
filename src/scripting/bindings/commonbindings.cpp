@@ -65,7 +65,8 @@ int CommonBindings::apiPlayVoice(const std::string& soundFile) {
     (void)soundFile;
     return -1;
 #else
-    std::shared_ptr<Sound> sound = SoundManager::current()->play(soundFile, glm::vec3(0, 0, -1), true);
+    std::shared_ptr<Sound> sound = SoundManager::current()->play(
+        soundFile, glm::vec3(0, 0, -1), true, SoundManager::Category::Voice);
     return sound->status() == Sound::Status::Null ? -1 : 0;
 #endif
 }

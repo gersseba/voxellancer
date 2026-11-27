@@ -12,6 +12,7 @@
 
 #ifndef VOXELLANCER_HEADLESS_SERVER
 #include "voxeleffect/voxelparticleengine.h"
+#include "voxeleffect/combateffects.h"
 #endif
 
 #include "worldtree/worldtree.h"
@@ -63,6 +64,7 @@ World::World(Mode mode):
     m_particleEngine(mode == Mode::Client
         ? std::unique_ptr<VoxelParticleEngine>(new VoxelParticleEngine(*this))
         : nullptr),
+    m_combatEffects(mode == Mode::Client ? std::make_unique<CombatEffects>() : nullptr),
 #endif
     m_factionMatrix(new FactionMatrix()),
     m_eventPoller(new EventPoller(*this)),
@@ -81,6 +83,14 @@ World::~World() {
 
 World::Mode World::mode() const {
     return m_mode;
+}
+
+ShieldType World::shieldShape() const {
+    return m_shieldShape;
+}
+
+void World::setShieldShape(const std::string& value) {
+    m_shieldShape = shieldShapeFromString(value);
 }
 
 bool World::hasPresentation() const {
@@ -139,6 +149,13 @@ VoxelParticleEngine &World::particleEngine() {
 ScriptEngine& World::scriptEngine() {
     return *m_scriptEngine;
 }
+
+#ifndef VOXELLANCER_HEADLESS_SERVER
+CombatEffects& World::combatEffects() {
+    if (!m_combatEffects) throw std::logic_error("A server world has no combat effects.");
+    return *m_combatEffects;
+}
+#endif
 
 FactionMatrix &World::factionMatrix() {
     return *m_factionMatrix;
@@ -249,6 +266,9 @@ void World::update(float deltaSecs) {
 }
 
 void World::clear() {
+#ifndef VOXELLANCER_HEADLESS_SERVER
+    if (m_combatEffects) m_combatEffects->clear();
+#endif
     m_worldLogic.reset();
     m_eventPoller.reset();
     m_missionSystem.reset();

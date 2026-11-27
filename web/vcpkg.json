@@ -1,0 +1,9 @@
+{
+  "name": "voxellancer-web",
+  "version-string": "0.3.1",
+  "builtin-baseline": "afa249f12f52ed8a3b919f195495ba8b330288d1",
+  "dependencies": [
+    "glm",
+    "lua"
+  ]
+}

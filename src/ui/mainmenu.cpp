@@ -1,6 +1,6 @@
 #include "mainmenu.h"
 
-#include <fstream>
+#include <algorithm>
 #include <utility>
 
 #include <GL/glew.h>
@@ -9,12 +9,30 @@
 #include <glowutils/global.h>
 
 #include "display/rendering/screenquad.h"
+#include "display/rendering/shaderloader.h"
 #include "property/property.h"
 #include "ui/uifont.h"
 #include "ui/scenariomenu.h"
-#include "utils/filesystem.h"
-
+#include "settings/settingsstore.h"
 namespace {
+    struct Preference {
+        std::string label, group, key;
+        std::vector<std::pair<std::string,std::string>> choices;
+        std::string property() const { return group+"."+key; }
+        std::string value() const {
+            return choices.empty() ? (Property<bool>(property()).get() ? "true" : "false") :
+                Property<std::string>(property()).get();
+        }
+    };
+    const std::vector<Preference> Preferences{
+        {"VSync","window","vsync",{}},
+        {"Antialiasing","vfx","antialiasing",{{"ssaa","SSAA"},{"fxaa","FXAA"},{"none","Off"}}},
+        {"Flight HUD","vfx","drawhud",{}},
+        {"Invulnerability","general","playerShipUndestroyable",{}},
+        {"Music","audio","musicEnabled",{}},
+        {"Sound effects","audio","effectsEnabled",{}},
+        {"Shield shape","gameplay","shieldShape",{{"SPHERE","Sphere"},{"HULL","Hull"}}}
+    };
     constexpr float ButtonLeft = 0.34f;
     constexpr float ButtonWidth = 0.32f;
     constexpr float ButtonHeight = 0.065f;
@@ -24,7 +42,8 @@ namespace {
     const glm::vec3 Accent(0.30f, 0.80f, 0.90f);
 }
 
-MainMenu::MainMenu(std::function<void()> contracts, std::function<void(int)> scenario):
+MainMenu::MainMenu(SettingsStore& settings, std::function<void()> contracts, std::function<void(int)> scenario):
+    m_settings(settings),
     m_contracts(std::move(contracts)),
     m_scenario(std::move(scenario)),
     m_quad(new ScreenQuad()) {}
@@ -66,20 +85,26 @@ std::vector<std::string> MainMenu::labels() const {
     if (m_state.page() != MainMenuState::Page::Settings) {
         return {"Contracts", "Scenarios", "Resume", "Settings", "Exit"};
     }
-    const std::string aa = Property<std::string>("vfx.antialiasing");
-    const std::string aaLabel = aa == "ssaa" ? "SSAA" : aa == "fxaa" ? "FXAA" : "Off";
-    return {
-        std::string("VSync: ") + (Property<bool>("window.vsync") ? "On" : "Off"),
-        "Antialiasing: " + aaLabel,
-        std::string("Flight HUD: ") + (Property<bool>("vfx.drawhud") ? "On" : "Off"),
-        std::string("Invulnerability: ") +
-            (Property<bool>("general.playerShipUndestroyable") ? "On" : "Off"),
-        "Back"
-    };
+    std::vector<std::string> items;
+    for (const auto& preference : Preferences) {
+        const auto value = preference.value();
+        std::string label = value == "true" ? "On" : "Off";
+        if (!preference.choices.empty()) {
+            const auto found = std::find_if(preference.choices.begin(),preference.choices.end(),
+                [&](const auto& choice) { return choice.first == value; });
+            label = found == preference.choices.end() ? "Unknown: "+value : found->second;
+        }
+        items.push_back(preference.label+": "+label);
+    }
+    items.emplace_back("Save settings");
+    items.emplace_back("Back");
+    return items;
 }
 
 bool MainMenu::enabled(int index) const {
     if (index < 0 || index >= static_cast<int>(labels().size())) return false;
+    if (m_state.page() == MainMenuState::Page::Settings && index == static_cast<int>(Preferences.size()))
+        return m_settings.status() != SettingsStore::Status::Saving;
     if (m_state.page() != MainMenuState::Page::Main) return true;
     return index == 0 ? m_state.contractsEnabled()
         : index == 2 ? m_state.resumeEnabled() : true;
@@ -94,17 +119,18 @@ void MainMenu::selectNext(int direction) {
 }
 
 float MainMenu::buttonTop() const {
-    return m_state.page() == MainMenuState::Page::Scenarios ? 0.31f
+    return m_state.page() != MainMenuState::Page::Main ? 0.31f
         : 0.36f;
 }
 
 float MainMenu::buttonStep() const {
     return m_state.page() == MainMenuState::Page::Scenarios ? 0.047f
-        : m_state.page() == MainMenuState::Page::Settings ? 0.08f : ButtonStep;
+        : m_state.page() == MainMenuState::Page::Settings ? 0.055f : ButtonStep;
 }
 
 float MainMenu::buttonHeight() const {
-    return m_state.page() == MainMenuState::Page::Scenarios ? 0.041f : ButtonHeight;
+    return m_state.page() == MainMenuState::Page::Scenarios ? 0.041f :
+        m_state.page() == MainMenuState::Page::Settings ? 0.052f : ButtonHeight;
 }
 
 int MainMenu::itemAtPointer() const {
@@ -188,12 +214,20 @@ void MainMenu::activate(int index) {
         if (index == 4) glfwSetWindowShouldClose(glfwGetCurrentContext(), GLFW_TRUE);
         return;
     }
-    if (index == 4) {
+    if (index == static_cast<int>(Preferences.size()+1)) {
         m_state.show();
         m_selected = 3;
         return;
     }
-    if (index == 0) {
+    if (index == static_cast<int>(Preferences.size())) { saveSettings(); return; }
+    m_saveAttempted = false;
+    m_settingsError.clear();
+    const auto& preference = Preferences.at(index);
+    if (preference.property() == "window.vsync") {
+#ifdef __EMSCRIPTEN__
+        m_settingsError = "Display timing is controlled by the browser.";
+        return;
+#else
         const bool vsync = !Property<bool>("window.vsync").get();
         glfwSwapInterval(vsync ? 1 : 0);
         const char* description = nullptr;
@@ -203,40 +237,40 @@ void MainMenu::activate(int index) {
             return;
         }
         Property<bool>("window.vsync").set(vsync);
-    } else if (index == 1) {
-        Property<std::string> aa("vfx.antialiasing");
-        aa.set(aa.get() == "ssaa" ? "fxaa" : aa.get() == "fxaa" ? "none" : "ssaa");
-    } else if (index == 2) {
-        Property<bool> hud("vfx.drawhud");
-        hud.set(!hud.get());
+#endif
+    } else if (!preference.choices.empty()) {
+        const auto current = std::find_if(preference.choices.begin(),preference.choices.end(),
+            [&](const auto& choice) { return choice.first == preference.value(); });
+        if (current == preference.choices.end())
+            glow::warning("Replacing unknown preference value for %;",preference.property());
+        const auto next = current == preference.choices.end() || current+1 == preference.choices.end()
+            ? preference.choices.begin() : current+1;
+        Property<std::string>(preference.property()).set(next->first);
     } else {
-        Property<bool> protection("general.playerShipUndestroyable");
-        protection.set(!protection.get());
+        Property<bool> toggle(preference.property());
+        toggle.set(!toggle.get());
     }
-    saveSettings();
 }
 
 void MainMenu::saveSettings() {
-    std::ofstream file(FileSystem::userConfigDir() + "/settings.ini");
-    file << "[window]\nvsync=" << (Property<bool>("window.vsync") ? "true" : "false")
-        << "\n[vfx]\nantialiasing=" << Property<std::string>("vfx.antialiasing").get()
-        << "\ndrawhud=" << (Property<bool>("vfx.drawhud") ? "true" : "false")
-        << "\n[general]\nplayerShipUndestroyable="
-        << (Property<bool>("general.playerShipUndestroyable") ? "true" : "false") << '\n';
-    file.close();
-    if (!file) {
-        glow::warning("Could not save menu settings to %;", FileSystem::userConfigDir());
-        m_settingsError = "Settings applied, but could not be saved. See the log.";
-    } else {
+    try {
+        SettingsStore::Groups groups;
+        for (const auto& preference : Preferences)
+            groups[preference.group][preference.key] = preference.value();
+        m_settings.save(groups);
+        m_saveAttempted = true;
         m_settingsError.clear();
+    } catch (const std::exception& error) {
+        glow::warning("Could not save settings: %;",error.what());
+        m_settingsError = "Could not save settings. See the log and retry.";
     }
 }
 
 void MainMenu::initialize() {
     m_program = new glow::Program();
     m_program->attach(
-        glowutils::createShaderFromFile(GL_VERTEX_SHADER, "data/shader/hud/hudoverlay.vert"),
-        glowutils::createShaderFromFile(GL_FRAGMENT_SHADER, "data/shader/hud/hudoverlay.frag"));
+        createShaderFromFile(GL_VERTEX_SHADER, "data/shader/hud/hudoverlay.vert"),
+        createShaderFromFile(GL_FRAGMENT_SHADER, "data/shader/hud/hudoverlay.frag"));
 }
 
 void MainMenu::rectangle(const glm::vec4& bounds, const glm::vec3& color) {
@@ -263,7 +297,8 @@ void MainMenu::draw() {
     rectangle(glm::vec4(0.08f, 0.12f, 0.002f, 0.72f), Accent * 0.35f);
     rectangle(glm::vec4(0.918f, 0.12f, 0.002f, 0.72f), Accent * 0.35f);
     const bool scenarios = m_state.page() == MainMenuState::Page::Scenarios;
-    rectangle(scenarios ? glm::vec4(0.30f, 0.30f, 0.40f, 0.53f)
+    const bool settings = m_state.page() == MainMenuState::Page::Settings;
+    rectangle(scenarios || settings ? glm::vec4(0.30f, 0.30f, 0.40f, 0.53f)
                         : glm::vec4(0.30f, 0.35f, 0.40f, 0.44f), Surface * 0.70f);
     const auto items = labels();
     for (int index = 0; index < static_cast<int>(items.size()); ++index) {
@@ -280,28 +315,38 @@ void MainMenu::draw() {
     auto* font = UiFont::instance();
     font->drawScreen("VOXELLANCER", glm::vec2(0.5f, 0.19f), 0.052f,
         glm::vec4(0.90f, 0.97f, 1.0f, 1), FontAlign::CENTER, 0.8f);
-    const bool settings = m_state.page() == MainMenuState::Page::Settings;
     font->drawScreen(settings ? "SETTINGS" : scenarios ? "SCENARIO SELECTION" : "MAIN MENU",
-        glm::vec2(0.5f, scenarios ? 0.265f : 0.285f), 0.019f, glm::vec4(Accent, 1),
+        glm::vec2(0.5f, scenarios || settings ? 0.265f : 0.285f), 0.019f, glm::vec4(Accent, 1),
         FontAlign::CENTER, 0.8f);
     for (int index = 0; index < static_cast<int>(items.size()); ++index) {
         font->drawScreen(items[index],
             glm::vec2(0.5f, buttonTop() + index * buttonStep() +
-                (scenarios ? 0.010f : 0.019f)), scenarios ? 0.019f : 0.025f,
+                (scenarios || settings ? 0.010f : 0.019f)), scenarios || settings ? 0.019f : 0.025f,
             enabled(index) ? glm::vec4(0.9f, 0.96f, 1, 1)
                 : glm::vec4(0.40f, 0.47f, 0.53f, 1),
             FontAlign::CENTER, ButtonWidth - 0.03f);
     }
     const std::string help = !m_settingsError.empty() ? m_settingsError
+        : settings && m_saveAttempted && m_settings.status() == SettingsStore::Status::Saving
+            ? "Saving settings in this browser..."
+        : settings && m_saveAttempted && m_settings.status() == SettingsStore::Status::Failed
+            ? "Could not save in this browser. Check storage permissions and retry."
+        : settings && m_saveAttempted ? "Settings saved."
         : settings && m_selected == 3
-            ? "Invulnerability protects only your pilot. Saved across launches."
-        : settings ? "Settings apply immediately and are saved on this computer."
+            ? "Invulnerability protects only your pilot. Use Save settings to keep it."
+        : settings && m_selected == 6
+            ? "Shield shape applies to the next local scenario or Contracts sortie."
+        : settings ? "Changes apply live except shield shape. Save settings to keep them."
         : scenarios ? "Choose a standalone scenario. The contract server continues running."
+#ifdef __EMSCRIPTEN__
+        : "Contracts and scenarios run locally. Scenarios pause in the menu.";
+#else
         : "Contracts require a server. Scenarios run locally and pause in the menu.";
-    font->drawScreen(help, glm::vec2(0.5f, scenarios ? 0.84f : 0.81f), 0.017f,
+#endif
+    font->drawScreen(help, glm::vec2(0.5f, scenarios || settings ? 0.84f : 0.81f), 0.017f,
         glm::vec4(0.65f, 0.75f, 0.82f, 1), FontAlign::CENTER, 0.85f);
     font->drawScreen("Arrow keys / Tab: select    Enter: confirm    Esc: menu / back",
-        glm::vec2(0.5f, scenarios ? 0.89f : 0.865f), 0.014f, glm::vec4(0.65f, 0.75f, 0.82f, 1),
+        glm::vec2(0.5f, scenarios || settings ? 0.89f : 0.865f), 0.014f, glm::vec4(0.65f, 0.75f, 0.82f, 1),
         FontAlign::CENTER, 0.85f);
     rectangle(glm::vec4(0.08f, 0.925f, 0.84f, 0.0015f), Accent * 0.35f);
     font->drawScreen(m_note, glm::vec2(0.5f, 0.95f), 0.016f,

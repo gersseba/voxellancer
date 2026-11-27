@@ -5,7 +5,10 @@
 #include <utility>
 #include <limits>
 
+#ifndef __EMSCRIPTEN__
 #include <SFML/System/Time.hpp>
+#include "protocol/localstream_sfml.h"
+#endif
 
 namespace {
     constexpr std::size_t FrameHeaderSize = 4;
@@ -35,6 +38,10 @@ bool TcpClient::connectLocal(std::uint16_t port) {
     if (m_connected || port == 0) {
         return fail("Cannot connect using the current TCP client state or port.");
     }
+    m_localStream.reset();
+#ifdef __EMSCRIPTEN__
+    return fail("TCP connections are unavailable in the browser.");
+#else
     const sf::Socket::Status status =
         m_socket.connect(sf::IpAddress::LocalHost, port, sf::seconds(2));
     if (status != sf::Socket::Status::Done) {
@@ -44,13 +51,47 @@ bool TcpClient::connectLocal(std::uint16_t port) {
     m_connected = true;
     m_lastError.clear();
     return true;
+#endif
+}
+
+bool TcpClient::connectInProcess(std::unique_ptr<LocalStream> stream) {
+    if (m_connected || !stream || !stream->connected()) {
+        return fail("Cannot connect using the current in-process client state.");
+    }
+    m_localStream = std::move(stream);
+    m_connected = true;
+    m_lastError.clear();
+    return true;
 }
 
 void TcpClient::disconnect() {
-    if (m_connected) {
-        m_socket.disconnect();
-        m_connected = false;
+    if (m_localStream) {
+        m_localStream.reset();
     }
+#ifndef __EMSCRIPTEN__
+    else if (m_connected) {
+        m_socket.disconnect();
+    }
+#endif
+    m_connected = false;
+}
+
+LocalStream::Status TcpClient::receiveBytes(void* data, std::size_t size, std::size_t& received) {
+    if (m_localStream) return m_localStream->receive(data, size, received);
+#ifndef __EMSCRIPTEN__
+    return localStreamStatus(m_socket.receive(data, size, received));
+#else
+    return LocalStream::Status::Error;
+#endif
+}
+
+LocalStream::Status TcpClient::sendBytes(const void* data, std::size_t size, std::size_t& sent) {
+    if (m_localStream) return m_localStream->send(data, size, sent);
+#ifndef __EMSCRIPTEN__
+    return localStreamStatus(m_socket.send(data, size, sent));
+#else
+    return LocalStream::Status::Error;
+#endif
 }
 
 bool TcpClient::poll() {
@@ -68,19 +109,21 @@ bool TcpClient::sendInput(const voxellancer::protocol::InputCommand& command) {
     if (!voxellancer::protocol::encodeInputCommand(command, packet)) {
         return fail("Input command is invalid for this protocol version.");
     }
-    return queuePacket(packet.data(), packet.size());
+    if (!queuePacket(packet.data(), packet.size())) return false;
+    // The local simulation advances before the next client poll.
+    return !m_localStream || flushOutput();
 }
 
 bool TcpClient::sendContractAction(voxellancer::protocol::ContractActionKind action,
     std::uint8_t weapon, glm::ivec3 cell, std::uint8_t node,
-    voxellancer::protocol::RewardChoice choice, std::uint8_t shield) {
+    voxellancer::protocol::RewardChoice choice, std::uint8_t shield, ShieldType shieldShape) {
     if (!m_connected || !m_actor || !m_contractStatus ||
         m_contractActionSequence == std::numeric_limits<std::uint64_t>::max()) {
         return fail("Cannot send a station action without an active contract session.");
     }
     voxellancer::protocol::ContractActionPacket packet{};
     if (!voxellancer::protocol::encodeContractAction(
-            {m_contractActionSequence + 1, m_contractStatus->mission, action, weapon, cell, node, choice, shield}, packet) ||
+            {m_contractActionSequence + 1, m_contractStatus->mission, action, weapon, cell, node, choice, shield, shieldShape}, packet) ||
         !queuePacket(packet.data(), packet.size())) {
         return fail("Could not queue the station action.");
     }
@@ -118,11 +161,18 @@ bool TcpClient::requestSnapshotResync() {
     m_voxelRemovalEvents.clear();
     m_voxelDamageEvents.clear();
     m_shieldHitEvents.clear();
+    m_projectileImpactEvents.clear();
     m_missionStateEvents.clear();
     m_weaponFiredEvents.clear();
     m_snapshotInterpolator.reset();
     m_resyncPending = true;
     return true;
+}
+
+std::vector<voxellancer::protocol::ProjectileImpactEvent> TcpClient::drainProjectileImpactEvents() {
+    std::vector<voxellancer::protocol::ProjectileImpactEvent> events;
+    events.swap(m_projectileImpactEvents);
+    return events;
 }
 
 std::optional<voxellancer::protocol::EntityId> TcpClient::actor() const {
@@ -227,16 +277,15 @@ bool TcpClient::receiveFrames() {
     std::array<std::uint8_t, 4096> buffer{};
     while (true) {
         std::size_t received = 0;
-        const sf::Socket::Status status =
-            m_socket.receive(buffer.data(), buffer.size(), received);
-        if (status == sf::Socket::Status::NotReady) {
+        const LocalStream::Status status = receiveBytes(buffer.data(), buffer.size(), received);
+        if (status == LocalStream::Status::NotReady) {
             return true;
         }
-        if (status == sf::Socket::Status::Disconnected) {
+        if (status == LocalStream::Status::Disconnected) {
             m_connected = false;
             return fail("Simulation server disconnected.");
         }
-        if (status == sf::Socket::Status::Error) {
+        if (status == LocalStream::Status::Error) {
             m_connected = false;
             return fail("TCP receive failed.");
         }
@@ -271,13 +320,23 @@ bool TcpClient::processFrames() {
         if (packet[0] != voxellancer::protocol::ProtocolVersion) {
             return fail("Server protocol version is unsupported.");
         }
-        if (m_resyncPending && packet[1] >= 6 && packet[1] <= 12) {
+        if (m_resyncPending && ((packet[1] >= 6 && packet[1] <= 12) || packet[1] == 16)) {
             m_incoming.erase(
                 m_incoming.begin(),
                 m_incoming.begin() + static_cast<std::ptrdiff_t>(frameSize));
             continue;
         }
         switch (packet[1]) {
+        case 16: {
+            if (!m_actor || m_projectileImpactEvents.size() >= MaxWeaponFiredEvents)
+                return fail("Server sent an unexpected or excessive projectile-impact event.");
+            voxellancer::protocol::ProjectileImpactEvent event;
+            if (voxellancer::protocol::decodeProjectileImpactEvent(packet,packetSize,event) !=
+                voxellancer::protocol::DecodeError::None)
+                return fail("Server sent an invalid projectile-impact event.");
+            m_projectileImpactEvents.push_back(std::move(event));
+            break;
+        }
         case 15: {
             voxellancer::protocol::ContractStatus status;
             if (!m_actor || voxellancer::protocol::decodeContractStatus(
@@ -600,16 +659,13 @@ bool TcpClient::flushOutput() {
     while (!m_outgoing.empty()) {
         std::vector<std::uint8_t>& frame = m_outgoing.front();
         std::size_t sent = 0;
-        const sf::Socket::Status status = m_socket.send(
-            frame.data() + m_outgoingOffset,
-            frame.size() - m_outgoingOffset,
-            sent
-        );
-        if (status == sf::Socket::Status::NotReady) {
+        const LocalStream::Status status = sendBytes(frame.data() + m_outgoingOffset,
+            frame.size() - m_outgoingOffset, sent);
+        if (status == LocalStream::Status::NotReady) {
             return true;
         }
-        if (status == sf::Socket::Status::Disconnected ||
-            status == sf::Socket::Status::Error) {
+        if (status == LocalStream::Status::Disconnected ||
+            status == LocalStream::Status::Error) {
             m_connected = false;
             return fail("TCP send failed.");
         }

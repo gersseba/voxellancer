@@ -22,7 +22,7 @@ public:
         World& world, std::size_t count);
 
     ContractRun(World& world, const std::vector<voxellancer::protocol::EntityId>& players,
-        std::filesystem::path checkpoint = {});
+        std::filesystem::path checkpoint = {}, bool allowClientShieldShape = false);
     void update();
     void act(voxellancer::protocol::EntityId player,
         const voxellancer::protocol::ContractAction& action);
@@ -59,6 +59,7 @@ private:
 
     World& m_world;
     std::filesystem::path m_checkpoint;
+    bool m_allowClientShieldShape;
     // Participant keys survive ship loss; PlayerState::actor changes only on a fresh run.
     std::map<std::uint64_t, PlayerState> m_players;
     std::vector<voxellancer::protocol::EntityId> m_enemies;
@@ -80,6 +81,7 @@ private:
     std::mt19937 m_offerRandom{std::random_device{}()};
 
     void deploy();
+    void applyRequestedShieldShape(ShieldType shape);
     void alertSquad();
     std::uint32_t encounterReward() const;
     void finishEncounter(bool success);

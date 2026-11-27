@@ -12,6 +12,7 @@
 #include "helper/splitdata.h"
 #include "voxel/voxel.h"
 #include "equipment/weapons/projectile.h"
+#include "worldobject/worldobjectinfo.h"
 #include "collision/voxelcollision.h"
 
 
@@ -69,6 +70,7 @@ void WorldLogic::update(float deltaSecs) {
         m_impulsor.parse(m_impulseGenerator.worldObjectImpulses());
 
         processDamageImpacts(m_damageImpactGenerator.damageImpacts());
+        m_mover.applyShieldHullImpacts();
         m_mover.moveProfiledProjectiles(deltaSecs);
     }
     m_lastUpdateTimings.collisionDamageMs =
@@ -116,6 +118,14 @@ void WorldLogic::processDamageImpacts(std::list<DamageImpact> damageImpacts) {
     damageForwardLoop(std::move(damageImpacts));
 }
 
+bool WorldLogic::canDamage(WorldObject& object) const {
+    return m_damager.canDamage(object);
+}
+
+void WorldLogic::damageShieldContact(WorldObject& object, float damage, glm::vec3 position) {
+    m_damager.applyShieldContact(object,damage,position);
+}
+
 void WorldLogic::setVoxelReplicationEnabled(bool enabled) {
     m_voxelRemovalReplicationEnabled = enabled;
     if (!enabled) {
@@ -133,6 +143,7 @@ void WorldLogic::setWeaponEventReplicationEnabled(bool enabled) {
     m_weaponEventReplicationEnabled = enabled;
     if (!enabled) {
         m_weaponFiredEvents.clear();
+        m_projectileImpactEvents.clear();
     }
 }
 
@@ -191,6 +202,20 @@ std::vector<voxellancer::protocol::WeaponFiredEvent>
 WorldLogic::drainWeaponFiredEvents() {
     std::vector<voxellancer::protocol::WeaponFiredEvent> events;
     events.swap(m_weaponFiredEvents);
+    return events;
+}
+
+void WorldLogic::recordProjectileImpact(Projectile& projectile, glm::vec3 position,
+    glm::vec3 normal, float scale) {
+    if (!m_weaponEventReplicationEnabled) return;
+    if (m_projectileImpactEvents.size() >= MaxQueuedWeaponFiredEvents)
+        throw std::overflow_error("Projectile-impact event queue exceeded its limit.");
+    m_projectileImpactEvents.push_back({m_world.simulationTickIndex(),position,normal,scale,
+        projectile.info().definitionKey()});
+}
+std::vector<voxellancer::protocol::ProjectileImpactEvent> WorldLogic::drainProjectileImpactEvents() {
+    std::vector<voxellancer::protocol::ProjectileImpactEvent> events;
+    events.swap(m_projectileImpactEvents);
     return events;
 }
 

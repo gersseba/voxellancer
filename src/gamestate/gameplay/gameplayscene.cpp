@@ -13,7 +13,9 @@
 #include <unordered_set>
 
 #include <glm/gtc/constants.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 #include <GL/glew.h>
+#include <GLFW/glfw3.h>
 #include <glow/logging.h>
 #include <glow/Program.h>
 
@@ -32,6 +34,7 @@
 #include "equipment/shieldtype.h"
 #include "equipment/weaponcatalog.h"
 #include "gamestate/gameplay/gameplay.h"
+#include "gamestate/game.h"
 #include "gamestate/gameplay/input/gameplayfreecaminput.h"
 #ifndef VOXELLANCER_HEADLESS_SERVER
 #include "gamestate/gameplay/running/gameplayrunning.h"
@@ -52,6 +55,13 @@
 #include "ui/hud/hudoverlay.h"
 #include "ui/contactmarker.h"
 #include "ui/stationoutfitter.h"
+#include "voxeleffect/combateffects.h"
+#include "voxeleffect/combateffectrenderer.h"
+#include "equipment/weapons/bullet.h"
+#include "worldobject/worldobjectinfo.h"
+#include "physics/physics.h"
+#include "world/worldlogic.h"
+#include "utils/safenormalize.h"
 #endif
 #include "ui/uifont.h"
 #include "ui/voxelfontconstants.h"
@@ -89,6 +99,9 @@ struct GamePlayScene::RemoteVoxelProxy {
     std::vector<voxellancer::protocol::EntityVoxelState> voxelStates;
     std::vector<voxellancer::protocol::EntityEquipmentState> equipmentStates;
     std::unordered_map<std::string, float> projectileOffsets;
+    std::string definitionKey;
+    std::uint64_t geometryRevision = 0;
+    ShieldType shieldType = ShieldType::None;
 };
 #endif
 
@@ -109,7 +122,8 @@ GamePlayScene::GamePlayScene(GamePlay& gamePlay):
     m_hudOverlay->setVisible(true);
     m_hudOverlay->setFocusChangedCallback(
         [this]() { m_gamePlay.refreshMouseCursorMode(); });
-    m_outfitter = std::make_unique<StationOutfitter>(
+    m_effectRenderer = std::make_unique<CombatEffectRenderer>();
+    m_outfitter = std::make_unique<StationOutfitter>(m_gamePlay.game()->settings(),World::instance()->combatEffects(),
         [this](auto kind, auto weapon, auto cell, auto node, auto choice, auto shield) -> std::optional<std::uint64_t> {
             if (!m_gamePlay.running().submitContractAction(kind, weapon, cell, node, choice, shield)) return {};
             return m_gamePlay.running().contractActionSequence();
@@ -123,6 +137,7 @@ GamePlayScene::~GamePlayScene() = default;
 void GamePlayScene::update(float deltaSec) {
     m_starField->update(deltaSec, m_gamePlay.cameraHead().position());
 #ifndef VOXELLANCER_HEADLESS_SERVER
+    m_effectPreviewTime += deltaSec;
     updateRemoteVoxelProxies();
     updateRemoteInfoOverlay();
     const auto actor = m_gamePlay.running().remotePreviewSnapshot();
@@ -131,8 +146,16 @@ void GamePlayScene::update(float deltaSec) {
         [&](const auto& entry) { return actor && entry.id == actor->id; });
     const auto contract = m_gamePlay.running().contractStatus();
     const bool servicesWereVisible = m_outfitter->visible();
-    m_outfitter->update(contract, content == contents.end() ? nullptr : &*content, deltaSec);
-    if (contract && contract->phase != voxellancer::protocol::ContractPhase::Mission) {
+    if (m_gamePlay.running().localScenarioActive() && m_outfitter->developerVisible()) {
+        m_outfitter->updateDeveloper(World::instance()->player().ship(), deltaSec);
+    } else {
+        if (m_outfitter->developerActive()) m_outfitter->setDeveloper(false);
+        m_outfitter->update(contract, content == contents.end() ? nullptr : &*content, deltaSec);
+    }
+    if (m_outfitter->developerVisible()) {
+        m_hudOverlay->setVisible(false);
+        m_gamePlay.setMouseCursorFree(true);
+    } else if (contract && contract->phase != voxellancer::protocol::ContractPhase::Mission) {
         m_hudOverlay->setVisible(false);
         m_gamePlay.setMouseCursorFree(m_outfitter->visible());
     } else if (servicesWereVisible) {
@@ -147,8 +170,14 @@ void GamePlayScene::update(float deltaSec) {
     } else {
         m_particlePhase.reset();
     }
-    if (!contract || contract->phase == voxellancer::protocol::ContractPhase::Mission)
-        updateShieldShimmer(deltaSec);
+    updateCombatEffects();
+#endif
+}
+
+void GamePlayScene::applyDeveloperConfiguration() {
+#ifndef VOXELLANCER_HEADLESS_SERVER
+    if (!m_gamePlay.running().remotePreviewActive())
+        m_outfitter->refreshDeveloper(*World::instance());
 #endif
 }
 
@@ -166,21 +195,37 @@ void GamePlayScene::announceMission(const voxellancer::protocol::ContractStatus&
 }
 
 bool GamePlayScene::stationKey(int key) {
-    if (m_gamePlay.running().localScenarioActive()) return false;
+    if (key == GLFW_KEY_F2) {
+        const bool opening = !m_outfitter->developerVisible();
+        if (opening && !m_gamePlay.running().localScenarioActive())
+            m_gamePlay.startLocalScenario(WeaponRangeScenario::ScenarioId);
+        if (opening && m_gamePlay.freecamActive()) m_gamePlay.setFreecamActive(false);
+        m_outfitter->setDeveloper(opening);
+        if (opening) m_outfitter->updateDeveloper(World::instance()->player().ship(), 0);
+        m_gamePlay.setMouseCursorFree(opening);
+        return true;
+    }
+    if (m_gamePlay.running().localScenarioActive() && !m_outfitter->developerVisible()) return false;
     const bool captured = m_outfitter->key(key);
     if (captured) m_gamePlay.setMouseCursorFree(m_outfitter->visible());
     return captured;
 }
 
 bool GamePlayScene::stationMouse(int button, int action, glm::vec2 pointer) {
-    if (m_gamePlay.running().localScenarioActive()) return false;
+    if (m_gamePlay.running().localScenarioActive() && !m_outfitter->developerVisible()) return false;
     const bool captured = m_outfitter->mouse(button, action, pointer);
     if (captured) m_gamePlay.setMouseCursorFree(m_outfitter->visible());
     return captured;
 }
 
 bool GamePlayScene::closeEquipment() {
-    return m_outfitter->closeEquipment();
+    const bool closed = m_outfitter->closeEquipment();
+    if (closed) m_gamePlay.setMouseCursorFree(m_outfitter->visible());
+    return closed;
+}
+
+bool GamePlayScene::developerConsoleVisible() const {
+    return m_outfitter->developerVisible();
 }
 
 void GamePlayScene::updateRemoteVoxelProxies() {
@@ -291,6 +336,9 @@ void GamePlayScene::updateRemoteVoxelProxies() {
         }
         proxy.voxelStates = content.voxels;
         proxy.equipmentStates = content.equipment;
+        proxy.definitionKey = content.definitionKey;
+        if (rebuildCluster) ++proxy.geometryRevision;
+        proxy.shieldType = content.shieldType;
     };
 
     const auto changedContents = running.drainRemoteEntityContentChanges();
@@ -374,37 +422,21 @@ void GamePlayScene::updateRemoteVoxelProxies() {
 
     const auto damageEvents =
         running.drainRemoteVoxelDamageEvents();
-    if (remotePreviewActive) for (const auto& event : damageEvents)
+    if (remotePreviewActive) for (const auto& event : damageEvents) {
         queueCue(event.entity, CombatCueKind::Hull, glm::vec3(event.cell));
-    constexpr std::size_t MaxVoxelDamageFlashesPerFrame = 64;
-    const std::size_t firstDamageEvent = damageEvents.size() >
-        MaxVoxelDamageFlashesPerFrame
-        ? damageEvents.size() - MaxVoxelDamageFlashesPerFrame
+        if (cockpit && event.entity == actor->id)
+            World::instance()->combatEffects().kick(0.2f);
+    }
+    const auto impacts = running.drainProjectileImpactEvents();
+    constexpr std::size_t MaxImpactsPerFrame = 64;
+    const std::size_t firstImpact = impacts.size() >
+        MaxImpactsPerFrame
+        ? impacts.size() - MaxImpactsPerFrame
         : 0;
-    for (std::size_t index = firstDamageEvent;
-         index < damageEvents.size(); ++index) {
-        const auto& event = damageEvents[index];
-        const auto snapshot = snapshotsById.find(remoteEntityKey(event.entity));
-        if (snapshot == snapshotsById.end()) {
-            continue;
-        }
-
-        const auto& state = *snapshot->second;
-        const auto proxy = m_remoteVoxelProxyIndex.find(remoteEntityKey(event.entity));
-        if (proxy == m_remoteVoxelProxyIndex.end() || !proxy->second->cluster) continue;
-        const glm::vec3 impactPosition = state.position +
-            state.orientation * ((glm::vec3(event.cell) -
-                proxy->second->cluster->transform().center()) * state.scale);
-        VoxelExplosionGenerator flash(nullptr, World::instance());
-        flash.setPosition(impactPosition);
-        flash.setRadius(state.scale * 0.02f);
-        flash.setScale(state.scale * 0.04f);
-        flash.setForce(0.01f);
-        flash.setLifetime(0.12f);
-        flash.setCount(2);
-        flash.setColor(0xff6644);
-        flash.setEmissiveness(0.7f);
-        flash.spawn();
+    for (std::size_t index = firstImpact; index < impacts.size(); ++index) {
+        const auto& impact = impacts[index];
+        if (const auto gun = CombatEffectSettings::gun(impact.projectileKey))
+            World::instance()->combatEffects().impact(*gun,impact.position,impact.normal,impact.scale);
     }
 
     const auto shieldHitEvents = running.drainShieldHitEvents();
@@ -418,90 +450,13 @@ void GamePlayScene::updateRemoteVoxelProxies() {
     for (std::size_t index = firstShieldHitEvent;
          index < shieldHitEvents.size(); ++index) {
         const auto& event = shieldHitEvents[index];
-        glm::vec3 center(0.0f);
-        glm::vec3 impactPosition(0.0f);
-        float scale = 1.0f;
-        float shieldRadius = 8.0f;
-        if (running.remotePreviewActive()) {
-            const auto snapshot =
-                snapshotsById.find(remoteEntityKey(event.entity));
-            if (snapshot == snapshotsById.end()) {
-                continue;
-            }
-
-            const auto& state = *snapshot->second;
-            const auto proxy = m_remoteVoxelProxyIndex.find(
-                remoteEntityKey(event.entity));
-            if (proxy == m_remoteVoxelProxyIndex.end() || !proxy->second->cluster) continue;
-            const auto& transform = proxy->second->cluster->transform();
-            const Sphere sphere = proxy->second->cluster->bounds().sphere(transform);
-            center = sphere.position();
-            impactPosition = transform.applyTo(event.localImpactPosition);
-            scale = state.scale;
-            shieldRadius = sphere.radius();
-        } else {
-            WorldObject* impactedObject =
-                World::instance()->worldObject(event.entity);
-            Ship* ship = dynamic_cast<Ship*>(impactedObject);
-            if (ship == nullptr) {
-                continue;
-            }
-
-            const Sphere shipSphere =
-                ship->bounds().sphere(ship->transform());
-            center = shipSphere.position();
-            impactPosition = ship->transform().applyTo(
-                event.localImpactPosition);
-            scale = ship->transform().scale();
-            shieldRadius = shipSphere.radius();
-        }
-
-        glm::vec3 normal = impactPosition - center;
-        if (glm::length(normal) < 0.001f) {
-            normal = glm::vec3(0.0f, 1.0f, 0.0f);
-        } else {
-            normal = glm::normalize(normal);
-        }
-        glm::vec3 tangent = glm::cross(normal, glm::vec3(0.0f, 1.0f, 0.0f));
-        if (glm::length(tangent) < 0.001f) {
-            tangent = glm::cross(normal, glm::vec3(1.0f, 0.0f, 0.0f));
-        }
-        tangent = glm::normalize(tangent);
-        const glm::vec3 bitangent = glm::normalize(glm::cross(normal, tangent));
-        constexpr int RippleParticleCount = 12;
-        const auto mixChannel = [](std::uint32_t first, std::uint32_t second) {
-            return (first + second) / 2;
-        };
-        const std::uint32_t red = mixChannel(
-            (0x3388ffu >> 16) & 0xffu,
-            (event.impactColor >> 16) & 0xffu);
-        const std::uint32_t green = mixChannel(
-            (0x3388ffu >> 8) & 0xffu,
-            (event.impactColor >> 8) & 0xffu);
-        const std::uint32_t blue = mixChannel(
-            0x3388ffu & 0xffu,
-            event.impactColor & 0xffu);
-        const std::uint32_t rippleColor =
-            (red << 16) | (green << 8) | blue;
-        for (int particle = 0; particle < RippleParticleCount; ++particle) {
-            const float angle = glm::two_pi<float>() * particle /
-                RippleParticleCount;
-            const glm::vec3 direction =
-                tangent * std::cos(angle) + bitangent * std::sin(angle);
-            Transform particleTransform;
-            particleTransform.setPosition(
-                impactPosition + direction * shieldRadius * 0.015f);
-            particleTransform.setScale(
-                std::max(scale * 0.1f, shieldRadius * 0.004f));
-            const Visuals visuals(rippleColor, 0.9f);
-            const Speed speed(
-                direction * std::max(scale * 1.6f, shieldRadius * 0.35f),
-                glm::vec3(0.0f));
-            const VoxelParticleSetup rippleParticle(
-                particleTransform, visuals, speed, 0.26f);
-            World::instance()->particleEngine().addParticle(
-                rippleParticle, nullptr);
-        }
+        World::instance()->combatEffects().shieldHit(
+            event.entity,event.localImpactPosition,event.absorbedDamage);
+        const auto localActor = World::instance()->entityId(World::instance()->player().ship());
+        if (!m_gamePlay.freecamActive() &&
+            ((remotePreviewActive && actor && event.entity == actor->id) ||
+             (!remotePreviewActive && localActor && event.entity == *localActor)))
+            World::instance()->combatEffects().kick(std::min(0.45f,event.absorbedDamage/100.0f));
     }
 
     const auto missionEvents =
@@ -537,11 +492,11 @@ void GamePlayScene::updateRemoteVoxelProxies() {
         MaxWeaponMuzzleFlashesPerFrame
         ? weaponEvents.size() - MaxWeaponMuzzleFlashesPerFrame
         : 0;
-    for (std::size_t index = firstEvent;     index < weaponEvents.size(); ++index) {
+    for (std::size_t index = firstEvent; index < weaponEvents.size(); ++index) {
         const auto& event = weaponEvents[index];
         const auto snapshot = snapshotsById.find(remoteEntityKey(event.entity));
         if (snapshot == snapshotsById.end()) {
-       continue;
+            continue;
         }
 
         const auto& state = *snapshot->second;
@@ -550,272 +505,144 @@ void GamePlayScene::updateRemoteVoxelProxies() {
         const glm::vec3 firingPosition = state.position +
             state.orientation * ((glm::vec3(event.cell) -
                 proxy->second->cluster->transform().center()) * state.scale);
-        VoxelExplosionGenerator flash(nullptr, World::instance());
-        flash.setPosition(firingPosition);
-        flash.setRadius(0.03f);
-        flash.setScale(0.05f);
-        flash.setForce(0.02f);
-        flash.setLifetime(0.08f);
-        flash.setCount(1);
-        flash.setColor(0xffdd88);
-        flash.setEmissiveness(0.8f);
-        flash.spawn();
+        for (const auto& mount : proxy->second->equipmentStates) {
+            if (mount.kind != voxellancer::protocol::EquipmentSlotKind::Weapon ||
+                mount.cell != event.cell) continue;
+            if (const auto gun = CombatEffectSettings::gun(mount.equipmentKey)) {
+                const auto direction = state.orientation*glm::vec3(0,0,-1);
+                const float offset = Property<float>(mount.equipmentKey+".general.bulletSpawnOffset",1).get();
+                World::instance()->combatEffects().fire(*gun,firingPosition+direction*offset,
+                    direction,state.scale,event.entity);
+                if (cockpit && event.entity == actor->id &&
+                    (*gun == 2 || *gun == 3 || *gun == 4 || *gun == 8))
+                    World::instance()->combatEffects().kick(0.35f);
+            }
+        }
     }
 }
 
-void GamePlayScene::updateShieldShimmer(float deltaSec) {
-    constexpr float shimmerInterval = 0.1f;
-    constexpr std::size_t maxShimmersPerUpdate = 24;
-    constexpr std::size_t maxPulseParticlesPerShip = 8;
-    constexpr float maxDistance = 1600.0f;
-    constexpr float pulsePeriod = 6.0f;
-    constexpr float pulseDuration = 2.0f;
-    constexpr float pulseHalfWidth = 0.8f;
-    constexpr glm::ivec3 surfaceNeighbors[] = {
-        glm::ivec3(-1, 0, 0),
-        glm::ivec3(1, 0, 0),
-        glm::ivec3(0, -1, 0),
-        glm::ivec3(0, 1, 0),
-        glm::ivec3(0, 0, -1),
-        glm::ivec3(0, 0, 1)
-    };
-
-    m_shieldPulseTime += deltaSec;
-    m_shieldShimmerAccumulator += deltaSec;
-    if (m_shieldShimmerAccumulator < shimmerInterval) {
+void GamePlayScene::updateCombatEffects() {
+    auto& world = *World::instance();
+    auto& effects = world.combatEffects();
+    auto& running = m_gamePlay.running();
+    world.worldLogic().setShieldHitEventReplicationEnabled(!running.remotePreviewActive());
+    const auto contract = running.contractStatus();
+    if (contract && contract->phase != voxellancer::protocol::ContractPhase::Mission) {
+        effects.clear();
+        m_shieldSurfaceCache.clear();
         return;
     }
-    m_shieldShimmerAccumulator = std::fmod(
-        m_shieldShimmerAccumulator, shimmerInterval);
-
-    World& world = *World::instance();
-    const glm::vec3 viewerPosition = m_gamePlay.cameraHead().position();
-    const float maxDistanceSquared = maxDistance * maxDistance;
-    const float pulsePhase = std::fmod(m_shieldPulseTime, pulsePeriod);
-    std::size_t emitted = 0;
-    std::unordered_set<const Ship*> activeShips;
-    activeShips.reserve(world.ships().size());
-    for (Ship* ship : world.ships()) {
-        activeShips.insert(ship);
-        if (emitted >= maxShimmersPerUpdate ||
-            ship->shieldType() == ShieldType::None) {
-            continue;
-        }
-
-        Shield* activeShield = nullptr;
-        for (const auto& slot : ship->components().shieldSlots()) {
-            if (slot && slot->shield() && !slot->shield()->depleted()) {
-                activeShield = slot->shield().get();
-                break;
-            }
-        }
-        if (activeShield == nullptr) {
-            continue;
-        }
-
-        const Sphere boundsSphere = ship->bounds().sphere(ship->transform());
-        const glm::vec3 fromViewer =
-            boundsSphere.position() - viewerPosition;
-        if (glm::dot(fromViewer, fromViewer) > maxDistanceSquared) {
-            continue;
-        }
-
-        if (ship->shieldType() == ShieldType::Hull &&
-            pulsePhase < pulseDuration) {
-            ShieldSurfaceCache& cache = m_shieldSurfaceCache[ship];
-            const std::uint64_t voxelRevision = ship->voxelRevision();
-            if (!cache.initialized ||
-                cache.voxelRevision != voxelRevision) {
-                cache.points.clear();
-                cache.minimumX = std::numeric_limits<int>::max();
-                cache.maximumX = std::numeric_limits<int>::min();
-                for (const auto& entry : ship->voxelMap()) {
-                    cache.minimumX = std::min(
-                        cache.minimumX, entry.first.x);
-                    cache.maximumX = std::max(
-                        cache.maximumX, entry.first.x);
-                    for (const glm::ivec3& neighbor : surfaceNeighbors) {
-                        if (ship->voxel(entry.first + neighbor) == nullptr) {
-                            cache.points.push_back(
-                                {entry.first, neighbor});
-                            break;
-                        }
-                    }
-                }
-                std::sort(
-                    cache.points.begin(),
-                    cache.points.end(),
-                    [](const ShieldSurfacePoint& left,
-                       const ShieldSurfacePoint& right) {
-                        if (left.cell.x != right.cell.x) {
-                            return left.cell.x < right.cell.x;
-                        }
-                        if (left.cell.y != right.cell.y) {
-                            return left.cell.y < right.cell.y;
-                        }
-                        return left.cell.z < right.cell.z;
-                    });
-                cache.voxelRevision = voxelRevision;
-                cache.initialized = true;
-            }
-
-            if (!cache.points.empty()) {
-                const float xSpan = static_cast<float>(
-                    cache.maximumX - cache.minimumX);
-                const float waveX = static_cast<float>(cache.minimumX) -
-                    pulseHalfWidth +
-                    (xSpan + 2.0f * pulseHalfWidth) *
-                    (pulsePhase / pulseDuration);
-                const auto first = std::lower_bound(
-                    cache.points.begin(),
-                    cache.points.end(),
-                    waveX - pulseHalfWidth,
-                    [](const ShieldSurfacePoint& point, float x) {
-                        return static_cast<float>(point.cell.x) < x;
-                    });
-                const auto last = std::upper_bound(
-                    first,
-                    cache.points.end(),
-                    waveX + pulseHalfWidth,
-                    [](float x, const ShieldSurfacePoint& point) {
-                        return x < static_cast<float>(point.cell.x);
-                    });
-                const std::size_t pointCount =
-                    static_cast<std::size_t>(last - first);
-                const std::size_t pulseCount = std::min({
-                    maxPulseParticlesPerShip,
-                    maxShimmersPerUpdate - emitted,
-                    pointCount
-                });
-                const glm::vec3 worldOrigin =
-                    ship->transform().applyTo(glm::vec3(0.0f));
-                for (std::size_t pulse = 0;
-                     pulse < pulseCount && pointCount > 0; ++pulse) {
-                    const std::size_t pointIndex = pulseCount == 1
-                        ? 0
-                        : pulse * (pointCount - 1) / (pulseCount - 1);
-                    const ShieldSurfacePoint& point =
-                        *(first + pointIndex);
-                    const glm::vec3 normal = glm::normalize(
-                        ship->transform().applyTo(
-                            glm::vec3(point.normal)) - worldOrigin);
-                    Transform particleTransform;
-                    particleTransform.setPosition(
-                        ship->transform().applyTo(
-                            glm::vec3(point.cell) +
-                            glm::vec3(point.normal) * 0.82f));
-                    particleTransform.setScale(std::max(
-                        ship->transform().scale() * 0.1f,
-                        boundsSphere.radius() * 0.0025f));
-                    const Visuals visuals(0x91dcff, 0.9f);
-                    const Speed speed(
-                        normal * ship->transform().scale() * 0.008f,
-                        glm::vec3(0.0f));
-                    const VoxelParticleSetup pulseParticle(
-                        particleTransform, visuals, speed, 0.2f);
-                    world.particleEngine().addParticle(
-                        pulseParticle, nullptr);
-                    ++emitted;
-                }
-            }
-        }
-
-        for (int glint = 0; glint < 2 &&
-             emitted < maxShimmersPerUpdate; ++glint) {
-            glm::vec3 position(0.0f);
-            glm::vec3 normal(0.0f, 1.0f, 0.0f);
-            if (ship->shieldType() == ShieldType::Sphere) {
-                const float z = 2.0f * nextShieldShimmerRandom() - 1.0f;
-                const float angle =
-                    glm::two_pi<float>() * nextShieldShimmerRandom();
-                const float radial = std::sqrt(
-                    std::max(0.0f, 1.0f - z * z));
-                normal = glm::vec3(
-                    radial * std::cos(angle),
-                    z,
-                    radial * std::sin(angle));
-                position = boundsSphere.position() + normal *
-                    (boundsSphere.radius() +
-                     ship->transform().scale() * 0.08f);
+    std::vector<ShieldEffectBody> shields;
+    std::unordered_set<std::uint64_t> active;
+    const glm::vec3 viewer = m_gamePlay.cameraHead().position();
+    const float distance = effects.settings.value(CombatEffectSettings::Global,
+        CombatEffectSettings::ViewDistance);
+    const auto addShield = [&](voxellancer::protocol::EntityId id, VoxelCluster& cluster,
+                               std::uint64_t revision, ShieldType type, float fraction) {
+        if (type == ShieldType::None || glm::distance(viewer,cluster.transform().position()) > distance)
+            return;
+        const auto index = remoteEntityKey(id);
+        active.insert(index);
+        auto& cache = m_shieldSurfaceCache[index];
+        const auto sphere = cluster.bounds().minimalGridSphere();
+        if (!cache.points || cache.cluster != &cluster || cache.voxelRevision != revision ||
+            cache.voxelCount != cluster.voxelCount() || cache.type != type) {
+            if (type == ShieldType::Sphere) {
+                cache.points = CombatEffects::sphereSurface(sphere.position(),sphere.radius());
             } else {
-                const auto& voxels = ship->voxelMap();
-                if (voxels.empty()) {
-                    break;
+                auto points = std::make_shared<std::vector<ShieldEffectPoint>>();
+                constexpr glm::ivec3 neighbors[] = {{-1,0,0},{1,0,0},{0,-1,0},{0,1,0},{0,0,-1},{0,0,1}};
+                for (const auto& entry : cluster.voxelMap())
+                    for (const auto& neighbor : neighbors)
+                        if (!cluster.voxel(entry.first+neighbor))
+                            points->push_back({glm::vec3(entry.first)+glm::vec3(neighbor)*0.76f,
+                                glm::vec3(neighbor),1});
+                std::sort(points->begin(),points->end(),[](const auto& a, const auto& b) {
+                    if (a.position.x != b.position.x) return a.position.x < b.position.x;
+                    if (a.position.y != b.position.y) return a.position.y < b.position.y;
+                    return a.position.z < b.position.z;
+                });
+                constexpr std::size_t MaxSurfacePoints = 2048;
+                if (points->size() > MaxSurfacePoints) {
+                    auto sampled = std::make_shared<std::vector<ShieldEffectPoint>>();
+                    for (std::size_t i = 0; i < MaxSurfacePoints; ++i)
+                        sampled->push_back((*points)[i*points->size()/MaxSurfacePoints]);
+                    points = std::move(sampled);
                 }
-                auto voxel = voxels.begin();
-                const std::size_t startIndex =
-                    static_cast<std::size_t>(
-                        nextShieldShimmerRandom() * voxels.size());
-                std::advance(voxel, startIndex);
-                bool foundSurface = false;
-                const std::size_t samples =
-                    std::min<std::size_t>(voxels.size(), 32);
-                for (std::size_t sample = 0; sample < samples &&
-                     !foundSurface; ++sample) {
-                    if (voxel == voxels.end()) {
-                        voxel = voxels.begin();
-                    }
-                    const glm::ivec3 cell = voxel->first;
-                    const std::size_t firstFace =
-                        static_cast<std::size_t>(
-                            nextShieldShimmerRandom() * 6.0f);
-                    for (std::size_t face = 0; face < 6; ++face) {
-                        const glm::ivec3& neighbor =
-                            surfaceNeighbors[(firstFace + face) % 6];
-                        if (ship->voxel(cell + neighbor) != nullptr) {
-                            continue;
-                        }
-                        const glm::vec3 localNormal(neighbor);
-                        const glm::vec3 worldOrigin =
-                            ship->transform().applyTo(glm::vec3(0.0f));
-                        normal = glm::normalize(
-                            ship->transform().applyTo(localNormal) -
-                            worldOrigin);
-                        position = ship->transform().applyTo(
-                            glm::vec3(cell) +
-                            localNormal * 0.82f);
-                        foundSurface = true;
-                        break;
-                    }
-                    ++voxel;
-                }
-                if (!foundSurface) {
-                    break;
+                cache.points = points;
+            }
+            cache.cluster = &cluster; cache.voxelRevision = revision;
+            cache.voxelCount = cluster.voxelCount(); cache.type = type;
+        }
+        shields.push_back({id,cluster.transform(),type,fraction,sphere.position(),sphere.radius(),cache.points});
+    };
+    effects.beginProjectiles();
+    if (running.remotePreviewActive()) {
+        for (const auto& state : running.remoteReplicaSnapshots()) {
+            const auto proxy = m_remoteVoxelProxyIndex.find(remoteEntityKey(state.id));
+            if (proxy == m_remoteVoxelProxyIndex.end() || !proxy->second->cluster) continue;
+            if (state.kind == voxellancer::protocol::EntitySnapshot::Kind::Ship)
+                addShield(state.id,*proxy->second->cluster,proxy->second->geometryRevision,
+                    proxy->second->shieldType,state.shieldFraction);
+            if (state.kind == voxellancer::protocol::EntitySnapshot::Kind::Bullet)
+                if (const auto gun = CombatEffectSettings::gun(proxy->second->definitionKey))
+                    effects.projectile(state.id,*gun,state.position,state.directionalVelocity);
+        }
+    } else {
+        for (auto* object : world.worldObjects()) {
+            const auto id = world.entityId(object);
+            if (!id) continue;
+            if (object->objectType() == WorldObjectType::Bullet)
+                if (const auto gun = CombatEffectSettings::gun(object->info().definitionKey()))
+                    effects.projectile(*id,*gun,object->position(),object->physics().speed().directional());
+        }
+        for (auto* ship : world.ships()) {
+            float hp = 0, maximum = 0;
+            for (const auto& slot : ship->components().shieldSlots()) {
+                if (slot->shield()) {
+                    maximum += slot->shield()->maxHP();
+                    if (!slot->shield()->depleted()) hp += slot->shield()->hp();
                 }
             }
-
-            Transform particleTransform;
-            particleTransform.setPosition(position);
-            particleTransform.setScale(std::max(
-                ship->transform().scale() * 0.1f,
-                boundsSphere.radius() * 0.0025f));
-            const Visuals visuals(
-                0x66ccff, 0.25f + nextShieldShimmerRandom() * 0.2f);
-            const Speed speed(
-                normal * ship->transform().scale() * 0.015f,
-                glm::vec3(0.0f));
-            const VoxelParticleSetup shimmer(
-                particleTransform, visuals, speed, 0.16f);
-            world.particleEngine().addParticle(shimmer, nullptr);
-            ++emitted;
+            if (const auto id = world.entityId(ship))
+                addShield(*id,*ship,ship->voxelRevision(),ship->shieldType(),maximum > 0 ? hp/maximum : 0);
         }
     }
-
-    for (auto cache = m_shieldSurfaceCache.begin();
-         cache != m_shieldSurfaceCache.end();) {
-        if (activeShips.find(cache->first) == activeShips.end()) {
-            cache = m_shieldSurfaceCache.erase(cache);
-        } else {
-            ++cache;
-        }
+    effects.endProjectiles();
+    effects.shields(shields);
+    effects.build(viewer);
+    for (auto it = m_shieldSurfaceCache.begin(); it != m_shieldSurfaceCache.end();) {
+        if (!active.count(it->first)) it = m_shieldSurfaceCache.erase(it);
+        else ++it;
     }
 }
 
-float GamePlayScene::nextShieldShimmerRandom() {
-    m_shieldShimmerRandomState =
-        1664525u * m_shieldShimmerRandomState + 1013904223u;
-    return static_cast<float>(m_shieldShimmerRandomState >> 8) /
-        16777216.0f;
+void GamePlayScene::drawEffectPreview() const {
+    if (!m_outfitter->effectsVisible()) return;
+    GLint viewport[4], scissor[4];
+    glGetIntegerv(GL_VIEWPORT,viewport);
+    glGetIntegerv(GL_SCISSOR_BOX,scissor);
+    const bool scissorEnabled = glIsEnabled(GL_SCISSOR_TEST);
+    const int x = viewport[0]+static_cast<int>(viewport[2]*0.64f);
+    const int y = viewport[1]+static_cast<int>(viewport[3]*0.31f);
+    const int w = static_cast<int>(viewport[2]*0.28f);
+    const int h = static_cast<int>(viewport[3]*0.36f);
+    if (w <= 0 || h <= 0) return;
+    glViewport(x,y,w,h);
+    glEnable(GL_SCISSOR_TEST);
+    glScissor(x,y,w,h);
+    GLboolean depthMask;
+    glGetBooleanv(GL_DEPTH_WRITEMASK,&depthMask);
+    glDepthMask(GL_TRUE);
+    glClear(GL_DEPTH_BUFFER_BIT);
+    glDepthMask(depthMask);
+    const auto view = glm::lookAt(glm::vec3(10,8,18),glm::vec3(0),glm::vec3(0,1,0));
+    const auto projection = glm::perspective(glm::radians(45.0f),static_cast<float>(w)/h,0.1f,100.0f);
+    m_effectRenderer->draw(World::instance()->combatEffects().preview(
+        m_outfitter->effectGroup(),m_effectPreviewTime),projection*view);
+    glViewport(viewport[0],viewport[1],viewport[2],viewport[3]);
+    glScissor(scissor[0],scissor[1],scissor[2],scissor[3]);
+    if (!scissorEnabled) glDisable(GL_SCISSOR_TEST);
 }
 
 std::optional<voxellancer::protocol::EntityId> GamePlayScene::remoteLeadTarget() const {
@@ -1234,10 +1061,22 @@ void GamePlayScene::setFps(float fps) {
 }
 
 void GamePlayScene::drawImpl(const Camera& camera) const {
+    Camera visualCamera(camera.viewport().x,camera.viewport().y);
+    visualCamera.setFovy(camera.fovy());
+    visualCamera.setZNear(camera.zNear());
+    visualCamera.setZFar(camera.zFar());
+    visualCamera.setProjectionOffset(camera.projectionOffset());
+    float kick = 0;
+#ifndef VOXELLANCER_HEADLESS_SERVER
+    if (!m_gamePlay.freecamActive() && !m_outfitter->visible())
+        kick = World::instance()->combatEffects().cameraKick();
+#endif
+    visualCamera.setEye(camera.eye()+camera.orientation()*glm::vec3(0,0.06f,0.18f)*kick);
+    visualCamera.setOrientation(camera.orientation());
     {
         BenchmarkCpuScope cpuScope(BenchmarkMetric::SkyboxDraw);
         BenchmarkGpuScope gpuScope(BenchmarkMetric::SkyboxDraw);
-        World::instance()->skybox().draw(camera);
+        World::instance()->skybox().draw(visualCamera);
     }
 
     m_voxelRenderer->program()->setUniform("lightdir", m_defaultLightDir.get());
@@ -1245,23 +1084,35 @@ void GamePlayScene::drawImpl(const Camera& camera) const {
     {
         BenchmarkCpuScope cpuScope(BenchmarkMetric::WorldObjectDraw);
         BenchmarkGpuScope gpuScope(BenchmarkMetric::WorldObjectDraw);
-        m_voxelRenderer->prepareDraw(camera);
+        m_voxelRenderer->prepareDraw(visualCamera);
         UiFont::instance()->setCamera(camera);
         if (!m_gamePlay.running().remotePreviewActive()) {
             for (WorldObject* worldObject : World::instance()->worldObjects()) {
-                VoxelRenderer::instance()->draw(*worldObject);
+                if (worldObject->objectType() == WorldObjectType::Bullet &&
+                    CombatEffectSettings::gun(worldObject->info().definitionKey())) continue;
+                glm::vec3 offset(0);
+#ifndef VOXELLANCER_HEADLESS_SERVER
+                if (const auto id = World::instance()->entityId(worldObject))
+                    offset = World::instance()->combatEffects().recoil(*id);
+#endif
+                VoxelRenderer::instance()->draw(*worldObject,offset);
             }
         }
 #ifndef VOXELLANCER_HEADLESS_SERVER
         for (const auto& proxy : m_remoteVoxelProxies) {
+            if (CombatEffectSettings::gun(proxy->definitionKey)) continue;
             if (proxy->cluster && proxy->cluster->voxelCount() > 0) {
-                VoxelRenderer::instance()->draw(*proxy->cluster);
+                VoxelRenderer::instance()->draw(*proxy->cluster,
+                    World::instance()->combatEffects().recoil(proxy->id));
             }
         }
 #endif
     }
     m_voxelRenderer->afterDraw();
 
+#ifndef VOXELLANCER_HEADLESS_SERVER
+    m_effectRenderer->draw(World::instance()->combatEffects().boxes(),visualCamera.viewProjection());
+#endif
     {
         BenchmarkCpuScope cpuScope(BenchmarkMetric::HudDraw);
         BenchmarkGpuScope gpuScope(BenchmarkMetric::HudDraw);
@@ -1297,7 +1148,7 @@ void GamePlayScene::drawImpl(const Camera& camera) const {
         }
 #ifndef VOXELLANCER_HEADLESS_SERVER
         if (!waitingForRemoteWorld) {
-            drawRemoteContacts(camera);
+            drawRemoteContacts(visualCamera);
         } else {
             m_remoteLeadCue.reset();
         }
@@ -1324,7 +1175,7 @@ void GamePlayScene::drawImpl(const Camera& camera) const {
             }
         }
         m_outfitter->draw();
-        if (const auto* range = m_gamePlay.weaponRange()) {
+        if (const auto* range = m_gamePlay.weaponRange(); range && !m_outfitter->developerVisible()) {
             UiFont::instance()->drawScreen(
                 "WEAPON RANGE / 1-6 CONTRACT / 7-9 LEGACY / 9 TOGGLE / 0 RESET",
                 {0.5f, 0.08f}, 0.017f, glm::vec4(1), FontAlign::CENTER, 0.9f);
@@ -1344,7 +1195,7 @@ void GamePlayScene::drawImpl(const Camera& camera) const {
                 const auto* ship = watched.ships[side].get();
                 if (!ship) continue;
                 const auto marker = projectContactMarker(
-                    camera.viewProjection()*glm::vec4(ship->position(),1));
+                    visualCamera.viewProjection()*glm::vec4(ship->position(),1));
                 const glm::vec4 color = side == 0 ? glm::vec4(1,0.65f,0.25f,1) : cyan;
                 UiFont::instance()->drawScreen(marker.onScreen ? "+" : "!",
                     marker.position,0.025f,color,FontAlign::CENTER);
@@ -1428,12 +1279,15 @@ void GamePlayScene::drawImpl(const Camera& camera) const {
         m_gamePlay.running().contractStatus()->phase == voxellancer::protocol::ContractPhase::Mission) {
         BenchmarkCpuScope cpuScope(BenchmarkMetric::ParticleDraw);
         BenchmarkGpuScope gpuScope(BenchmarkMetric::ParticleDraw);
-        World::instance()->particleEngine().draw(camera);
+        World::instance()->particleEngine().draw(visualCamera);
     }
 
     if (m_worldTreeRendererEnabled) {
         BenchmarkCpuScope cpuScope(BenchmarkMetric::WorldTreeDraw);
         BenchmarkGpuScope gpuScope(BenchmarkMetric::WorldTreeDraw);
-        m_worldTreeRenderer->draw(camera);
+        m_worldTreeRenderer->draw(visualCamera);
     }
+#ifndef VOXELLANCER_HEADLESS_SERVER
+    drawEffectPreview();
+#endif
 }

@@ -1,4 +1,7 @@
 #include "god.h"
+#include "collision/shieldcontact.h"
+#include "worldtree/worldtreequery.h"
+#include "worldtree/worldtreegeode.h"
 
 
 
@@ -63,11 +66,28 @@ void God::spawn() {
                 collisions = worldObject->collisionDetector().checkCollisions();
             }
 
+            WorldObject* collider = nullptr;
             if (!collisions.empty()) {
-                WorldObject* collider = collisions.front().a().worldObject();
-                if (collider == worldObject) {
-                    collider = collisions.front().b().worldObject();
+                collider = collisions.front().a().worldObject();
+                if (collider == worldObject) collider = collisions.front().b().worldObject();
+            } else if (worldObject->objectType() != WorldObjectType::Bullet &&
+                       worldObject->objectType() != WorldObjectType::Rocket) {
+                const auto candidates = WorldTreeQuery(
+                    &m_world.worldTree(),&worldObject->collisionDetector().geode()->aabb(),
+                    worldObject->collisionDetector().geode()->hint(),
+                    &worldObject->collisionFilter()).nearGeodes();
+                for (auto* candidate : candidates) {
+                    auto* other = candidate->worldObject();
+                    if (other->objectType() == WorldObjectType::Bullet ||
+                        other->objectType() == WorldObjectType::Rocket) continue;
+                    if (sweepShieldContact(*worldObject,worldObject->transform(),
+                                           worldObject->transform(),*other,true)) {
+                        collider = other;
+                        break;
+                    }
                 }
+            }
+            if (collider) {
                 glow::warning("Failed to spawn %; due to collision with %;",
                     worldObject->info().name(), collider->info().name());
 

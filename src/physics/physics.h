@@ -15,6 +15,7 @@ class WorldObject;
 class Transform;
 class Voxel;
 class VoxelCollision;
+class Mover;
 
 /**
  * Component of the WorldObject that is managing
@@ -42,7 +43,9 @@ public:
 
     const Transform projectedTransformIn(float deltaSec);
 
-    std::list<VoxelCollision>& move(float deltaSec);
+    std::list<VoxelCollision>& move(float deltaSec, Mover* mover = nullptr);
+    void prepareMove(float deltaSec);
+    std::list<VoxelCollision>& movePrepared(float deltaSec, Mover* mover = nullptr);
 
     void addVoxel(Voxel* voxel);
     void removeVoxel(Voxel* voxel);

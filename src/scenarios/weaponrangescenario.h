@@ -12,6 +12,8 @@ class WeaponRangeScenario : public BaseScenario {
 public:
     static constexpr int ScenarioId = 10;
     static constexpr std::size_t GunCount = 10;
+    static std::string gunKey(std::size_t index);
+    static std::string gunName(std::size_t index);
 
     explicit WeaponRangeScenario(World& world);
     void selectGun(std::size_t index);

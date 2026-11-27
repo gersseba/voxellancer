@@ -14,10 +14,11 @@
 
 namespace glow { class Program; }
 class ScreenQuad;
+class SettingsStore;
 
 class MainMenu : public InputHandler, public ContextDependant {
 public:
-    MainMenu(std::function<void()> contracts, std::function<void(int)> scenario);
+    MainMenu(SettingsStore& settings, std::function<void()> contracts, std::function<void(int)> scenario);
     ~MainMenu() override;
 
     bool visible() const;
@@ -44,6 +45,8 @@ private:
     void afterContextRebuild() override;
 
     MainMenuState m_state;
+    SettingsStore& m_settings;
+    bool m_saveAttempted = false;
     int m_selected = 1;
     int m_pressed = -1;
     glm::dvec2 m_lastPointer = glm::dvec2(-1.0);

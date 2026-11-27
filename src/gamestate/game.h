@@ -10,6 +10,7 @@ class GamePlay;
 class Intro;
 class Viewer;
 class MainMenu;
+class SettingsStore;
 
 /**
  * Mainstate of the Game, entered once when libraries and context are setup
@@ -28,6 +29,7 @@ public:
     virtual InputHandler& inputHandler() override;
 
     Viewer& viewer();
+    SettingsStore& settings();
     void enableMainMenu();
     bool mainMenuEnabled() const;
     bool mainMenuVisible() const;
@@ -39,6 +41,7 @@ public:
 
 
 protected:
+    std::unique_ptr<SettingsStore> m_settings;
     std::unique_ptr<Viewer> m_viewer;
 
     GamePlay* m_gamePlay;

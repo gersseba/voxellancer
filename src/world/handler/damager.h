@@ -20,7 +20,9 @@ class Damager
 public:
     explicit Damager(World& world);
 
+    bool canDamage(WorldObject& object) const;
     void applyDamages(std::list<DamageImpact> &damageImpacts);
+    void applyShieldContact(WorldObject& object, float damage, glm::vec3 position);
     void setShieldHitEventReplicationEnabled(bool enabled);
     std::vector<voxellancer::protocol::ShieldHitEvent>
     drainShieldHitEvents();

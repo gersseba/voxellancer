@@ -8,6 +8,24 @@ using namespace bandit;
 using namespace voxellancer::protocol;
 
 go_bandit([]() {
+    describe("projectile impact visual events",[]() {
+        it("round trips projectile identity and contact geometry and rejects malformed effects",[]() {
+            ProjectileImpactEvent event{42,{1,2,3},{0,1,0},0.5f,"plasmamortar_bullet"};
+            ProjectileImpactEventPacket packet{};
+            AssertThat(encodeProjectileImpactEvent(event,packet),IsTrue());
+            ProjectileImpactEvent decoded;
+            AssertThat(decodeProjectileImpactEvent(packet.data(),packet.size(),decoded),Equals(DecodeError::None));
+            AssertThat(decoded == event,IsTrue());
+            packet.back() = 1;
+            AssertThat(decodeProjectileImpactEvent(packet.data(),packet.size(),decoded),Equals(DecodeError::InvalidValue));
+            packet.back() = 0;
+            AssertThat(decodeProjectileImpactEvent(packet.data(),packet.size()-1,decoded),Equals(DecodeError::InvalidLength));
+            event.normal = {};
+            AssertThat(encodeProjectileImpactEvent(event,packet),IsFalse());
+            event.normal = {0,1,0}; event.scale = std::numeric_limits<float>::infinity();
+            AssertThat(encodeProjectileImpactEvent(event,packet),IsFalse());
+        });
+    });
     describe("Combat audio budget", []() {
         it("keeps personal hits ahead of a fleet volley and coalesces repeated impacts", []() {
             CombatCueBudget batch;
@@ -52,6 +70,19 @@ go_bandit([]() {
         });
     });
     describe("server protocol values", []() {
+        it("validates shield-shape requests on sortie actions", []() {
+            ContractAction action{9,2,ContractActionKind::Ready};
+            action.shieldShape = ShieldType::Hull;
+            ContractActionPacket packet{};
+            AssertThat(encodeContractAction(action,packet),IsTrue());
+            ContractAction decoded;
+            AssertThat(decodeContractAction(packet.data(),packet.size(),decoded),Equals(DecodeError::None));
+            AssertThat(decoded.shieldShape == ShieldType::Hull,IsTrue());
+            packet[22] = 3;
+            AssertThat(decodeContractAction(packet.data(),packet.size(),decoded),Equals(DecodeError::InvalidValue));
+            action.kind = ContractActionKind::BuyShield;
+            AssertThat(encodeContractAction(action,packet),IsFalse());
+        });
         it("round trips valid stored-weapon sales and rejects malformed sales", []() {
             ContractAction action{9, 2, ContractActionKind::SellGun, 3};
             ContractActionPacket packet{};
@@ -734,7 +765,8 @@ go_bandit([]() {
                         EquipmentSlotKind::Shield, 0, glm::ivec3(0), ""
                     }
                 },
-                "basicship"
+                "basicship",
+                ShieldType::Sphere
             };
             std::vector<std::uint8_t> packet;
             AssertThat(encodeEntityContent(original, packet), Equals(true));
@@ -760,8 +792,13 @@ go_bandit([]() {
             );
             AssertThat(decoded.id, Equals(original.id));
             AssertThat(decoded.definitionKey, Equals(original.definitionKey));
+            AssertThat(decoded.shieldType == ShieldType::Sphere,IsTrue());
             AssertThat(decoded.voxels, Equals(original.voxels));
             AssertThat(decoded.equipment, Equals(original.equipment));
+            auto invalidShape = packet;
+            invalidShape[15] = 3;
+            AssertThat(decodeEntityContent(invalidShape.data(),invalidShape.size(),decoded),
+                Equals(DecodeError::InvalidValue));
 
             std::vector<std::uint8_t> invalidKindPacket = packet;
             invalidKindPacket[

@@ -18,7 +18,6 @@ struct WeaponProfile {
     float propagationAngle = 360;
     float propagationFraction = 1;
     float mass = 0;
-    int penetration = 1;
     int pellets = 1;
     float scatter = 0; // half-angle of the per-shot aim cone, degrees
 

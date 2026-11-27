@@ -64,10 +64,16 @@ Sound& Sound::setAttenuation(float attenuation) {
 }
 
 Sound& Sound::setVolume(float volume) {
+    m_volume = volume;
     if (m_sound) {
-        m_sound->setVolume(volume * 100);
+        m_sound->setVolume(m_muted ? 0 : volume * 100);
     }
     return *this;
+}
+
+Sound& Sound::setMuted(bool muted) {
+    m_muted = muted;
+    return setVolume(m_volume);
 }
 
 Sound& Sound::setLooping(bool loop) {

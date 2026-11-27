@@ -35,7 +35,11 @@ void VoxelRenderData::setupVertexAttributes() {
 
     VoxelRenderer::voxelMesh().bindTo(VoxelRenderer::program(), m_vertexArrayObject, 0);
     setupVertexAttribute(offsetof(VoxelData, position), "v_position", 3, GL_FLOAT, GL_FALSE, 2);
+#ifdef __EMSCRIPTEN__
+    setupVertexAttribute(offsetof(VoxelData, color), "v_color", 4, GL_UNSIGNED_BYTE, GL_TRUE, 3);
+#else
     setupVertexAttribute(offsetof(VoxelData, color), "v_color", GL_BGRA, GL_UNSIGNED_BYTE, GL_TRUE, 3);
+#endif
     setupVertexAttribute(offsetof(VoxelData, emissiveness), "v_emissiveness", 1, GL_FLOAT, GL_FALSE, 4);
 }
 
@@ -64,8 +68,13 @@ void VoxelRenderData::updateBuffer() {
         m_bufferSize = m_voxel.size();
     }
 
+#ifdef __EMSCRIPTEN__
+    std::vector<VoxelData> staging(m_voxel.size());
+    VoxelData* voxelData = staging.data();
+#else
     VoxelData* voxelData = static_cast<VoxelData*>(m_voxelDataBuffer->mapRange(0, m_voxel.size() * sizeof(VoxelData), GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT));
     assert(voxelData != nullptr);
+#endif
 
     int i = 0;
     for (auto& pair : m_voxel) {
@@ -74,7 +83,11 @@ void VoxelRenderData::updateBuffer() {
         voxelData[i++] = VoxelData{ glm::vec3(voxel->cell()), voxel->visuals().color(), voxel->visuals().emissiveness() };
     }
 
+#ifdef __EMSCRIPTEN__
+    m_voxelDataBuffer->setSubData(staging);
+#else
     m_voxelDataBuffer->unmap();
+#endif
 
     m_isDirty = false;
 }

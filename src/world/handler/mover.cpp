@@ -1,4 +1,7 @@
 #include "mover.h"
+#ifndef VOXELLANCER_HEADLESS_SERVER
+#include "voxeleffect/combateffects.h"
+#endif
 
 #include <algorithm>
 #include <limits>
@@ -38,9 +41,25 @@ Mover::Mover(World& world):
 
 void Mover::moveWorldObjects(float deltaSec) {
     m_voxelCollisions.clear();
+    m_previousShieldContacts.swap(m_currentShieldContacts);
+    m_currentShieldContacts.clear();
+    m_tickAccelerations.clear();
+    m_shieldHullImpacts.clear();
+    m_tickDuration = deltaSec;
+    std::vector<WorldObject*> objects(m_world.worldObjects().begin(),m_world.worldObjects().end());
+    std::sort(objects.begin(),objects.end(),[this](const auto* a, const auto* b) {
+        const auto aid = m_world.entityId(a).value(), bid = m_world.entityId(b).value();
+        return aid.index != bid.index ? aid.index < bid.index : aid.generation < bid.generation;
+    });
+    for (auto* object : objects) {
+        m_tickAccelerations.emplace(object,object->physics().acceleration().directional());
+        const auto* projectile = dynamic_cast<Projectile*>(object);
+        if (!projectile || !projectile->profile.enabled)
+            object->physics().prepareMove(deltaSec);
+    }
     std::vector<std::pair<WorldObject*, glm::vec3>> projectileStartPositions;
 
-    for (WorldObject *worldObject : m_world.worldObjects()) {
+    for (WorldObject *worldObject : objects) {
         auto* projectile = dynamic_cast<Projectile*>(worldObject);
         if (projectile && projectile->profile.enabled) {
             continue;
@@ -54,15 +73,100 @@ void Mover::moveWorldObjects(float deltaSec) {
         if (worldObject->objectType() == WorldObjectType::Bullet ||
             worldObject->objectType() == WorldObjectType::Rocket) {
             BenchmarkCpuScope scope(BenchmarkMetric::ProjectileMovement);
-            collisionsPointer = &worldObject->physics().move(deltaSec);
+            collisionsPointer = &worldObject->physics().movePrepared(deltaSec,this);
         } else {
-            collisionsPointer = &worldObject->physics().move(deltaSec);
+            collisionsPointer = &worldObject->physics().movePrepared(deltaSec,this);
         }
         std::list<VoxelCollision>& collisions = *collisionsPointer;
         m_voxelCollisions.splice(m_voxelCollisions.end(), collisions);
     }
 
     interceptShieldHits(projectileStartPositions);
+}
+
+Mover::ContactPair Mover::contactPair(WorldObject& a, WorldObject& b) const {
+    const auto idA = m_world.entityId(&a).value(), idB = m_world.entityId(&b).value();
+    const auto key = [](const auto& id) {
+        return (static_cast<std::uint64_t>(id.generation)<<32) | id.index;
+    };
+    return std::minmax(key(idA),key(idB));
+}
+
+std::optional<std::pair<WorldObject*,ShieldContact>> Mover::findShieldContact(
+    WorldObject& moving, const Transform& start, const Transform& end,
+    const std::unordered_set<WorldTreeGeode*>& candidates) {
+    if (moving.objectType() == WorldObjectType::Bullet ||
+        moving.objectType() == WorldObjectType::Rocket) return std::nullopt;
+    std::optional<std::pair<WorldObject*,ShieldContact>> first;
+    for (auto* candidate : candidates) {
+        auto* other = candidate->worldObject();
+        if (other->objectType() == WorldObjectType::Bullet ||
+            other->objectType() == WorldObjectType::Rocket) continue;
+        const auto contact = sweepShieldContact(moving,start,end,*other);
+        if (!contact) continue;
+        if (!first || contact->time < first->second.time ||
+            (contact->time == first->second.time &&
+             contactPair(moving,*other) < contactPair(moving,*first->first)))
+            first = std::make_pair(other,*contact);
+    }
+    return first;
+}
+
+void Mover::resolveShieldContact(WorldObject& moving, WorldObject& other, const ShieldContact& contact) {
+    const auto pair = contactPair(moving,other);
+    const auto id = m_world.entityId(&moving).value();
+    const auto key = (static_cast<std::uint64_t>(id.generation)<<32) | id.index;
+    const unsigned signature = key == pair.first
+        ? (contact.movingShield ? 1u : 0u) | (contact.otherShield ? 2u : 0u)
+        : (contact.movingShield ? 2u : 0u) | (contact.otherShield ? 1u : 0u);
+    if (!m_currentShieldContacts.emplace(pair,signature).second) return;
+    const float massA = moving.physics().mass(), massB = other.physics().mass();
+    if (massA <= 0 || massB <= 0) return;
+    const auto normal = contact.normal;
+    const auto speedA = moving.physics().speed(), speedB = other.physics().speed();
+    const auto armA = contact.point-moving.position(), armB = contact.point-other.position();
+    const auto pointSpeedA = speedA.directional()+glm::cross(speedA.angular(),armA);
+    const auto pointSpeedB = speedB.directional()+glm::cross(speedB.angular(),armB);
+    const float closing = std::max(0.0f,glm::dot(pointSpeedA-pointSpeedB,normal));
+    const float elasticity = glm::clamp(Property<float>("physics.elasticity").get(),0.0f,1.0f);
+    const float radiusA = moving.bounds().sphere(moving.transform()).radius();
+    const float radiusB = other.bounds().sphere(other.transform()).radius();
+    const float inertiaA = 0.4f*massA*std::max(radiusA*radiusA,1e-4f);
+    const float inertiaB = 0.4f*massB*std::max(radiusB*radiusB,1e-4f);
+    const auto torqueA = glm::cross(armA,normal), torqueB = glm::cross(armB,normal);
+    const float reducedMass = 1.0f/(1.0f/massA+1.0f/massB+
+        glm::dot(torqueA,torqueA)/inertiaA+glm::dot(torqueB,torqueB)/inertiaB);
+    const auto previous = m_previousShieldContacts.find(pair);
+    const float impact = previous != m_previousShieldContacts.end() && previous->second == signature ? 0.0f :
+        0.5f*reducedMass*closing*closing*(1-elasticity*elasticity)*0.5f;
+    const float pressure = 0.5f*m_tickDuration*(
+        massA*std::max(0.0f,glm::dot(m_tickAccelerations.at(&moving),normal)) +
+        massB*std::max(0.0f,-glm::dot(m_tickAccelerations.at(&other),normal)));
+    const float damage = impact+pressure;
+    const float impulse = (1+elasticity)*reducedMass*closing;
+    moving.physics().setSpeed(Speed(speedA.directional()-normal*(impulse/massA),
+        speedA.angular()-torqueA*(impulse/inertiaA)));
+    other.physics().setSpeed(Speed(speedB.directional()+normal*(impulse/massB),
+        speedB.angular()+torqueB*(impulse/inertiaB)));
+    if (contact.movingShield)
+        m_world.worldLogic().damageShieldContact(moving,damage,contact.point);
+    else if (contact.movingVoxel && damage > 0)
+        m_shieldHullImpacts.push_back({&moving,contact.movingVoxel->cell(),-normal,damage,other.collisionFieldOfDamage()});
+    if (contact.otherShield)
+        m_world.worldLogic().damageShieldContact(other,damage,contact.point);
+    else if (contact.otherVoxel && damage > 0)
+        m_shieldHullImpacts.push_back({&other,contact.otherVoxel->cell(),normal,damage,moving.collisionFieldOfDamage()});
+}
+
+void Mover::applyShieldHullImpacts() {
+    for (const auto& impact : m_shieldHullImpacts) {
+        if (auto* voxel = impact.object->voxel(impact.cell)) {
+            std::list<DamageImpact> impacts;
+            impacts.emplace_back(impact.object,voxel,impact.direction*impact.damage,impact.fieldOfDamage);
+            m_world.worldLogic().processDamageImpacts(std::move(impacts));
+        }
+    }
+    m_shieldHullImpacts.clear();
 }
 
 void Mover::moveProfiledProjectiles(float deltaSec) {
@@ -199,11 +303,12 @@ void Mover::moveProfiledProjectile(Projectile &projectile, float deltaSec, unsig
                       old.angular() + glm::cross(point - target->position(), impulse) / inertia));
             remainingVelocity = nextVelocity;
         };
-        if (target->info().invulnerable()) {
+        if (!m_world.worldLogic().canDamage(*target)) {
             stopped = true;
         } else if (contact.shield) {
             const float incoming = profile.shield * projectile.impactBudget;
             const float overflow = contact.shield->compensate(incoming);
+            if (incoming > 0) target->components().noteShipHit(m_world.deltaSec());
             projectile.impactBudget = overflow / profile.shield;
             if (m_shieldHitEventReplicationEnabled && incoming > overflow) {
                 if (m_shieldHitEvents.size() >= 4096)
@@ -217,6 +322,13 @@ void Mover::moveProfiledProjectile(Projectile &projectile, float deltaSec, unsig
             transferMomentum(stopped ? 0 : projectile.impactBudget);
         } else {
             const float budgetBefore = projectile.impactBudget;
+            m_world.worldLogic().recordProjectileImpact(projectile,point,-direction,target->transform().scale());
+#ifndef VOXELLANCER_HEADLESS_SERVER
+            if (m_world.hasPresentation()) {
+                if (const auto effect = CombatEffectSettings::gun(projectile.info().definitionKey()))
+                    m_world.combatEffects().impact(*effect,point,-direction,target->transform().scale());
+            }
+#endif
             std::list<DamageImpact> impacts;
             const auto damageVoxel = [&](Voxel *voxel, float fraction) {
                 const float materialDamage = voxel->armored() ? profile.armor : profile.normal;
@@ -226,35 +338,36 @@ void Mover::moveProfiledProjectile(Projectile &projectile, float deltaSec, unsig
                 impacts.back().setDamage(damage);
                 return damage / materialDamage;
             };
-            if (profile.radius > 0) {
+            std::unordered_set<Voxel *> destroyed;
+            std::unordered_set<Voxel *> affected;
+            float remaining = profile.isBlast
+                ? budgetBefore * profile.propagationFraction : budgetBefore;
+            if (!profile.isBlast) {
+                Voxel *first = found->second;
+                const float spent = damageVoxel(first, remaining);
+                remaining = std::max(0.0f, remaining - spent);
+                affected.insert(first);
+                if (spent * (first->armored() ? profile.armor : profile.normal) >=
+                    first->hp() - 1e-4f) {
+                    destroyed.insert(first);
+                    remaining *= profile.propagationFraction;
+                } else {
+                    remaining = 0;
+                }
+            }
+            if (profile.radius > 0 && remaining > 1e-6f) {
                 struct Surface {
                     Voxel *voxel;
                     float distance;
                 };
-                std::unordered_set<Voxel *> destroyed;
-                std::unordered_set<Voxel *> affected;
-                float remaining = profile.isBlast
-                    ? budgetBefore * profile.propagationFraction : budgetBefore;
-                if (!profile.isBlast) {
-                    Voxel *first = found->second;
-                    const float spent = damageVoxel(first, remaining);
-                    remaining = std::max(0.0f, remaining - spent);
-                    affected.insert(first);
-                    if (spent * (first->armored() ? profile.armor : profile.normal) >=
-                        first->hp() - 1e-4f) {
-                        destroyed.insert(first);
-                        remaining *= profile.propagationFraction;
-                    } else {
-                        remaining = 0;
-                    }
-                }
-
                 const float scale = target->transform().scale();
                 const Sphere area(point, profile.radius * scale);
                 const auto nearby = VoxelTreeQuery(&target->collisionDetector().voxelTree(), &area)
                                         .intersectingVoxels();
                 const auto origin = point - direction * (0.001f * scale);
                 const auto localOrigin = target->transform().inverseApplyTo(origin);
+                const auto localRayEnd = target->transform().inverseApplyTo(
+                    point + direction * (profile.radius * scale));
                 const float angleLimit = std::cos(glm::radians(profile.propagationAngle * 0.5f));
                 std::vector<Surface> candidates;
                 for (auto *voxel : nearby) {
@@ -263,9 +376,15 @@ void Mover::moveProfiledProjectile(Projectile &projectile, float deltaSec, unsig
                     const float distance = length / scale;
                     if (distance >= profile.radius)
                         continue;
-                    if (profile.propagationAngle < 360 && length > 1e-6f &&
-                        glm::dot(offset / length, direction) + 1e-6f < angleLimit)
-                        continue;
+                    if (profile.propagationAngle < 360 && length > 1e-6f) {
+                        float t;
+                        // A narrow cone must still reach voxels crossed off-center by its axis.
+                        const bool onAxis = segmentIntersectsVoxel(
+                            localOrigin, localRayEnd, voxel->cell(), 0.5f, t);
+                        if (!onAxis &&
+                            glm::dot(offset / length, direction) + 1e-6f < angleLimit)
+                            continue;
+                    }
                     candidates.push_back({voxel, distance});
                 }
                 std::sort(candidates.begin(), candidates.end(),
@@ -275,7 +394,7 @@ void Mover::moveProfiledProjectile(Projectile &projectile, float deltaSec, unsig
                                          : cellLess(a.voxel->cell(), b.voxel->cell());
                           });
                 constexpr std::size_t MaxPropagationRecipients = 12;
-                std::size_t recipients = 0;
+                std::size_t recipients = affected.size();
                 while (remaining > 1e-6f && recipients < MaxPropagationRecipients) {
                     std::vector<Surface> surfaces;
                     for (const auto &candidate : candidates) {
@@ -330,14 +449,10 @@ void Mover::moveProfiledProjectile(Projectile &projectile, float deltaSec, unsig
                     recipients += surfaces.size();
                     remaining = overflow * profile.propagationFraction;
                 }
-                projectile.impactBudget = 0;
-            } else {
-                projectile.impactBudget -= damageVoxel(found->second, budgetBefore);
-                ++projectile.penetratedVoxels;
             }
-            stopped = projectile.impactBudget <= 1e-6f ||
-                      projectile.penetratedVoxels >= profile.penetration;
-            transferMomentum(stopped ? 0 : projectile.impactBudget);
+            projectile.impactBudget = 0;
+            stopped = true;
+            transferMomentum(0);
             m_world.worldLogic().processDamageImpacts(std::move(impacts));
         }
         if (stopped) {
@@ -477,10 +592,13 @@ void Mover::interceptShieldHits(
                 }
             }
         }
-        if (hitShield == nullptr || !hitShield->registerHit()) {
+        if (hitShield == nullptr) {
             continue;
         }
 
+        const bool damageable = m_world.worldLogic().canDamage(*protectedObject);
+        if (damageable && !hitShield->registerHit()) continue;
+        if (damageable) protectedObject->components().noteShipHit(m_world.deltaSec());
         interceptedProjectiles.insert(projectileObject);
         const glm::vec3 impactPosition = glm::mix(start, end, earliestHit);
         const glm::vec3 localImpactPosition =
@@ -493,7 +611,7 @@ void Mover::interceptShieldHits(
             impactPosition,
             projectileObject->orientation());
         projectile->onShieldImpact();
-        if (m_shieldHitEventReplicationEnabled) {
+        if (damageable && m_shieldHitEventReplicationEnabled) {
             const auto entity = m_world.entityId(protectedObject);
             if (!entity) {
                 throw std::logic_error(

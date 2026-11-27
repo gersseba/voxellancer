@@ -6,6 +6,10 @@
 #include <glow/logging.h>
 #include <glow/Texture.h>
 
+#ifdef __EMSCRIPTEN__
+#include <algorithm>
+#include "dxtdecoder.h"
+#endif
 
 bool DdsTexture::loadImage2d(glow::Texture * texture, std::string path){
     assert(texture->target() != GL_TEXTURE_CUBE_MAP);
@@ -64,6 +68,9 @@ bool DdsTexture::loadImage2d(glow::Texture * texture, std::string path, GLenum t
     unsigned int bufsize = mipMapCount > 1 ? linearSize * 2 : linearSize;
     char * buffer = new char[bufsize * sizeof(char)];
     file.read(buffer, bufsize);
+#ifdef __EMSCRIPTEN__
+    const std::size_t bytesRead = static_cast<std::size_t>(file.gcount());
+#endif
     /* close the file pointer */
     file.close();
 
@@ -92,10 +99,29 @@ bool DdsTexture::loadImage2d(glow::Texture * texture, std::string path, GLenum t
     for (unsigned int level = 0; level < mipMapCount && (width || height); ++level)
     {
         unsigned int size = ((width + 3) / 4)*((height + 3) / 4)*blockSize;
+#ifdef __EMSCRIPTEN__
+        if (offset > bytesRead || size > bytesRead - offset) {
+            delete[] buffer;
+            glow::critical("DdsTexture: truncated mipmap in %;", path);
+            return false;
+        }
+        const DxtFormat dxtFormat = fourCC == FOURCC_DXT1 ? DxtFormat::Dxt1 :
+            fourCC == FOURCC_DXT3 ? DxtFormat::Dxt3 : DxtFormat::Dxt5;
+        const auto pixels = decodeDxt(dxtFormat, width, height,
+            reinterpret_cast<const std::uint8_t*>(buffer + offset), size);
+        texture->image2D(target, level, GL_RGBA8, width, height, 0,
+            GL_RGBA, GL_UNSIGNED_BYTE, pixels.data());
+#else
         texture->compressedImage2D(level, format, width, height, 0, size, buffer + offset, target);
+#endif
         offset += size;
+#ifdef __EMSCRIPTEN__
+        width = std::max(1u, width / 2);
+        height = std::max(1u, height / 2);
+#else
         width /= 2;
         height /= 2;
+#endif
     }
     delete[] buffer;
 

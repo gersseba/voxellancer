@@ -10,10 +10,12 @@
 
 class WorldObject;
 class CollisionDetector;
+class Mover;
 
 class Movement {
 public:
-    Movement(WorldObject& worldObject, const Transform& originalTransform, const Transform& targetTransform);
+    Movement(WorldObject& worldObject, const Transform& originalTransform, const Transform& targetTransform,
+        Mover* mover = nullptr);
     virtual ~Movement();
 
     bool perform();
@@ -29,10 +31,11 @@ protected:
 
     float m_distance;
     bool m_successful;
+    Mover* m_mover;
 
 
     void performSplitted();
     void performStepped(const IAABB& phaseAABB);
-    int calculateStepCount();
+    int calculateStepCount(bool shieldAware);
     Transform calculateStep(int s, int stepCount) const;
 };
