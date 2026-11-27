@@ -35,6 +35,7 @@ jobs:
           repository: microsoft/vcpkg
           ref: e1ff419d28c7f0a94abaf0a848fe0aeeb69b2de3
           path: .ci/vcpkg
+          fetch-depth: 0
 
       - name: Build browser game
         shell: bash
